@@ -21,21 +21,38 @@ import {
   UsersRound,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, PointerEvent, ReactNode } from 'react';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
 type TextAlign = 'left' | 'center' | 'right';
+type TextWrapMode = 'single' | 'wrap' | 'shrink';
+type TextDecoration = 'none' | 'underline' | 'line-through';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
 type Screen = 'dashboard' | 'mandals' | 'members' | 'template' | 'generate' | 'slips';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 
 interface TemplatePlacement {
+  backgroundColor: string;
+  borderColor: string;
+  borderRadius: number;
   color: string;
+  fontFamily: string;
   fontSize: number;
+  fontStyle: 'normal' | 'italic';
   fontWeight: number;
+  height: number;
+  letterSpacing: number;
+  lineHeight: number;
+  opacity: number;
+  padding: number;
+  rotate: number;
+  shadow: boolean;
   textAlign: TextAlign;
+  textDecoration: TextDecoration;
+  textTransform: 'none' | 'uppercase' | 'capitalize';
+  textWrap: TextWrapMode;
   width: number;
   x: number;
   y: number;
@@ -1457,9 +1474,15 @@ function TemplateView({
   onPreviewChange: (url: string) => void;
   templatePreview: string;
 }) {
+  type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+  type FieldInteraction =
+    | { fieldKey: string; origin: TemplatePlacement; startX: number; startY: number; type: 'move' }
+    | { fieldKey: string; handle: ResizeHandle; origin: TemplatePlacement; startX: number; startY: number; type: 'resize' };
+
   const [fieldLabel, setFieldLabel] = useState('');
   const canvasWidth = latestTemplateVersion?.canvasWidth ?? 1328;
   const canvasHeight = latestTemplateVersion?.canvasHeight ?? 800;
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const fieldOptions = useMemo(
     () => [
       { key: 'slipNumber', label: 'Slip No.' },
@@ -1479,62 +1502,76 @@ function TemplateView({
     [activeForm?.customFields],
   );
   const [activeField, setActiveField] = useState('slipNumber');
-  const [draggingField, setDraggingField] = useState<string | null>(null);
+  const [interaction, setInteraction] = useState<FieldInteraction | null>(null);
+  const [showGrid, setShowGrid] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ fieldKey: string; x: number; y: number } | null>(null);
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>({
     amount: {
+      ...defaultPlacement(),
       color: '#111111',
       fontSize: 31,
       fontWeight: 900,
+      height: 52,
       textAlign: 'left',
       width: 250,
       x: 720,
-      y: 706,
+      y: 680,
     },
     building_name: {
+      ...defaultPlacement(),
       color: '#111111',
       fontSize: 24,
       fontWeight: 700,
+      height: 48,
       textAlign: 'left',
       width: 420,
       x: 715,
-      y: 648,
+      y: 623,
     },
     contributorAddress: {
+      ...defaultPlacement(),
       color: '#111111',
       fontSize: 27,
       fontWeight: 800,
+      height: 70,
       textAlign: 'left',
+      textWrap: 'wrap',
       width: 560,
       x: 715,
-      y: 612,
+      y: 574,
     },
     contributorName: {
+      ...defaultPlacement(),
       color: '#111111',
       fontSize: 30,
       fontWeight: 900,
+      height: 58,
       textAlign: 'left',
       width: 610,
       x: 670,
-      y: 544,
+      y: 515,
     },
     createdAt: {
+      ...defaultPlacement(),
       color: '#111111',
       fontSize: 25,
       fontWeight: 800,
+      height: 46,
       textAlign: 'center',
       width: 160,
       x: 1115,
-      y: 478,
+      y: 455,
     },
     slipNumber: {
+      ...defaultPlacement(),
       color: '#b62028',
       fontSize: 31,
       fontWeight: 900,
+      height: 48,
       textAlign: 'left',
       width: 100,
       x: 648,
-      y: 470,
+      y: 445,
     },
   });
   const selectedPlacement = placements[activeField] ?? defaultPlacement();
@@ -1554,11 +1591,12 @@ function TemplateView({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeField, placements]);
 
-  function canvasPoint(event: PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
+  function pointFromClient(clientX: number, clientY: number) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
     return {
-      x: Math.round(((event.clientX - rect.left) / rect.width) * canvasWidth),
-      y: Math.round(((event.clientY - rect.top) / rect.height) * canvasHeight),
+      x: clamp(Math.round(((clientX - rect.left) / rect.width) * canvasWidth), 0, canvasWidth),
+      y: clamp(Math.round(((clientY - rect.top) / rect.height) * canvasHeight), 0, canvasHeight),
     };
   }
 
@@ -1575,15 +1613,89 @@ function TemplateView({
 
   function placeActiveField(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
-    if (draggingField) return;
+    if (event.target !== event.currentTarget) return;
+    if (interaction) return;
     setContextMenu(null);
-    const point = canvasPoint(event);
-    updatePlacement(activeField, point);
+    const point = pointFromClient(event.clientX, event.clientY);
+    const placement = placements[activeField] ?? defaultPlacement();
+    updatePlacement(activeField, {
+      x: clamp(point.x, 0, canvasWidth - placement.width),
+      y: clamp(point.y, 0, canvasHeight - placement.height),
+    });
   }
 
-  function moveDraggingField(event: PointerEvent<HTMLDivElement>) {
-    if (!draggingField) return;
-    updatePlacement(draggingField, canvasPoint(event));
+  function handleCanvasPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!interaction) return;
+    event.preventDefault();
+    const point = pointFromClient(event.clientX, event.clientY);
+    const deltaX = point.x - interaction.startX;
+    const deltaY = point.y - interaction.startY;
+    const origin = interaction.origin;
+    if (interaction.type === 'move') {
+      updatePlacement(interaction.fieldKey, {
+        x: clamp(origin.x + deltaX, 0, canvasWidth - origin.width),
+        y: clamp(origin.y + deltaY, 0, canvasHeight - origin.height),
+      });
+      return;
+    }
+
+    let nextX = origin.x;
+    let nextY = origin.y;
+    let nextWidth = origin.width;
+    let nextHeight = origin.height;
+    if (interaction.handle.includes('e')) nextWidth = origin.width + deltaX;
+    if (interaction.handle.includes('s')) nextHeight = origin.height + deltaY;
+    if (interaction.handle.includes('w')) {
+      nextX = origin.x + deltaX;
+      nextWidth = origin.width - deltaX;
+    }
+    if (interaction.handle.includes('n')) {
+      nextY = origin.y + deltaY;
+      nextHeight = origin.height - deltaY;
+    }
+    nextWidth = clamp(nextWidth, 48, canvasWidth - nextX);
+    nextHeight = clamp(nextHeight, 24, canvasHeight - nextY);
+    nextX = clamp(nextX, 0, canvasWidth - nextWidth);
+    nextY = clamp(nextY, 0, canvasHeight - nextHeight);
+    updatePlacement(interaction.fieldKey, {
+      height: nextHeight,
+      width: nextWidth,
+      x: nextX,
+      y: nextY,
+    });
+  }
+
+  function startMove(fieldKey: string, event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const point = pointFromClient(event.clientX, event.clientY);
+    setActiveField(fieldKey);
+    setContextMenu(null);
+    setInteraction({
+      fieldKey,
+      origin: placements[fieldKey] ?? defaultPlacement(),
+      startX: point.x,
+      startY: point.y,
+      type: 'move',
+    });
+  }
+
+  function startResize(fieldKey: string, handle: ResizeHandle, event: PointerEvent<HTMLSpanElement>) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const point = pointFromClient(event.clientX, event.clientY);
+    setActiveField(fieldKey);
+    setContextMenu(null);
+    setInteraction({
+      fieldKey,
+      handle,
+      origin: placements[fieldKey] ?? defaultPlacement(),
+      startX: point.x,
+      startY: point.y,
+      type: 'resize',
+    });
   }
 
   function removePlacement(fieldKey = activeField) {
@@ -1622,6 +1734,59 @@ function TemplateView({
     setContextMenu(null);
   }
 
+  function centerFieldOnSlip(fieldKey = activeField) {
+    const source = placements[fieldKey] ?? defaultPlacement();
+    updatePlacement(fieldKey, { x: Math.round((canvasWidth - source.width) / 2) });
+    setContextMenu(null);
+  }
+
+  function fullWidthCenterField(fieldKey = activeField) {
+    updatePlacement(fieldKey, {
+      textAlign: 'center',
+      width: canvasWidth - 80,
+      x: 40,
+    });
+    setContextMenu(null);
+  }
+
+  function contextAction(fieldKey: string, action: string) {
+    const source = placements[fieldKey] ?? defaultPlacement();
+    const actions: Record<string, () => void> = {
+      black: () => updatePlacement(fieldKey, { color: '#111111' }),
+      bold: () => updatePlacement(fieldKey, { fontWeight: source.fontWeight >= 800 ? 500 : 900 }),
+      border: () => updatePlacement(fieldKey, { borderColor: source.borderColor === 'transparent' ? '#ff4f0a' : 'transparent' }),
+      capitalize: () => updatePlacement(fieldKey, { textTransform: source.textTransform === 'capitalize' ? 'none' : 'capitalize' }),
+      center: () => updatePlacement(fieldKey, { textAlign: 'center' }),
+      centerField: () => centerFieldOnSlip(fieldKey),
+      delete: () => removePlacement(fieldKey),
+      duplicate: () => duplicatePlacement(fieldKey),
+      fontArial: () => updatePlacement(fieldKey, { fontFamily: 'Arial, sans-serif' }),
+      fontDevanagari: () => updatePlacement(fieldKey, { fontFamily: '"Noto Sans Devanagari", Arial, sans-serif' }),
+      fontGeorgia: () => updatePlacement(fieldKey, { fontFamily: 'Georgia, serif' }),
+      fullWidth: () => fullWidthCenterField(fieldKey),
+      grid: () => setShowGrid((value) => !value),
+      italic: () => updatePlacement(fieldKey, { fontStyle: source.fontStyle === 'italic' ? 'normal' : 'italic' }),
+      larger: () => updatePlacement(fieldKey, { fontSize: clamp(source.fontSize + 2, 8, 96) }),
+      left: () => updatePlacement(fieldKey, { textAlign: 'left' }),
+      orange: () => updatePlacement(fieldKey, { color: '#ff4f0a' }),
+      red: () => updatePlacement(fieldKey, { color: '#b62028' }),
+      resetRotate: () => updatePlacement(fieldKey, { rotate: 0 }),
+      right: () => updatePlacement(fieldKey, { textAlign: 'right' }),
+      rotateLeft: () => updatePlacement(fieldKey, { rotate: source.rotate - 5 }),
+      rotateRight: () => updatePlacement(fieldKey, { rotate: source.rotate + 5 }),
+      shadow: () => updatePlacement(fieldKey, { shadow: !source.shadow }),
+      shrink: () => updatePlacement(fieldKey, { fontSize: clamp(source.fontSize - 2, 8, 96), textWrap: 'shrink' }),
+      smaller: () => updatePlacement(fieldKey, { fontSize: clamp(source.fontSize - 2, 8, 96) }),
+      splitHold: () => updatePlacement(fieldKey, { height: Math.max(source.height, source.fontSize * 2.7), textWrap: 'wrap' }),
+      transparentBg: () => updatePlacement(fieldKey, { backgroundColor: 'transparent' }),
+      underline: () => updatePlacement(fieldKey, { textDecoration: source.textDecoration === 'underline' ? 'none' : 'underline' }),
+      uppercase: () => updatePlacement(fieldKey, { textTransform: source.textTransform === 'uppercase' ? 'none' : 'uppercase' }),
+      whiteBg: () => updatePlacement(fieldKey, { backgroundColor: 'rgba(255, 255, 255, 0.78)' }),
+      wrap: () => updatePlacement(fieldKey, { textWrap: source.textWrap === 'wrap' ? 'single' : 'wrap' }),
+    };
+    actions[action]?.();
+  }
+
   return (
     <section className="template-grid">
       <div className="card template-stage">
@@ -1654,11 +1819,12 @@ function TemplateView({
         </div>
         <div className="template-canvas">
           <div
-            className="template-map-canvas"
+            className={`template-map-canvas ${showGrid ? 'show-grid' : ''}`}
+            ref={canvasRef}
             onPointerDown={placeActiveField}
-            onPointerMove={moveDraggingField}
-            onPointerUp={() => setDraggingField(null)}
-            onPointerCancel={() => setDraggingField(null)}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerUp={() => setInteraction(null)}
+            onPointerCancel={() => setInteraction(null)}
             onContextMenu={(event) => {
               event.preventDefault();
               setContextMenu(null);
@@ -1668,39 +1834,65 @@ function TemplateView({
             <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
             {Object.entries(placements).map(([key, placement]) => {
               const field = fieldOptions.find((item) => item.key === key);
+              const sampleValue = sampleFieldValue(key, field?.label ?? key);
+              const fontSize =
+                placement.textWrap === 'shrink' && sampleValue.length > 18
+                  ? Math.max(10, placement.fontSize - Math.ceil((sampleValue.length - 18) / 3))
+                  : placement.fontSize;
               return (
-                <button
+                <div
                   className={`field-anchor ${activeField === key ? 'active' : ''}`}
                   key={key}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setActiveField(key);
-                  }}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     setActiveField(key);
                     setContextMenu({ fieldKey: key, x: event.clientX, y: event.clientY });
                   }}
-                  onPointerDown={(event) => {
-                    if (event.button !== 0) return;
-                    event.stopPropagation();
-                    setActiveField(key);
-                    setDraggingField(key);
-                  }}
+                  onPointerDown={(event) => startMove(key, event)}
+                  role="button"
                   style={{
+                    alignItems: placement.textWrap === 'single' ? 'center' : 'flex-start',
+                    backgroundColor: placement.backgroundColor,
+                    borderColor: placement.borderColor,
+                    borderRadius: `${placement.borderRadius}px`,
                     color: placement.color,
-                    fontSize: `${placement.fontSize}px`,
+                    fontFamily: placement.fontFamily,
+                    fontSize: `${fontSize}px`,
+                    fontStyle: placement.fontStyle,
                     fontWeight: placement.fontWeight,
+                    height: `${(placement.height / canvasHeight) * 100}%`,
                     left: `${(placement.x / canvasWidth) * 100}%`,
+                    letterSpacing: `${placement.letterSpacing}px`,
+                    lineHeight: placement.lineHeight,
+                    opacity: placement.opacity,
+                    padding: `${placement.padding}px`,
+                    textDecoration: placement.textDecoration,
                     textAlign: placement.textAlign,
+                    textShadow: placement.shadow ? '0 2px 4px rgba(0, 0, 0, 0.35)' : 'none',
+                    textTransform: placement.textTransform,
                     top: `${(placement.y / canvasHeight) * 100}%`,
+                    transform: `rotate(${placement.rotate}deg)`,
                     width: `${(placement.width / canvasWidth) * 100}%`,
+                    whiteSpace: placement.textWrap === 'single' ? 'nowrap' : 'normal',
+                    wordBreak: placement.textWrap === 'single' ? 'normal' : 'break-word',
                   }}
-                  type="button"
+                  tabIndex={0}
                 >
-                  {sampleFieldValue(key, field?.label ?? key)}
-                </button>
+                  <span>{sampleValue}</span>
+                  {activeField === key && (
+                    <>
+                      {(['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as ResizeHandle[]).map((handle) => (
+                        <span
+                          aria-hidden="true"
+                          className={`resize-handle handle-${handle}`}
+                          key={handle}
+                          onPointerDown={(event) => startResize(key, handle, event)}
+                        />
+                      ))}
+                    </>
+                  )}
+                </div>
               );
             })}
             {contextMenu && (
@@ -1711,6 +1903,36 @@ function TemplateView({
                   top: `${contextMenu.y}px`,
                 }}
               >
+                <div className="context-menu-title">Text Properties</div>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'larger')} type="button">Increase Text Size</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'smaller')} type="button">Reduce Text Size</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'bold')} type="button">Bold / Normal</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'italic')} type="button">Italic</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'underline')} type="button">Underline</button>
+                <div className="context-menu-title">Background Properties</div>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'transparentBg')} type="button">Transparent Background</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'whiteBg')} type="button">White Background</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'border')} type="button">Toggle Border</button>
+                <div className="context-menu-title">Alignments</div>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'centerField')} type="button">Center Field on Slip</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'fullWidth')} type="button">Full Width + Center Text</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'grid')} type="button">Grid View</button>
+                <div className="context-menu-title">Color / Rotate / Font</div>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'orange')} type="button">Color: Orange</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'red')} type="button">Color: Receipt Red</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'black')} type="button">Color: Black</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'rotateLeft')} type="button">Rotate -5 degrees</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'rotateRight')} type="button">Rotate +5 degrees</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'resetRotate')} type="button">Reset Rotate</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontArial')} type="button">Font: Arial</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontDevanagari')} type="button">Font: Devanagari</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontGeorgia')} type="button">Font: Serif</button>
+                <div className="context-menu-title">Size / Wrap</div>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'splitHold')} type="button">Split Hold Size</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'wrap')} type="button">WordWrap Text</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'shrink')} type="button">WordWrap / Reduce Font Size</button>
+                <button onClick={() => contextAction(contextMenu.fieldKey, 'shadow')} type="button">Shadow</button>
+                <div className="context-menu-title">Layer</div>
                 <button onClick={() => removePlacement(contextMenu.fieldKey)} type="button">Delete Field</button>
                 <button onClick={() => duplicatePlacement(contextMenu.fieldKey)} type="button">Duplicate Field</button>
                 <button onClick={() => bringPlacementForward(contextMenu.fieldKey)} type="button">Bring To Front</button>
@@ -1767,13 +1989,41 @@ function TemplateView({
             <label>X<input type="number" value={selectedPlacement.x} onChange={(event) => updatePlacement(activeField, { x: Number(event.target.value) })} /></label>
             <label>Y<input type="number" value={selectedPlacement.y} onChange={(event) => updatePlacement(activeField, { y: Number(event.target.value) })} /></label>
             <label>Width<input type="number" value={selectedPlacement.width} onChange={(event) => updatePlacement(activeField, { width: Number(event.target.value) })} /></label>
-            <label>Font<input type="number" value={selectedPlacement.fontSize} onChange={(event) => updatePlacement(activeField, { fontSize: Number(event.target.value) })} /></label>
+            <label>Height<input type="number" value={selectedPlacement.height} onChange={(event) => updatePlacement(activeField, { height: Number(event.target.value) })} /></label>
           </div>
           <div className="mini-grid">
-            <label>Weight<select value={selectedPlacement.fontWeight} onChange={(event) => updatePlacement(activeField, { fontWeight: Number(event.target.value) })}><option value={400}>Regular</option><option value={700}>Bold</option><option value={800}>Extra Bold</option><option value={900}>Black</option></select></label>
+            <label>Font Size<input type="number" value={selectedPlacement.fontSize} onChange={(event) => updatePlacement(activeField, { fontSize: Number(event.target.value) })} /></label>
             <label>Align<select value={selectedPlacement.textAlign} onChange={(event) => updatePlacement(activeField, { textAlign: event.target.value as TextAlign })}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
           </div>
-          <label>Color<input type="color" value={selectedPlacement.color} onChange={(event) => updatePlacement(activeField, { color: event.target.value })} /></label>
+          <label>Font Family<select value={selectedPlacement.fontFamily} onChange={(event) => updatePlacement(activeField, { fontFamily: event.target.value })}><option value="Arial, sans-serif">Arial</option><option value='"Noto Sans Devanagari", Arial, sans-serif'>Noto Sans Devanagari</option><option value="Inter, Arial, sans-serif">Inter</option><option value="Georgia, serif">Serif</option><option value='"Arial Narrow", Arial, sans-serif'>Arial Narrow</option></select></label>
+          <div className="mini-grid">
+            <label>Weight<select value={selectedPlacement.fontWeight} onChange={(event) => updatePlacement(activeField, { fontWeight: Number(event.target.value) })}><option value={400}>Regular</option><option value={700}>Bold</option><option value={800}>Extra Bold</option><option value={900}>Black</option></select></label>
+            <label>Wrap<select value={selectedPlacement.textWrap} onChange={(event) => updatePlacement(activeField, { textWrap: event.target.value as TextWrapMode })}><option value="single">Single line</option><option value="wrap">Word wrap</option><option value="shrink">Auto reduce</option></select></label>
+          </div>
+          <div className="field-style-buttons">
+            <button className={selectedPlacement.fontWeight >= 800 ? 'active' : ''} onClick={() => contextAction(activeField, 'bold')} type="button">B</button>
+            <button className={selectedPlacement.fontStyle === 'italic' ? 'active' : ''} onClick={() => contextAction(activeField, 'italic')} type="button">I</button>
+            <button className={selectedPlacement.textDecoration === 'underline' ? 'active' : ''} onClick={() => contextAction(activeField, 'underline')} type="button">U</button>
+            <button className={selectedPlacement.shadow ? 'active' : ''} onClick={() => contextAction(activeField, 'shadow')} type="button">Shadow</button>
+          </div>
+          <div className="mini-grid">
+            <label>Text Color<input type="color" value={selectedPlacement.color} onChange={(event) => updatePlacement(activeField, { color: event.target.value })} /></label>
+            <label>Background<input type="color" value={toColorInput(selectedPlacement.backgroundColor)} onChange={(event) => updatePlacement(activeField, { backgroundColor: event.target.value })} /></label>
+          </div>
+          <div className="mini-grid">
+            <label>Border Color<input type="color" value={toColorInput(selectedPlacement.borderColor)} onChange={(event) => updatePlacement(activeField, { borderColor: event.target.value })} /></label>
+            <label>Radius<input type="number" value={selectedPlacement.borderRadius} onChange={(event) => updatePlacement(activeField, { borderRadius: Number(event.target.value) })} /></label>
+          </div>
+          <div className="mini-grid">
+            <label>Line Height<input step="0.05" type="number" value={selectedPlacement.lineHeight} onChange={(event) => updatePlacement(activeField, { lineHeight: Number(event.target.value) })} /></label>
+            <label>Letter Space<input type="number" value={selectedPlacement.letterSpacing} onChange={(event) => updatePlacement(activeField, { letterSpacing: Number(event.target.value) })} /></label>
+            <label>Rotate<input type="number" value={selectedPlacement.rotate} onChange={(event) => updatePlacement(activeField, { rotate: Number(event.target.value) })} /></label>
+            <label>Padding<input type="number" value={selectedPlacement.padding} onChange={(event) => updatePlacement(activeField, { padding: Number(event.target.value) })} /></label>
+          </div>
+          <div className="template-action-row wide">
+            <button disabled={!placements[activeField]} onClick={() => centerFieldOnSlip(activeField)} type="button">Center Field on Slip</button>
+            <button disabled={!placements[activeField]} onClick={() => fullWidthCenterField(activeField)} type="button">Full Width + Center Text</button>
+          </div>
           <div className="template-action-row">
             <button disabled={!placements[activeField]} onClick={() => removePlacement(activeField)} type="button">Delete Field</button>
             <button disabled={!placements[activeField]} onClick={() => duplicatePlacement(activeField)} type="button">Duplicate</button>
@@ -1923,14 +2173,41 @@ function StatusLine({ label, value }: { label: string; value: string }) {
 
 function defaultPlacement(): TemplatePlacement {
   return {
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    borderColor: '#ff4f0a',
+    borderRadius: 6,
     color: '#111111',
+    fontFamily: 'Arial, sans-serif',
     fontSize: 28,
+    fontStyle: 'normal',
     fontWeight: 800,
+    height: 48,
+    letterSpacing: 0,
+    lineHeight: 1.15,
+    opacity: 1,
+    padding: 5,
+    rotate: 0,
+    shadow: false,
     textAlign: 'left',
+    textDecoration: 'none',
+    textTransform: 'none',
+    textWrap: 'single',
     width: 280,
     x: 120,
     y: 120,
   };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function toColorInput(value: string) {
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  if (value === 'transparent') return '#ffffff';
+  const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) return '#ffffff';
+  return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, '0')).join('')}`;
 }
 
 function sampleFieldValue(key: string, label: string) {
