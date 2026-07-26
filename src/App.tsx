@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Menu,
   Plus,
   Printer,
   ReceiptText,
@@ -18,6 +19,7 @@ import {
   SlidersHorizontal,
   Upload,
   UsersRound,
+  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, PointerEvent, ReactNode } from 'react';
@@ -170,6 +172,7 @@ export default function App() {
   const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
   const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const mandalId = session?.user.mandalId;
   const festivalId = activeForm?.festival.id;
@@ -460,6 +463,8 @@ export default function App() {
         notice={notice}
         onCreateMandal={createMandal}
         onLogout={logout}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         session={session}
         templatePreview={templatePreview}
         onPreviewChange={setTemplatePreview}
@@ -468,7 +473,11 @@ export default function App() {
   }
 
   return (
-    <main className="shell">
+    <main className={`shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <button className="mobile-menu-toggle" onClick={() => setSidebarOpen((open) => !open)} type="button">
+        {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+      </button>
+      {sidebarOpen && <button aria-label="Close menu" className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} type="button" />}
       <aside className="sidebar">
         <div className="brand">
           <span>DV</span>
@@ -483,7 +492,10 @@ export default function App() {
             <button
               className={activeScreen === item.id ? 'active' : ''}
               key={item.id}
-              onClick={() => setActiveScreen(item.id)}
+              onClick={() => {
+                setActiveScreen(item.id);
+                setSidebarOpen(false);
+              }}
               type="button"
             >
               {item.icon}
@@ -500,7 +512,7 @@ export default function App() {
               <small>{session.user.role.replaceAll('_', ' ')}</small>
             </div>
           </div>
-          <button className="logout" onClick={logout} type="button">
+          <button className="logout" onClick={() => { setSidebarOpen(false); logout(); }} type="button">
             <LogOut size={18} />
             Logout
           </button>
@@ -619,6 +631,8 @@ function SuperAdminApp({
   onLogout,
   onPreviewChange,
   session,
+  setSidebarOpen,
+  sidebarOpen,
   templatePreview,
 }: {
   demoMandals: DemoMandal[];
@@ -627,6 +641,8 @@ function SuperAdminApp({
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
   session: AuthSession;
+  setSidebarOpen: (open: boolean | ((current: boolean) => boolean)) => void;
+  sidebarOpen: boolean;
   templatePreview: string;
 }) {
   const seedMandal: DemoMandal = {
@@ -670,6 +686,7 @@ function SuperAdminApp({
     setOwnerScreen('mandals');
     setManagedIndex(null);
     setAddMandalOpen(true);
+    setSidebarOpen(false);
   }
 
   function openMandal(index: number) {
@@ -678,6 +695,7 @@ function SuperAdminApp({
     setOwnerScreen('mandals');
     setDetailTab('overview');
     setAddMandalOpen(false);
+    setSidebarOpen(false);
   }
 
   function createLogin(event: FormEvent<HTMLFormElement>) {
@@ -696,7 +714,11 @@ function SuperAdminApp({
   }
 
   return (
-    <main className="shell owner-shell">
+    <main className={`shell owner-shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <button className="mobile-menu-toggle" onClick={() => setSidebarOpen((open) => !open)} type="button">
+        {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+      </button>
+      {sidebarOpen && <button aria-label="Close menu" className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} type="button" />}
       <aside className="sidebar">
         <div className="brand">
           <span>DV</span>
@@ -706,10 +728,10 @@ function SuperAdminApp({
           </div>
         </div>
         <nav>
-          <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => { setOwnerScreen('dashboard'); setManagedIndex(null); }} type="button">
+          <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => { setOwnerScreen('dashboard'); setManagedIndex(null); setSidebarOpen(false); }} type="button">
             <LayoutDashboard size={19} />Dashboard
           </button>
-          <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => { setOwnerScreen('mandals'); setManagedIndex(null); }} type="button">
+          <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => { setOwnerScreen('mandals'); setManagedIndex(null); setSidebarOpen(false); }} type="button">
             <Building2 size={19} />Mandals
           </button>
         </nav>
@@ -721,7 +743,7 @@ function SuperAdminApp({
               <small>SUPER ADMIN</small>
             </div>
           </div>
-          <button className="logout" onClick={onLogout} type="button"><LogOut size={18} />Logout</button>
+          <button className="logout" onClick={() => { setSidebarOpen(false); onLogout(); }} type="button"><LogOut size={18} />Logout</button>
         </div>
       </aside>
 

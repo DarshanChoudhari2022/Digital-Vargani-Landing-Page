@@ -277,6 +277,11 @@ nav button.active svg {
   width: 100%;
 }
 
+.mobile-menu-toggle,
+.sidebar-backdrop {
+  display: none;
+}
+
 .content {
   display: grid;
   gap: 24px;
@@ -1631,11 +1636,138 @@ kbd {
 }
 
 @media (max-width: 760px) {
+  .shell,
+  .member-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .mobile-menu-toggle {
+    background: #fffdf8;
+    border-color: #e2dcc8;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(60, 42, 32, 0.14);
+    display: inline-flex;
+    height: 46px;
+    left: 14px;
+    min-height: 46px;
+    padding: 0;
+    position: fixed;
+    top: 14px;
+    width: 46px;
+    z-index: 80;
+  }
+
+  .sidebar-backdrop {
+    background: rgba(37, 37, 37, 0.5);
+    border: 0;
+    border-radius: 0;
+    display: block;
+    inset: 0;
+    min-height: 100vh;
+    padding: 0;
+    position: fixed;
+    width: 100vw;
+    z-index: 60;
+  }
+
+  .sidebar,
+  .member-sidebar {
+    bottom: 0;
+    box-shadow: 18px 0 46px rgba(37, 37, 37, 0.18);
+    height: 100dvh;
+    left: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 72px 14px 14px;
+    position: fixed;
+    top: 0;
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+    width: min(310px, 86vw);
+    z-index: 70;
+  }
+
+  .shell.sidebar-open .sidebar,
+  .member-shell.sidebar-open .member-sidebar {
+    transform: translateX(0);
+  }
+
+  .brand {
+    border-radius: 18px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .brand > span,
+  .auth-brand > span,
+  .mandal-logo,
+  .avatar {
+    border-radius: 13px;
+    height: 46px;
+    width: 46px;
+  }
+
+  .brand strong,
+  .auth-brand strong {
+    font-size: 20px;
+  }
+
+  .brand small,
+  .auth-brand small {
+    font-size: 14px;
+  }
+
+  nav {
+    gap: 8px;
+    padding: 18px 0;
+  }
+
+  nav button {
+    font-size: 15px;
+    min-height: 48px;
+    padding: 0 12px;
+  }
+
+  nav button svg {
+    height: 34px;
+    padding: 8px;
+    width: 34px;
+  }
+
+  .sidebar-footer {
+    background: #fffdf6;
+    bottom: 0;
+    margin-top: auto;
+    padding-top: 12px;
+    position: sticky;
+  }
+
+  .user-chip {
+    border-radius: 16px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .user-chip > span,
+  .avatar.small {
+    height: 38px;
+    width: 38px;
+  }
+
+  .logout {
+    min-height: 46px;
+  }
+
   .content,
   .member-content,
   .auth-form-panel,
   .auth-brand-panel {
-    padding: 20px;
+    padding: 76px 16px 22px;
+  }
+
+  .app-topbar {
+    display: none;
   }
 
   .page-header,
@@ -1666,7 +1798,29 @@ kbd {
 
   .page-header h1,
   .member-header h1 {
-    font-size: 34px;
+    font-size: 30px;
+  }
+
+  .page-header p,
+  .member-header p {
+    font-size: 15px;
+  }
+
+  .owner-list-head h2 {
+    font-size: 26px;
+  }
+
+  .stat {
+    min-height: 112px;
+    padding: 16px;
+  }
+
+  .stat strong {
+    font-size: 26px;
+  }
+
+  .owner-client-main strong {
+    font-size: 18px;
   }
 }
 
@@ -1757,11 +1911,11 @@ kbd {
   }
 
   .page-header h1 {
-    font-size: 34px;
+    font-size: 30px;
   }
 
   .page-header p {
-    font-size: 15px;
+    font-size: 14px;
     margin-top: 8px;
   }
 
@@ -1827,8 +1981,8 @@ kbd {
   }
 
   .stat {
-    min-height: 128px;
-    padding: 16px;
+    min-height: 116px;
+    padding: 14px;
   }
 
   .stat div {
@@ -1839,7 +1993,26 @@ kbd {
   }
 
   .stat strong {
+    font-size: 24px;
+  }
+
+  .owner-list-head h2 {
     font-size: 27px;
+  }
+
+  .owner-list-head p,
+  .owner-toolbar > span {
+    font-size: 14px;
+  }
+
+  .owner-client-main strong {
+    font-size: 18px;
+  }
+
+  .owner-client-main span,
+  .mandal-card-meta span,
+  .mandal-card-meta em {
+    font-size: 13px;
   }
 
   .status-line {
