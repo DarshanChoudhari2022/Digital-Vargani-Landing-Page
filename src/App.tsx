@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { TrustStrip } from './components/TrustStrip';
@@ -12,18 +11,15 @@ import { FestivalGallerySection } from './components/FestivalGallerySection';
 import { FAQSection } from './components/FAQSection';
 import { FinalCTA } from './components/FinalCTA';
 import { Footer } from './components/Footer';
-import { LiveDemoModal } from './components/LiveDemoModal';
 
 export function App() {
-  const [demoOpen, setDemoOpen] = useState(false);
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header onOpenDemo={() => setDemoOpen(true)} />
+      <Header />
 
       <main style={{ flexGrow: 1 }}>
         {/* 1. Hero */}
-        <HeroSection onOpenDemo={() => setDemoOpen(true)} />
+        <HeroSection />
 
         {/* 2. Trust Strip */}
         <TrustStrip />
@@ -53,12 +49,10 @@ export function App() {
         <FAQSection />
 
         {/* 13. Final CTA */}
-        <FinalCTA onOpenDemo={() => setDemoOpen(true)} />
+        <FinalCTA />
       </main>
 
       <Footer />
-
-      <LiveDemoModal isOpen={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }

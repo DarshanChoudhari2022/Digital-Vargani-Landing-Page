@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface FinalCTAProps {
-  onOpenDemo: () => void;
-}
-
-export const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenDemo }) => {
+export const FinalCTA: React.FC = () => {
   return (
     <section style={{
       background: 'var(--ink)', color: 'white', padding: '80px 0',
@@ -14,7 +10,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenDemo }) => {
       <div style={{
         position: 'absolute', top: '-50%', left: '50%', transform: 'translateX(-50%)',
         width: 600, height: 400,
-        background: 'radial-gradient(ellipse, rgba(230,126,34,0.15) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(234,88,12,0.18) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
@@ -26,17 +22,18 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenDemo }) => {
           Set up your committee on Eksutra in under 5 minutes. Replace the receipt book before collection day.
         </p>
 
-        <button onClick={onOpenDemo} className="btn-primary" style={{
+        <a href="#how-it-works" className="btn-primary" style={{
           padding: '16px 40px', fontSize: 16,
-          background: 'var(--saffron)', color: 'white',
-          boxShadow: '0 4px 20px rgba(230,126,34,0.3)',
+          background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', color: 'white',
+          boxShadow: '0 4px 20px rgba(234,88,12,0.4)',
+          textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8,
         }}>
-          Book a Demo
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_forward</span>
-        </button>
+          Get Started
+          <span style={{ fontSize: 16 }}>➔</span>
+        </a>
 
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 20 }}>
-          {['Free to start', 'No credit card', 'Marathi support'].map((item, i) => (
+          {['Free to start', 'Instant setup', 'Marathi support'].map((item, i) => (
             <span key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
               ✓ {item}
             </span>

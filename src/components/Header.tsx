@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { EksutraLogo } from './EksutraLogo';
 
-interface HeaderProps {
-  onOpenDemo: () => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
+export const Header: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('Features');
@@ -40,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
           <EksutraLogo size={36} />
         </a>
 
-        {/* Floating Dark Pill Navbar (From attached visual reference) */}
+        {/* Floating Dark Pill Navbar */}
         <nav
           className="desktop-nav"
           style={{
@@ -75,42 +71,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
           })}
         </nav>
 
-        {/* Action Button & App Launcher Icon */}
+        {/* Primary Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="desktop-nav">
-          <button
-            onClick={onOpenDemo}
+          <a
+            href="#how-it-works"
             style={{
               padding: '10px 22px', borderRadius: 999,
               fontSize: 14, fontWeight: 700,
               background: '#0f172a', color: '#ffffff',
-              border: 'none', cursor: 'pointer',
+              textDecoration: 'none',
               transition: 'all 0.2s',
               boxShadow: '0 4px 12px rgba(15,23,42,0.15)',
               display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            Try Demo
+            Get Started
             <span style={{
               width: 18, height: 18, borderRadius: '50%',
               background: '#ea580c',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 10, color: 'white'
             }}>➔</span>
-          </button>
-
-          <button
-            onClick={onOpenDemo}
-            style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: '#0f172a', color: '#ffffff',
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(15,23,42,0.15)'
-            }}
-            title="App Launcher"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>grid_view</span>
-          </button>
+          </a>
         </div>
 
         {/* Mobile hamburger */}
@@ -152,13 +134,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
               </a>
             ))}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-              <button
-                onClick={() => { setMobileOpen(false); onOpenDemo(); }}
+              <a
+                href="#how-it-works"
+                onClick={() => setMobileOpen(false)}
                 className="btn-primary"
-                style={{ width: '100%', borderRadius: 999, background: '#0f172a' }}
+                style={{ width: '100%', borderRadius: 999, background: '#0f172a', textDecoration: 'none', textAlign: 'center' }}
               >
-                Try Demo
-              </button>
+                Get Started
+              </a>
             </div>
           </nav>
         </div>

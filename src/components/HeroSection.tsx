@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface HeroSectionProps {
-  onOpenDemo: () => void;
-}
-
-export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
+export const HeroSection: React.FC = () => {
   return (
     <section
       style={{
@@ -32,7 +28,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
       />
 
       <div className="container-main" style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-        {/* Top Badge Pill (Warm Orange) */}
+        {/* Top Badge Pill */}
         <div
           className="anim-fade-up"
           style={{
@@ -95,7 +91,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
           Experience seamless financial management. Replace paper receipt books with instant Eksutra Vargani slips and live committee tracking.
         </p>
 
-        {/* Action CTAs (Replacing Store Buttons) */}
+        {/* Action CTAs */}
         <div
           className="anim-fade-up anim-delay-3"
           style={{
@@ -107,8 +103,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
             flexWrap: 'wrap',
           }}
         >
-          <button
-            onClick={onOpenDemo}
+          <a
+            href="#how-it-works"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -117,19 +113,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
               borderRadius: 999,
               background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
               color: '#ffffff',
-              border: 'none',
               fontSize: 15,
               fontWeight: 700,
-              cursor: 'pointer',
+              textDecoration: 'none',
               boxShadow: '0 8px 25px rgba(234, 88, 12, 0.3)',
               transition: 'transform 0.2s, box-shadow 0.2s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            Try Interactive Demo
+            Get Started
             <span style={{ fontSize: 16 }}>➔</span>
-          </button>
+          </a>
 
           <a
             href="#product"
@@ -341,7 +334,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
                 }}
               />
 
-              {/* Front Main Vargani Slip Card (Pure Warm Orange Palette) */}
+              {/* Front Main Vargani Slip Card */}
               <div
                 style={{
                   position: 'relative',
