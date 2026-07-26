@@ -1,30 +1,33 @@
 import {
   BadgeIndianRupee,
+  Building2,
   CheckCircle2,
-  CircleGauge,
+  Copy,
   FileText,
+  LayoutDashboard,
   LogIn,
   LogOut,
+  Plus,
   Printer,
   ReceiptText,
   RefreshCw,
-  Smartphone,
+  Search,
+  Settings,
+  ShieldCheck,
+  Upload,
   UsersRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
+type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
+type Screen = 'dashboard' | 'mandals' | 'members' | 'template' | 'generate' | 'slips';
 
 interface AuthSession {
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: string;
-    mandalId: string | null;
-    name: string;
-    role: string;
-  };
+  user: { id: string; mandalId: string | null; name: string; role: UserRole };
 }
 
 interface CustomField {
@@ -39,7 +42,26 @@ interface CustomField {
 interface Festival {
   id: string;
   name: string;
+  status: string;
+  targetAmount?: number | string | null;
   type: string;
+}
+
+interface Member {
+  id: string;
+  areaName?: string | null;
+  displayName: string;
+  phone?: string | null;
+  group?: { id: string; name: string; areaName?: string | null } | null;
+  user?: { email?: string | null; name: string; phone?: string | null; role: UserRole; status: string };
+}
+
+interface Group {
+  id: string;
+  areaName?: string | null;
+  name: string;
+  leader?: { name: string; phone?: string | null } | null;
+  _count?: { members: number; slips: number };
 }
 
 interface Slip {
@@ -52,43 +74,86 @@ interface Slip {
   paymentMode: PaymentMode;
   shopName?: string | null;
   slipNumber: string;
+  status?: string;
+}
+
+interface Template {
+  id: string;
+  name: string;
+  status: string;
+  versions: Array<{
+    id: string;
+    backgroundFileUrl: string;
+    canvasHeight: number;
+    canvasWidth: number;
+    isActive: boolean;
+    version: number;
+  }>;
 }
 
 interface ActiveForm {
   customFields: CustomField[];
   festival: Festival;
+  member?: Member | null;
 }
 
 interface CollectionReport {
   balance: number;
+  byCollector?: Array<{ collectorName: string; slipCount: number; totalAmount: number }>;
+  byPaymentMode?: Array<{ paymentMode: PaymentMode; slipCount: number; totalAmount: number }>;
   slipCount: number;
   totalCollection: number;
   totalExpenses: number;
 }
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
-const SESSION_KEY = 'digital-vargani-demo-session';
-const DEMO_IDENTIFIER = 'sagar@akhilnayak.local';
+const SESSION_KEY = 'digital-vargani-admin-session';
+const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
 const DEMO_PASSWORD = 'Demo@123456789';
+const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
+
+const navItems: Array<{ id: Screen; icon: ReactNode; label: string }> = [
+  { id: 'dashboard', icon: <LayoutDashboard size={19} />, label: 'Dashboard' },
+  { id: 'mandals', icon: <Building2 size={19} />, label: 'Mandals' },
+  { id: 'members', icon: <UsersRound size={19} />, label: 'Members' },
+  { id: 'template', icon: <FileText size={19} />, label: 'Vargani Template' },
+  { id: 'generate', icon: <ReceiptText size={19} />, label: 'Generate' },
+  { id: 'slips', icon: <BadgeIndianRupee size={19} />, label: 'Latest Slips' },
+];
 
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [slips, setSlips] = useState<Slip[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<Slip | null>(null);
-  const [notice, setNotice] = useState('Login to open the live Vargani slip generator.');
+  const [templatePreview, setTemplatePreview] = useState(TEMPLATE_IMAGE);
+  const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
 
+  const mandalId = session?.user.mandalId;
+  const festivalId = activeForm?.festival.id;
+  const filteredSlips = slips.filter((slip) => {
+    const haystack = `${slip.slipNumber} ${slip.contributorName} ${slip.shopName ?? ''} ${slip.areaName ?? ''}`;
+    return haystack.toLowerCase().includes(query.toLowerCase());
+  });
   const totalCollection = useMemo(
     () => slips.reduce((sum, slip) => sum + Number(slip.amount), 0),
     [slips],
   );
+  const activeTemplate = templates.find((template) =>
+    template.versions.some((version) => version.isActive),
+  );
+  const latestTemplateVersion = activeTemplate?.versions.find((version) => version.isActive);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(SESSION_KEY);
     if (!stored) return;
-
     const parsed = JSON.parse(stored) as AuthSession;
     setSession(parsed);
     void loadWorkspace(parsed);
@@ -106,11 +171,10 @@ export default function App() {
         }),
         method: 'POST',
       });
-
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
       await loadWorkspace(nextSession);
-      setNotice(`Logged in as ${nextSession.user.name}. Ready to generate slips.`);
+      setNotice(`Logged in as ${nextSession.user.name}.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Login failed.');
     } finally {
@@ -119,40 +183,40 @@ export default function App() {
   }
 
   async function logout() {
-    if (session) {
-      await apiRequest('/auth/logout', { method: 'POST' }, session).catch(() => undefined);
-    }
-
+    if (session) await apiRequest('/auth/logout', { method: 'POST' }, session).catch(() => undefined);
     window.localStorage.removeItem(SESSION_KEY);
     setSession(null);
     setActiveForm(null);
+    setGroups([]);
+    setMembers([]);
     setSlips([]);
+    setTemplates([]);
     setReport(null);
     setSelectedSlip(null);
-    setNotice('Logged out. Login again to use the live generator.');
+    setNotice('Logged out. Login again to use the console.');
   }
 
   async function loadWorkspace(currentSession = session) {
     if (!currentSession) return;
-
     setBusy(true);
     try {
       const form = await apiRequest<ActiveForm>('/vargani/active-form', {}, currentSession);
-      const slipList = await apiRequest<{ items: Slip[] }>(
-        '/vargani/slips?limit=15',
-        {},
-        currentSession,
-      );
+      const slipList = await apiRequest<{ items: Slip[] }>('/vargani/slips?limit=50', {}, currentSession);
       setActiveForm(form);
       setSlips(slipList.items);
       setSelectedSlip(slipList.items[0] ?? null);
 
       if (currentSession.user.mandalId) {
-        const nextReport = await apiRequest<CollectionReport>(
-          `/mandals/${currentSession.user.mandalId}/festivals/${form.festival.id}/reports/collections`,
-          {},
-          currentSession,
-        );
+        const base = `/mandals/${currentSession.user.mandalId}/festivals/${form.festival.id}`;
+        const [nextGroups, nextMembers, nextTemplates, nextReport] = await Promise.all([
+          apiRequest<Group[]>(`${base}/groups`, {}, currentSession),
+          apiRequest<Member[]>(`${base}/members`, {}, currentSession),
+          apiRequest<Template[]>(`${base}/templates`, {}, currentSession),
+          apiRequest<CollectionReport>(`${base}/reports/collections`, {}, currentSession),
+        ]);
+        setGroups(nextGroups);
+        setMembers(nextMembers);
+        setTemplates(nextTemplates);
         setReport(nextReport);
       }
 
@@ -164,10 +228,69 @@ export default function App() {
     }
   }
 
+  async function createMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session || !mandalId || !festivalId) return;
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/members`,
+        {
+          body: JSON.stringify({
+            areaName: String(form.get('areaName') || ''),
+            email: String(form.get('email') || ''),
+            groupId: String(form.get('groupId') || '') || undefined,
+            name: String(form.get('name') || ''),
+            password: String(form.get('password') || DEMO_PASSWORD),
+            phone: String(form.get('phone') || ''),
+            role: String(form.get('role') || 'MEMBER') as UserRole,
+          }),
+          method: 'POST',
+        },
+        session,
+      );
+      event.currentTarget.reset();
+      await loadWorkspace(session);
+      setNotice('Member login created successfully.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not create member login.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createCustomField(label: string, required = true) {
+    if (!session || !mandalId || !festivalId || !label.trim()) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/custom-fields`,
+        {
+          body: JSON.stringify({
+            dashboardFilter: true,
+            label: label.trim(),
+            printOnSlip: true,
+            required,
+            sortOrder: (activeForm?.customFields.length ?? 0) + 1,
+            type: 'TEXT',
+          }),
+          method: 'POST',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice(`${label} field added to the live template form.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not add field.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function generateSlip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) return;
-
     const form = new FormData(event.currentTarget);
     const customData = Object.fromEntries(
       (activeForm?.customFields ?? []).map((field) => [
@@ -175,7 +298,6 @@ export default function App() {
         String(form.get(`custom_${field.key}`) || ''),
       ]),
     );
-
     setBusy(true);
     try {
       const slip = await apiRequest<Slip>(
@@ -196,9 +318,9 @@ export default function App() {
         },
         session,
       );
-
       setSlips((current) => [slip, ...current]);
       setSelectedSlip(slip);
+      setActiveScreen('slips');
       event.currentTarget.reset();
       await loadWorkspace(session);
       setNotice(`Slip ${slip.slipNumber} generated successfully.`);
@@ -209,78 +331,73 @@ export default function App() {
     }
   }
 
-  const receiptUrl = selectedSlip
-    ? `${API_BASE_URL}/vargani/slips/${selectedSlip.id}/receipt.html`
-    : '';
+  const receiptUrl = selectedSlip ? `${API_BASE_URL}/vargani/slips/${selectedSlip.id}/receipt.html` : '';
 
   return (
-    <main className="app-shell">
+    <main className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">DV</div>
+          <span>DV</span>
           <div>
             <strong>Digital Vargani</strong>
-            <span>Mandal Collection OS</span>
+            <small>Festival Collection OS</small>
           </div>
         </div>
 
-        <div className="api-pill">
-          <CheckCircle2 size={18} />
-          <span>Live API connected</span>
-        </div>
+        <nav>
+          {navItems.map((item) => (
+            <button
+              className={activeScreen === item.id ? 'active' : ''}
+              disabled={!session}
+              key={item.id}
+              onClick={() => setActiveScreen(item.id)}
+              type="button"
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-        {!session ? (
-          <form className="login-card" onSubmit={login}>
-            <div className="section-title">
-              <LogIn size={20} />
+        <div className="sidebar-footer">
+          {session ? (
+            <>
+              <div className="user-chip">
+                <span>{session.user.name.charAt(0)}</span>
+                <div>
+                  <strong>{session.user.name}</strong>
+                  <small>{session.user.role.replaceAll('_', ' ')}</small>
+                </div>
+              </div>
+              <button className="logout" onClick={logout} type="button">
+                <LogOut size={18} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <div className="user-chip muted">
+              <span>A</span>
               <div>
-                <p>Member Login</p>
-                <h1>Vargani Slip Generator</h1>
+                <strong>Admin Login</strong>
+                <small>Use demo credentials</small>
               </div>
             </div>
-            <label>
-              Identifier
-              <input name="identifier" required defaultValue={DEMO_IDENTIFIER} />
-            </label>
-            <label>
-              Password
-              <input name="password" required type="password" defaultValue={DEMO_PASSWORD} />
-            </label>
-            <button className="primary" disabled={busy} type="submit">
-              <Smartphone size={18} />
-              Login And Start
-            </button>
-          </form>
-        ) : (
-          <div className="login-card">
-            <div className="section-title">
-              <UsersRound size={20} />
-              <div>
-                <p>Logged In</p>
-                <h1>{session.user.name}</h1>
-              </div>
-            </div>
-            <div className="role-chip">{session.user.role}</div>
-            <button type="button" onClick={logout}>
-              <LogOut size={18} />
-              Logout
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
 
-      <section className="workspace">
-        <header className="topbar">
+      <section className="content">
+        <header className="page-header">
           <div>
-            <p>{activeForm?.festival.name ?? 'Akhilnayak Mitra Mandal Demo'}</p>
-            <h2>Digital Vargani Slip Generator</h2>
+            <h1>{screenTitle(activeScreen)}</h1>
+            <p>{screenSubtitle(activeScreen)}</p>
           </div>
-          <div className="top-actions">
-            <button type="button" onClick={() => loadWorkspace()} disabled={!session || busy}>
+          <div className="header-actions">
+            <button disabled={!session || busy} onClick={() => loadWorkspace()} type="button">
               <RefreshCw size={18} />
               Refresh
             </button>
-            <a className={receiptUrl ? '' : 'disabled'} href={receiptUrl || '#'} target="_blank">
+            <a className={receiptUrl ? 'primary' : 'primary disabled'} href={receiptUrl || '#'} target="_blank">
               <Printer size={18} />
               Open Receipt
             </a>
@@ -289,188 +406,459 @@ export default function App() {
 
         <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
 
-        <section className="metrics">
-          <Metric
-            icon={<BadgeIndianRupee />}
-            label="Total Collection"
-            value={money(report?.totalCollection ?? totalCollection)}
-          />
-          <Metric
-            icon={<ReceiptText />}
-            label="Slips"
-            value={String(report?.slipCount ?? slips.length)}
-          />
-          <Metric
-            icon={<FileText />}
-            label="Expenses"
-            value={money(report?.totalExpenses ?? 0)}
-          />
-          <Metric icon={<CircleGauge />} label="Balance" value={money(report?.balance ?? 0)} />
-        </section>
-
-        <section className="main-grid">
-          <form className="panel form-grid" onSubmit={generateSlip}>
-            <div className="section-title full">
-              <ReceiptText size={20} />
-              <div>
-                <p>Live Generator</p>
-                <h3>Create Vargani Slip</h3>
-              </div>
-            </div>
-            <label>
-              Contributor name
-              <input
-                disabled={!session || busy}
-                name="contributorName"
-                required
-                placeholder="Donor or shop owner"
+        {!session ? (
+          <LoginPanel onSubmit={login} busy={busy} />
+        ) : (
+          <>
+            {activeScreen === 'dashboard' && (
+              <Dashboard
+                groups={groups}
+                members={members}
+                report={report}
+                slips={slips}
+                templates={templates}
+                totalCollection={totalCollection}
               />
-            </label>
-            <label>
-              Shop / company
-              <input disabled={!session || busy} name="shopName" placeholder="Optional" />
-            </label>
-            <label>
-              Mobile
-              <input disabled={!session || busy} name="contributorPhone" placeholder="+91..." />
-            </label>
-            <label>
-              Area
-              <input disabled={!session || busy} name="areaName" required placeholder="Ramtekdi" />
-            </label>
-            <label>
-              Amount
-              <input
-                disabled={!session || busy}
-                inputMode="numeric"
-                name="amount"
-                required
-                placeholder="2100"
+            )}
+            {activeScreen === 'mandals' && (
+              <MandalsView
+                activeForm={activeForm}
+                groups={groups}
+                members={members}
+                report={report}
+                templates={templates}
               />
-            </label>
-            <label>
-              Payment
-              <select disabled={!session || busy} name="paymentMode" defaultValue="UPI">
-                <option value="CASH">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="CHEQUE">Cheque</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </label>
-            <label className="full">
-              Address
-              <input
-                disabled={!session || busy}
-                name="contributorAddress"
-                placeholder="Building, lane, shop address"
+            )}
+            {activeScreen === 'members' && (
+              <MembersView groups={groups} members={members} onCreateMember={createMember} />
+            )}
+            {activeScreen === 'template' && (
+              <TemplateView
+                activeForm={activeForm}
+                activeTemplate={activeTemplate}
+                latestTemplateVersion={latestTemplateVersion}
+                onAddField={createCustomField}
+                onPreviewChange={setTemplatePreview}
+                templatePreview={templatePreview}
               />
-            </label>
-            {(activeForm?.customFields ?? []).map((field) => (
-              <label key={field.id}>
-                {field.label}
-                <input
-                  disabled={!session || busy}
-                  name={`custom_${field.key}`}
-                  required={field.required}
-                />
-              </label>
-            ))}
-            <button className="primary full" disabled={!session || busy} type="submit">
-              <ReceiptText size={18} />
-              Generate Digital Slip
-            </button>
-          </form>
-
-          <div className="panel">
-            <div className="section-title">
-              <ReceiptText size={20} />
-              <div>
-                <p>Latest Collection</p>
-                <h3>Generated Slips</h3>
-              </div>
-            </div>
-            <div className="slip-list">
-              {slips.map((slip) => (
-                <button
-                  className={selectedSlip?.id === slip.id ? 'active' : ''}
-                  key={slip.id}
-                  onClick={() => setSelectedSlip(slip)}
-                  type="button"
-                >
-                  <span>{slip.slipNumber}</span>
-                  <strong>{slip.contributorName}</strong>
-                  <em>
-                    {money(Number(slip.amount))} | {slip.paymentMode} |{' '}
-                    {slip.areaName || 'No area'}
-                  </em>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="receipt-preview">
-            <div className="receipt">
-              <div className="receipt-head">
-                <span>DV</span>
-                <div>
-                  <h3>{selectedSlip?.slipNumber ?? 'No slip selected'}</h3>
-                  <p>Verified Digital Vargani Slip</p>
-                </div>
-              </div>
-              <dl>
-                <div>
-                  <dt>Name</dt>
-                  <dd>{selectedSlip?.contributorName ?? '-'}</dd>
-                </div>
-                <div>
-                  <dt>Amount</dt>
-                  <dd>{money(Number(selectedSlip?.amount ?? 0))}</dd>
-                </div>
-                <div>
-                  <dt>Shop</dt>
-                  <dd>{selectedSlip?.shopName || '-'}</dd>
-                </div>
-                <div>
-                  <dt>Payment</dt>
-                  <dd>{selectedSlip?.paymentMode ?? '-'}</dd>
-                </div>
-                <div>
-                  <dt>Area</dt>
-                  <dd>{selectedSlip?.areaName || '-'}</dd>
-                </div>
-                <div>
-                  <dt>Mobile</dt>
-                  <dd>{selectedSlip?.contributorPhone || '-'}</dd>
-                </div>
-              </dl>
-              <a className={receiptUrl ? 'primary receipt-link' : 'primary receipt-link disabled'} href={receiptUrl || '#'} target="_blank">
-                <Printer size={18} />
-                Open Printable Receipt
-              </a>
-            </div>
-          </div>
-        </section>
+            )}
+            {activeScreen === 'generate' && (
+              <GenerateView
+                activeForm={activeForm}
+                busy={busy}
+                onGenerate={generateSlip}
+                templatePreview={templatePreview}
+              />
+            )}
+            {activeScreen === 'slips' && (
+              <SlipsView
+                query={query}
+                receiptUrl={receiptUrl}
+                selectedSlip={selectedSlip}
+                setQuery={setQuery}
+                setSelectedSlip={setSelectedSlip}
+                slips={filteredSlips}
+              />
+            )}
+          </>
+        )}
       </section>
     </main>
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function LoginPanel({ busy, onSubmit }: { busy: boolean; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
-    <div className="metric">
-      {icon}
+    <section className="login-wrap">
+      <form className="login-panel" onSubmit={onSubmit}>
+        <div className="panel-title">
+          <LogIn size={22} />
+          <div>
+            <strong>Main Admin Login</strong>
+            <span>Create mandal members, manage template, generate slips.</span>
+          </div>
+        </div>
+        <label>
+          Email / Username
+          <input name="identifier" required defaultValue={DEMO_IDENTIFIER} />
+        </label>
+        <label>
+          Password
+          <input name="password" required type="password" defaultValue={DEMO_PASSWORD} />
+        </label>
+        <button className="primary" disabled={busy} type="submit">
+          <ShieldCheck size={18} />
+          Login To Console
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function Dashboard({
+  groups,
+  members,
+  report,
+  slips,
+  templates,
+  totalCollection,
+}: {
+  groups: Group[];
+  members: Member[];
+  report: CollectionReport | null;
+  slips: Slip[];
+  templates: Template[];
+  totalCollection: number;
+}) {
+  return (
+    <>
+      <section className="stats-grid">
+        <Stat icon={<Building2 />} label="Total Mandals" note="Active demo mandal" value="1" />
+        <Stat icon={<UsersRound />} label="Total Members" note={`${groups.length} collection groups`} value={String(members.length)} />
+        <Stat icon={<ReceiptText />} label="Slips Generated" note="Latest live records" value={String(report?.slipCount ?? slips.length)} />
+        <Stat icon={<BadgeIndianRupee />} label="Total Vargani" note="Live Supabase amount" value={money(report?.totalCollection ?? totalCollection)} />
+      </section>
+      <section className="operations-grid">
+        <div className="card">
+          <div className="panel-title">
+            <CheckCircle2 size={22} />
+            <div>
+              <strong>Readiness</strong>
+              <span>Production services for demo</span>
+            </div>
+          </div>
+          <StatusLine label="Database" value="connected" />
+          <StatusLine label="API" value="connected" />
+          <StatusLine label="Template" value={templates.length ? 'ready' : 'pending'} />
+          <StatusLine label="Login" value="active" />
+        </div>
+        <div className="card">
+          <div className="panel-title">
+            <BadgeIndianRupee size={22} />
+            <div>
+              <strong>Collection By Payment</strong>
+              <span>Cash, UPI, cheque split</span>
+            </div>
+          </div>
+          {(report?.byPaymentMode ?? []).slice(0, 5).map((item) => (
+            <StatusLine key={item.paymentMode} label={item.paymentMode} value={money(Number(item.totalAmount))} />
+          ))}
+        </div>
+        <div className="card">
+          <div className="panel-title">
+            <ReceiptText size={22} />
+            <div>
+              <strong>Recent Slips</strong>
+              <span>Generated by mandal members</span>
+            </div>
+          </div>
+          {slips.slice(0, 5).map((slip) => (
+            <StatusLine key={slip.id} label={slip.contributorName} value={money(Number(slip.amount))} />
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function MandalsView({
+  activeForm,
+  groups,
+  members,
+  report,
+  templates,
+}: {
+  activeForm: ActiveForm | null;
+  groups: Group[];
+  members: Member[];
+  report: CollectionReport | null;
+  templates: Template[];
+}) {
+  return (
+    <>
+      <section className="stats-grid compact">
+        <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value="1" />
+        <Stat icon={<UsersRound />} label="Total Members" note="Collectors" value={String(members.length)} />
+        <Stat icon={<ReceiptText />} label="Slips" note="Active festival" value={String(report?.slipCount ?? 0)} />
+      </section>
+      <section className="mandal-grid">
+        <article className="mandal-card">
+          <div className="avatar">अ</div>
+          <div>
+            <h3>Akhilnayak Mitra Mandal</h3>
+            <p>Prathama Building, S.R.P.F. Gate No. 1, Ramtekdi, Pune</p>
+            <div className="chips">
+              <span>{members.length} members</span>
+              <span>{groups.length} groups</span>
+              <span>{templates.length ? 'Template Ready' : 'Template Pending'}</span>
+              <span>{activeForm?.festival.name ?? 'Ganpati Festival 2026'}</span>
+            </div>
+          </div>
+          <button type="button">Manage</button>
+        </article>
+      </section>
+    </>
+  );
+}
+
+function MembersView({
+  groups,
+  members,
+  onCreateMember,
+}: {
+  groups: Group[];
+  members: Member[];
+  onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <section className="split-grid">
+      <form className="card form-grid" onSubmit={onCreateMember}>
+        <div className="panel-title full">
+          <Plus size={22} />
+          <div>
+            <strong>Create Member Login</strong>
+            <span>Khajindar, group leader, and collection member accounts.</span>
+          </div>
+        </div>
+        <label>Name<input name="name" required placeholder="Rahul Shinde" /></label>
+        <label>Email<input name="email" required placeholder="rahul@mandal.local" /></label>
+        <label>Phone<input name="phone" placeholder="+919876543210" /></label>
+        <label>Password<input name="password" required defaultValue={DEMO_PASSWORD} /></label>
+        <label>
+          Role
+          <select name="role" defaultValue="MEMBER">
+            <option value="KHAJINDAR">Khajindar</option>
+            <option value="GROUP_LEADER">Group Leader</option>
+            <option value="MEMBER">Member</option>
+          </select>
+        </label>
+        <label>
+          Group
+          <select name="groupId">
+            <option value="">No group</option>
+            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select>
+        </label>
+        <label className="full">Area<input name="areaName" placeholder="Ramtekdi Market" /></label>
+        <button className="primary full" type="submit"><Plus size={18} />Create Login</button>
+      </form>
+      <div className="card">
+        <div className="panel-title">
+          <UsersRound size={22} />
+          <div>
+            <strong>Members</strong>
+            <span>{members.length} active collector logins</span>
+          </div>
+        </div>
+        <div className="table-list">
+          {members.map((member) => (
+            <div className="table-row" key={member.id}>
+              <span className="avatar small">{member.displayName.charAt(0)}</span>
+              <strong>{member.displayName}</strong>
+              <span>{member.user?.role.replaceAll('_', ' ')}</span>
+              <span>{member.group?.name ?? member.areaName ?? 'No group'}</span>
+              <em>{member.user?.email ?? member.phone ?? '-'}</em>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TemplateView({
+  activeForm,
+  activeTemplate,
+  latestTemplateVersion,
+  onAddField,
+  onPreviewChange,
+  templatePreview,
+}: {
+  activeForm: ActiveForm | null;
+  activeTemplate?: Template;
+  latestTemplateVersion?: Template['versions'][number];
+  onAddField: (label: string, required?: boolean) => void;
+  onPreviewChange: (url: string) => void;
+  templatePreview: string;
+}) {
+  const [fieldLabel, setFieldLabel] = useState('');
+  return (
+    <section className="template-grid">
+      <div className="card template-stage">
+        <div className="panel-title">
+          <FileText size={22} />
+          <div>
+            <strong>{activeTemplate?.name ?? 'Akhilnayak Vargani Template'}</strong>
+            <span>
+              {latestTemplateVersion
+                ? `${latestTemplateVersion.canvasWidth} x ${latestTemplateVersion.canvasHeight}px active`
+                : 'Upload and map fields over the slip'}
+            </span>
+          </div>
+        </div>
+        <div className="toolbar">
+          <label className="upload-button">
+            <Upload size={18} />
+            Upload Template
+            <input
+              accept="image/*"
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onPreviewChange(URL.createObjectURL(file));
+              }}
+            />
+          </label>
+          <button type="button"><Settings size={18} />ID Size</button>
+          <button type="button"><CheckCircle2 size={18} />Save Layout</button>
+        </div>
+        <div className="template-canvas">
+          <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
+          {['slipNumber', 'contributorName', 'contributorAddress', 'building_name', 'amount', 'createdAt'].map((field) => (
+            <span className={`field-anchor ${field}`} key={field}>{field}</span>
+          ))}
+        </div>
+      </div>
+      <aside className="card settings-panel">
+        <div className="panel-title">
+          <Settings size={22} />
+          <div>
+            <strong>Field Mapping</strong>
+            <span>Place boxes exactly on printed slip labels.</span>
+          </div>
+        </div>
+        <div className="field-pills">
+          {['Name', 'Address', 'Amount', 'Date', 'Shop Name', 'Mobile No.', 'Payment Mode', 'Area'].map((field) => (
+            <button key={field} type="button">+ {field}</button>
+          ))}
+          {(activeForm?.customFields ?? []).map((field) => (
+            <button key={field.id} type="button">+ {field.label}</button>
+          ))}
+        </div>
+        <div className="add-field">
+          <strong>Add Custom Field</strong>
+          <input value={fieldLabel} onChange={(event) => setFieldLabel(event.target.value)} placeholder="e.g. Building / Lane" />
+          <button onClick={() => { void onAddField(fieldLabel, true); setFieldLabel(''); }} type="button">
+            <Plus size={18} />Add
+          </button>
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+function GenerateView({
+  activeForm,
+  busy,
+  onGenerate,
+  templatePreview,
+}: {
+  activeForm: ActiveForm | null;
+  busy: boolean;
+  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
+  templatePreview: string;
+}) {
+  return (
+    <section className="split-grid">
+      <form className="card form-grid" onSubmit={onGenerate}>
+        <div className="panel-title full">
+          <ReceiptText size={22} />
+          <div>
+            <strong>Generate Vargani Slip</strong>
+            <span>Members fill this on mobile while collecting vargani.</span>
+          </div>
+        </div>
+        <label>Contributor Name<input disabled={busy} name="contributorName" required placeholder="Donor or shop owner" /></label>
+        <label>Shop / Company<input disabled={busy} name="shopName" placeholder="Optional" /></label>
+        <label>Mobile<input disabled={busy} name="contributorPhone" placeholder="+91..." /></label>
+        <label>Area<input disabled={busy} name="areaName" required placeholder="Ramtekdi" /></label>
+        <label>Amount<input disabled={busy} inputMode="numeric" name="amount" required placeholder="2100" /></label>
+        <label>
+          Payment
+          <select disabled={busy} name="paymentMode" defaultValue="UPI">
+            <option value="CASH">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </label>
+        <label className="full">Address<input disabled={busy} name="contributorAddress" placeholder="Building, lane, shop address" /></label>
+        {(activeForm?.customFields ?? []).map((field) => (
+          <label key={field.id}>
+            {field.label}
+            <input disabled={busy} name={`custom_${field.key}`} required={field.required} />
+          </label>
+        ))}
+        <button className="primary full" disabled={busy} type="submit"><ReceiptText size={18} />Generate Digital Slip</button>
+      </form>
+      <div className="card phone-preview">
+        <img alt="Vargani template preview" src={templatePreview} />
+      </div>
+    </section>
+  );
+}
+
+function SlipsView({
+  query,
+  receiptUrl,
+  selectedSlip,
+  setQuery,
+  setSelectedSlip,
+  slips,
+}: {
+  query: string;
+  receiptUrl: string;
+  selectedSlip: Slip | null;
+  setQuery: (value: string) => void;
+  setSelectedSlip: (slip: Slip) => void;
+  slips: Slip[];
+}) {
+  return (
+    <section className="card">
+      <div className="table-toolbar">
+        <div className="search-box"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search slip, name, shop, area..." /></div>
+        <a className={receiptUrl ? 'primary' : 'primary disabled'} href={receiptUrl || '#'} target="_blank"><Printer size={18} />Print Selected</a>
+      </div>
+      <div className="slip-table">
+        <div className="slip-head"><span>Slip No.</span><span>Name</span><span>Shop</span><span>Area</span><span>Amount</span><span>Payment</span><span>Action</span></div>
+        {slips.map((slip) => (
+          <button className={selectedSlip?.id === slip.id ? 'slip-row selected' : 'slip-row'} key={slip.id} onClick={() => setSelectedSlip(slip)} type="button">
+            <strong>{slip.slipNumber}</strong>
+            <span>{slip.contributorName}</span>
+            <span>{slip.shopName || '-'}</span>
+            <span>{slip.areaName || '-'}</span>
+            <span>{money(Number(slip.amount))}</span>
+            <em>{slip.paymentMode}</em>
+            <Copy size={17} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Stat({ icon, label, note, value }: { icon: ReactNode; label: string; note: string; value: string }) {
+  return (
+    <article className="stat">
+      <div>{icon}</div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </article>
+  );
+}
+
+function StatusLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="status-line">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
   );
 }
 
-async function apiRequest<T>(
-  path: string,
-  options: RequestInit = {},
-  session?: AuthSession | null,
-): Promise<T> {
+async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -479,13 +867,30 @@ async function apiRequest<T>(
       ...options.headers,
     },
   });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(readErrorMessage(body, response.status));
-  }
-
+  if (!response.ok) throw new Error(readErrorMessage(await response.text(), response.status));
   return response.json() as Promise<T>;
+}
+
+function screenTitle(screen: Screen) {
+  return {
+    dashboard: 'Dashboard',
+    generate: 'Generate Slip',
+    mandals: 'Mandals',
+    members: 'Members & Logins',
+    slips: 'Latest Slips',
+    template: 'Vargani Template',
+  }[screen];
+}
+
+function screenSubtitle(screen: Screen) {
+  return {
+    dashboard: "Welcome back. Here's your mandal overview.",
+    generate: 'Live vargani slip generator for collection members.',
+    mandals: 'Manage onboarded mandals and festival readiness.',
+    members: 'Create and manage khajindar, leader, and member logins.',
+    slips: 'All latest generated vargani slips from the mandal.',
+    template: 'Upload slip template and map custom fields accurately.',
+  }[screen];
 }
 
 function readErrorMessage(body: string, status: number) {
