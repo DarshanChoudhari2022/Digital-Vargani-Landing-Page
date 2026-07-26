@@ -40,6 +40,7 @@ type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPE
 type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'users' | 'logs';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
+type Language = 'en' | 'mr' | 'hi';
 
 interface TemplatePlacement {
   backgroundColor: string;
@@ -184,10 +185,97 @@ interface LocalTask {
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const DEMO_MANDALS_KEY = 'digital-vargani-demo-mandals';
+const LANGUAGE_KEY = 'digital-vargani-language';
 const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
 const SUPER_ADMIN_IDENTIFIER = 'owner@digitalvargani.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
+
+const translations: Record<Exclude<Language, 'en'>, Record<string, string>> = {
+  hi: {
+    'Add Mandal': 'मंडल जोड़ें',
+    'Add mandals and manage each client account.': 'मंडल जोड़ें और हर क्लाइंट अकाउंट संभालें।',
+    'Address': 'पता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडलों पर वापस',
+    'Dashboard': 'डैशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'English': 'English',
+    'Generate Login': 'लॉगिन बनाएं',
+    'Generate More Logins': 'और लॉगिन बनाएं',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉगआउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडल नाम आवश्यक है। पता, लोगो, संपर्क और सदस्य संख्या वैकल्पिक हैं।',
+    'Mandals': 'मंडल',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'ओवरव्यू',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव करें',
+    'Saved': 'सेव हो गया',
+    'Search': 'खोजें',
+    'Search mandals by name, area, email...': 'नाम, क्षेत्र, ईमेल से मंडल खोजें...',
+    'Slips Generated': 'बनी हुई रसीदें',
+    'Slip Settings': 'रसीद सेटिंग्स',
+    'Slip Size': 'रसीद आकार',
+    'Super Admin Console': 'सुपर एडमिन कंसोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'कुल मंडल',
+    'Total Members': 'कुल सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करें',
+    'Username': 'यूजरनेम',
+    'Field Mapping': 'फील्ड मैपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स को छपी हुई रसीद के लेबल पर ठीक से रखें।',
+    'Selected Field': 'चुनी हुई फील्ड',
+  },
+  mr: {
+    'Add Mandal': 'मंडळ जोडा',
+    'Add mandals and manage each client account.': 'मंडळे जोडा आणि प्रत्येक क्लायंट खाते व्यवस्थापित करा.',
+    'Address': 'पत्ता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडळांकडे परत',
+    'Dashboard': 'डॅशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'English': 'English',
+    'Generate Login': 'लॉगिन तयार करा',
+    'Generate More Logins': 'अधिक लॉगिन तयार करा',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉगआउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडळाचे नाव आवश्यक आहे. पत्ता, लोगो, संपर्क आणि सदस्य संख्या ऐच्छिक आहेत.',
+    'Mandals': 'मंडळे',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'आढावा',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव्ह करा',
+    'Saved': 'सेव्ह झाले',
+    'Search': 'शोधा',
+    'Search mandals by name, area, email...': 'नाव, परिसर, ईमेलने मंडळ शोधा...',
+    'Slips Generated': 'तयार झालेल्या पावत्या',
+    'Slip Settings': 'पावती सेटिंग्ज',
+    'Slip Size': 'पावती आकार',
+    'Super Admin Console': 'सुपर अॅडमिन कन्सोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'एकूण मंडळे',
+    'Total Members': 'एकूण सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करा',
+    'Username': 'वापरकर्ता नाव',
+    'Field Mapping': 'फील्ड मॅपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स छापलेल्या पावतीवरील लेबलवर अचूक ठेवा.',
+    'Selected Field': 'निवडलेली फील्ड',
+  },
+};
+
+function t(language: Language, text: string) {
+  if (language === 'en') return text;
+  return translations[language][text] ?? text;
+}
 
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -205,6 +293,10 @@ export default function App() {
   const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState<Language>(() => {
+    const stored = window.localStorage.getItem(LANGUAGE_KEY);
+    return stored === 'mr' || stored === 'hi' ? stored : 'en';
+  });
 
   const mandalId = session?.user.mandalId;
   const festivalId = activeForm?.festival.id;
@@ -228,6 +320,20 @@ export default function App() {
     const stored = window.localStorage.getItem(DEMO_MANDALS_KEY);
     if (stored) setDemoMandals(JSON.parse(stored) as DemoMandal[]);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_KEY, language);
+    document.documentElement.lang = language === 'mr' ? 'mr' : language === 'hi' ? 'hi' : 'en';
+  }, [language]);
+
+  function saveTemplateLocally(scope: string, placements: Record<string, TemplatePlacement>) {
+    window.localStorage.setItem(`digital-vargani-template-${scope}`, JSON.stringify({
+      placements,
+      savedAt: new Date().toISOString(),
+      templatePreview,
+    }));
+    setNotice('Template saved successfully.');
+  }
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -458,9 +564,12 @@ export default function App() {
     return (
       <SuperAdminApp
         demoMandals={demoMandals}
+        language={language}
         notice={notice}
         onCreateMandal={createMandal}
+        onLanguageChange={setLanguage}
         onLogout={logout}
+        onTemplateSaved={saveTemplateLocally}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         session={session}
@@ -1007,20 +1116,30 @@ function EmptyTableState({ message }: { message: string }) {
   );
 }
 
-function AdminTopbar({ session }: { session: AuthSession }) {
+function AdminTopbar({
+  language,
+  onLanguageChange,
+  session,
+}: {
+  language: Language;
+  onLanguageChange: (language: Language) => void;
+  session: AuthSession;
+}) {
   return (
     <div className="app-topbar">
-      <strong>Digital Vargani</strong>
+      <strong>{t(language, 'Digital Vargani')}</strong>
       <div className="top-search">
         <Search size={18} />
-        <span>Search</span>
+        <span>{t(language, 'Search')}</span>
         <kbd>Ctrl K</kbd>
       </div>
-      <div className="join-code">
-        JOIN CODE <strong>VARGANI2026</strong>
-        <Copy size={16} />
-      </div>
-      <button type="button">English</button>
+      <label className="language-picker">
+        <select value={language} onChange={(event) => onLanguageChange(event.target.value as Language)}>
+          <option value="en">{t(language, 'English')}</option>
+          <option value="mr">{t(language, 'Marathi')}</option>
+          <option value="hi">{t(language, 'Hindi')}</option>
+        </select>
+      </label>
       <div className="top-user">
         <span>{session.user.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</span>
         <div>
@@ -1034,20 +1153,26 @@ function AdminTopbar({ session }: { session: AuthSession }) {
 
 function SuperAdminApp({
   demoMandals,
+  language,
   notice,
   onCreateMandal,
+  onLanguageChange,
   onLogout,
   onPreviewChange,
+  onTemplateSaved,
   session,
   setSidebarOpen,
   sidebarOpen,
   templatePreview,
 }: {
   demoMandals: DemoMandal[];
+  language: Language;
   notice: string;
   onCreateMandal: (event: FormEvent<HTMLFormElement>) => void;
+  onLanguageChange: (language: Language) => void;
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
+  onTemplateSaved: (scope: string, placements: Record<string, TemplatePlacement>) => void;
   session: AuthSession;
   setSidebarOpen: (open: boolean | ((current: boolean) => boolean)) => void;
   sidebarOpen: boolean;
@@ -1131,16 +1256,16 @@ function SuperAdminApp({
         <div className="brand">
           <span>DV</span>
           <div>
-            <strong>Digital Vargani</strong>
-            <small>Super Admin Console</small>
+            <strong>{t(language, 'Digital Vargani')}</strong>
+            <small>{t(language, 'Super Admin Console')}</small>
           </div>
         </div>
         <nav>
           <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => { setOwnerScreen('dashboard'); setManagedIndex(null); setSidebarOpen(false); }} type="button">
-            <LayoutDashboard size={19} />Dashboard
+            <LayoutDashboard size={19} />{t(language, 'Dashboard')}
           </button>
           <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => { setOwnerScreen('mandals'); setManagedIndex(null); setSidebarOpen(false); }} type="button">
-            <Building2 size={19} />Mandals
+            <Building2 size={19} />{t(language, 'Mandals')}
           </button>
         </nav>
         <div className="sidebar-footer">
@@ -1151,19 +1276,19 @@ function SuperAdminApp({
               <small>SUPER ADMIN</small>
             </div>
           </div>
-          <button className="logout" onClick={() => { setSidebarOpen(false); onLogout(); }} type="button"><LogOut size={18} />Logout</button>
+          <button className="logout" onClick={() => { setSidebarOpen(false); onLogout(); }} type="button"><LogOut size={18} />{t(language, 'Logout')}</button>
         </div>
       </aside>
 
       <section className="content">
-        <AdminTopbar session={session} />
+        <AdminTopbar language={language} onLanguageChange={onLanguageChange} session={session} />
         <header className="page-header">
           <div>
-            <h1>{ownerScreen === 'dashboard' ? 'Dashboard' : 'Mandals'}</h1>
-            <p>{ownerScreen === 'dashboard' ? 'Track all onboarded mandals and software operations.' : 'Add mandals and manage each client account.'}</p>
+            <h1>{ownerScreen === 'dashboard' ? t(language, 'Dashboard') : t(language, 'Mandals')}</h1>
+            <p>{ownerScreen === 'dashboard' ? 'Track all onboarded mandals and software operations.' : t(language, 'Add mandals and manage each client account.')}</p>
           </div>
           <div className="header-actions">
-            <button onClick={openAddMandal} type="button"><Plus size={18} />Add Mandal</button>
+            <button onClick={openAddMandal} type="button"><Plus size={18} />{t(language, 'Add Mandal')}</button>
           </div>
         </header>
         <div className="notice">{notice}</div>
@@ -1171,21 +1296,21 @@ function SuperAdminApp({
         {ownerScreen === 'dashboard' && (
           <>
             <section className="stats-grid compact owner-stat-grid">
-              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded client mandals" value={String(mandals.length)} />
-              <Stat icon={<UsersRound />} label="Total Members" note="Across all mandals" value={String(totalMembers)} />
-              <Stat icon={<FileText />} label="Slips Generated" note="Live receipt records" value={String(totalSlipsGenerated)} />
+              <Stat icon={<Building2 />} label={t(language, 'Total Mandals')} note="Onboarded client mandals" value={String(mandals.length)} />
+              <Stat icon={<UsersRound />} label={t(language, 'Total Members')} note="Across all mandals" value={String(totalMembers)} />
+              <Stat icon={<FileText />} label={t(language, 'Slips Generated')} note="Live receipt records" value={String(totalSlipsGenerated)} />
             </section>
             <section className="owner-list-head">
               <div>
-                <h2>Mandals</h2>
+                <h2>{t(language, 'Mandals')}</h2>
                 <p>Each block represents one mandal. Open Manage to set logins and templates.</p>
               </div>
-              <button className="primary" onClick={openAddMandal} type="button"><Plus size={18} />Add Mandal</button>
+              <button className="primary" onClick={openAddMandal} type="button"><Plus size={18} />{t(language, 'Add Mandal')}</button>
             </section>
             <section className="owner-toolbar">
               <div className="search-input">
                 <Search size={20} />
-                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder="Search mandals by name, area, email..." value={ownerQuery} />
+                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder={t(language, 'Search mandals by name, area, email...')} value={ownerQuery} />
               </div>
               <span>{filteredMandals.length} of {mandals.length} mandals</span>
             </section>
@@ -1196,35 +1321,35 @@ function SuperAdminApp({
         {ownerScreen === 'mandals' && managedIndex === null && (
           <>
             <section className="stats-grid compact owner-stat-grid">
-              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value={String(mandals.length)} />
-              <Stat icon={<UsersRound />} label="Total Members" note="Declared collectors" value={String(totalMembers)} />
-              <Stat icon={<ReceiptText />} label="Slips Generated" note="Across mandals" value={String(totalSlipsGenerated)} />
+              <Stat icon={<Building2 />} label={t(language, 'Total Mandals')} note="Onboarded" value={String(mandals.length)} />
+              <Stat icon={<UsersRound />} label={t(language, 'Total Members')} note="Declared collectors" value={String(totalMembers)} />
+              <Stat icon={<ReceiptText />} label={t(language, 'Slips Generated')} note="Across mandals" value={String(totalSlipsGenerated)} />
             </section>
             {addMandalOpen && (
               <form className="card form-grid owner-add-panel" onSubmit={(event) => { onCreateMandal(event); setAddMandalOpen(false); }}>
                 <div className="panel-title full">
                   <Plus size={22} />
                   <div>
-                    <strong>Add Mandal</strong>
-                    <span>Mandal name is required. Address, logo, contacts and member count are optional.</span>
+                    <strong>{t(language, 'Add Mandal')}</strong>
+                    <span>{t(language, 'Mandal name is required. Address, logo, contacts and member count are optional.')}</span>
                   </div>
                   <button className="ghost-button" onClick={() => setAddMandalOpen(false)} type="button">Close</button>
                 </div>
                 <label className="full">Mandal Name *<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
-                <label>Address<input name="address" placeholder="Full mandal address" /></label>
+                <label>{t(language, 'Address')}<input name="address" placeholder="Full mandal address" /></label>
                 <label>Locality<input name="locality" placeholder="Dapodi, Pune" /></label>
                 <label>City<input name="city" defaultValue="Pune" /></label>
-                <label>Phone No.<input name="contactPhone" placeholder="+91..." /></label>
+                <label>{t(language, 'Phone No.')}<input name="contactPhone" placeholder="+91..." /></label>
                 <label>Contact Email<input name="contactEmail" placeholder="contact@mandal.local" /></label>
                 <label>No. of Members<input name="memberCount" inputMode="numeric" placeholder="50" /></label>
                 <label className="full">Mandal Logo<input accept="image/*" name="logo" type="file" /></label>
-                <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
+                <button className="primary full" type="submit"><Plus size={18} />{t(language, 'Add Mandal')}</button>
               </form>
             )}
             <section className="owner-toolbar">
               <div className="search-input">
                 <Search size={20} />
-                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder="Search mandals by name, area, email..." value={ownerQuery} />
+                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder={t(language, 'Search mandals by name, area, email...')} value={ownerQuery} />
               </div>
               <span>{filteredMandals.length} of {mandals.length} mandals</span>
             </section>
@@ -1235,7 +1360,7 @@ function SuperAdminApp({
         {ownerScreen === 'mandals' && managedIndex !== null && (
           <section className="owner-managed-view">
             <button className="back-link" onClick={() => setManagedIndex(null)} type="button">
-              <ArrowLeft size={20} />Back to Mandals
+              <ArrowLeft size={20} />{t(language, 'Back to Mandals')}
             </button>
             <div className="card owner-detail-card">
               <div className="owner-detail-header">
@@ -1246,8 +1371,8 @@ function SuperAdminApp({
                 </div>
               </div>
               <div className="detail-tabs">
-                <button className={detailTab === 'overview' ? 'active' : ''} onClick={() => setDetailTab('overview')} type="button">Overview</button>
-                <button className={detailTab === 'template' ? 'active' : ''} onClick={() => setDetailTab('template')} type="button">Template</button>
+                <button className={detailTab === 'overview' ? 'active' : ''} onClick={() => setDetailTab('overview')} type="button">{t(language, 'Overview')}</button>
+                <button className={detailTab === 'template' ? 'active' : ''} onClick={() => setDetailTab('template')} type="button">{t(language, 'Template')}</button>
               </div>
 
               {detailTab === 'overview' && (
@@ -1256,26 +1381,26 @@ function SuperAdminApp({
                     <div className="panel-title">
                       <ShieldCheck size={22} />
                       <div>
-                        <strong>Adhyaksh Login</strong>
+                        <strong>{t(language, 'Adhyaksh Login')}</strong>
                         <span>Main mandal login to manage their team.</span>
                       </div>
                     </div>
-                    <StatusLine label="Login URL" value="digital-vargani-landing-page.vercel.app" />
-                    <StatusLine label="Username" value={selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`} />
-                    <StatusLine label="Password" value={selectedMandal.adminPassword || DEMO_PASSWORD} />
+                    <StatusLine label={t(language, 'Login URL')} value="digital-vargani-landing-page.vercel.app" />
+                    <StatusLine label={t(language, 'Username')} value={selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`} />
+                    <StatusLine label={t(language, 'Password')} value={selectedMandal.adminPassword || DEMO_PASSWORD} />
                   </div>
                   <form className="card form-grid" onSubmit={createLogin}>
                     <div className="panel-title full">
                       <Plus size={22} />
                       <div>
-                        <strong>Generate More Logins</strong>
+                        <strong>{t(language, 'Generate More Logins')}</strong>
                         <span>Khajindar, karyakari, group leader, or member.</span>
                       </div>
                     </div>
                     <label>Role<select name="role"><option>Khajindar</option><option>Karyakari</option><option>Group Leader</option><option>Member</option></select></label>
                     <label>Username<input name="username" required placeholder="khajindar@mandal.local" /></label>
                     <label>Password<input name="password" defaultValue={DEMO_PASSWORD} /></label>
-                    <button className="primary" type="submit"><Plus size={18} />Generate Login</button>
+                    <button className="primary" type="submit"><Plus size={18} />{t(language, 'Generate Login')}</button>
                   </form>
                   <div className="table-list">
                     {[{ role: 'Adhyaksh', username: selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`, password: selectedMandal.adminPassword || DEMO_PASSWORD }, ...extraLogins].map((login) => (
@@ -1294,8 +1419,10 @@ function SuperAdminApp({
               {detailTab === 'template' && (
                 <TemplateView
                   activeForm={null}
+                  language={language}
                   onAddField={() => undefined}
                   onPreviewChange={onPreviewChange}
+                  onSaveTemplate={(placements) => onTemplateSaved(slugify(selectedMandal.name), placements)}
                   templatePreview={templatePreview}
                 />
               )}
@@ -1622,6 +1749,7 @@ function LoginPanel({
 function TemplateView({
   activeForm,
   activeTemplate,
+  language = 'en',
   latestTemplateVersion,
   onAddField,
   onPreviewChange,
@@ -1630,6 +1758,7 @@ function TemplateView({
 }: {
   activeForm: ActiveForm | null;
   activeTemplate?: Template;
+  language?: Language;
   latestTemplateVersion?: Template['versions'][number];
   onAddField: (label: string, required?: boolean) => void;
   onPreviewChange: (url: string) => void;
@@ -1667,6 +1796,7 @@ function TemplateView({
   const [interaction, setInteraction] = useState<FieldInteraction | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ fieldKey: string; x: number; y: number } | null>(null);
+  const [saveMessage, setSaveMessage] = useState('');
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>({
     amount: {
       ...defaultPlacement(),
@@ -1949,6 +2079,12 @@ function TemplateView({
     actions[action]?.();
   }
 
+  function handleSaveTemplate() {
+    onSaveTemplate?.(placements);
+    setSaveMessage('Saved');
+    window.setTimeout(() => setSaveMessage(''), 2400);
+  }
+
   return (
     <section className="template-grid">
       <div className="card template-stage">
@@ -1966,7 +2102,7 @@ function TemplateView({
         <div className="toolbar">
           <label className="upload-button">
             <Upload size={18} />
-            Upload Template
+            {t(language, 'Upload Template')}
             <input
               accept="image/*"
               type="file"
@@ -1976,8 +2112,9 @@ function TemplateView({
               }}
             />
           </label>
-          <button type="button"><SlidersHorizontal size={18} />Slip Size</button>
-          <button onClick={() => onSaveTemplate?.(placements)} type="button"><CheckCircle2 size={18} />Save Template</button>
+          <button type="button"><SlidersHorizontal size={18} />{t(language, 'Slip Size')}</button>
+          <button onClick={handleSaveTemplate} type="button"><CheckCircle2 size={18} />{t(language, 'Save Template')}</button>
+          {saveMessage && <span className="template-save-toast"><CheckCircle2 size={16} />{t(language, saveMessage)}</span>}
         </div>
         <div className="template-canvas">
           <div
@@ -2105,9 +2242,9 @@ function TemplateView({
       </div>
       <aside className="card settings-panel">
         <div className="template-settings">
-          <strong>Slip Settings</strong>
+          <strong>{t(language, 'Slip Settings')}</strong>
           <label>
-            Template Size
+            {t(language, 'Template Size')}
             <select defaultValue="landscape">
               <option value="landscape">Landscape Vargani Slip</option>
               <option value="portrait">Portrait Receipt</option>
@@ -2126,8 +2263,8 @@ function TemplateView({
         <div className="panel-title">
           <Settings size={22} />
           <div>
-            <strong>Field Mapping</strong>
-            <span>Place boxes exactly on printed slip labels.</span>
+            <strong>{t(language, 'Field Mapping')}</strong>
+            <span>{t(language, 'Place boxes exactly on printed slip labels.')}</span>
           </div>
         </div>
         <div className="field-pills">
@@ -2146,7 +2283,7 @@ function TemplateView({
           ))}
         </div>
         <div className="template-settings">
-          <strong>Selected Field</strong>
+          <strong>{t(language, 'Selected Field')}</strong>
           <div className="mini-grid">
             <label>X<input type="number" value={selectedPlacement.x} onChange={(event) => updatePlacement(activeField, { x: Number(event.target.value) })} /></label>
             <label>Y<input type="number" value={selectedPlacement.y} onChange={(event) => updatePlacement(activeField, { y: Number(event.target.value) })} /></label>
