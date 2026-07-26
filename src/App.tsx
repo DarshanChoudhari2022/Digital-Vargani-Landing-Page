@@ -1126,6 +1126,7 @@ function TemplateView({
   );
   const [activeField, setActiveField] = useState('slipNumber');
   const [draggingField, setDraggingField] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ fieldKey: string; x: number; y: number } | null>(null);
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>({
     amount: {
       color: '#111111',
@@ -1184,6 +1185,21 @@ function TemplateView({
   });
   const selectedPlacement = placements[activeField] ?? defaultPlacement();
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
+      if ((event.key === 'Delete' || event.key === 'Backspace') && placements[activeField]) {
+        event.preventDefault();
+        removePlacement(activeField);
+      }
+      if (event.key === 'Escape') setContextMenu(null);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeField, placements]);
+
   function canvasPoint(event: PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     return {
@@ -1204,7 +1220,9 @@ function TemplateView({
   }
 
   function placeActiveField(event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
     if (draggingField) return;
+    setContextMenu(null);
     const point = canvasPoint(event);
     updatePlacement(activeField, point);
   }
@@ -1214,12 +1232,40 @@ function TemplateView({
     updatePlacement(draggingField, canvasPoint(event));
   }
 
-  function removePlacement() {
+  function removePlacement(fieldKey = activeField) {
     setPlacements((current) => {
       const next = { ...current };
-      delete next[activeField];
+      delete next[fieldKey];
       return next;
     });
+    setContextMenu(null);
+  }
+
+  function duplicatePlacement(fieldKey = activeField) {
+    const source = placements[fieldKey];
+    if (!source) return;
+    const duplicateKey = `${fieldKey}_copy_${Date.now()}`;
+    setPlacements((current) => ({
+      ...current,
+      [duplicateKey]: {
+        ...source,
+        x: source.x + 24,
+        y: source.y + 24,
+      },
+    }));
+    setActiveField(duplicateKey);
+    setContextMenu(null);
+  }
+
+  function bringPlacementForward(fieldKey = activeField) {
+    const source = placements[fieldKey];
+    if (!source) return;
+    setPlacements((current) => {
+      const next = { ...current };
+      delete next[fieldKey];
+      return { ...next, [fieldKey]: source };
+    });
+    setContextMenu(null);
   }
 
   return (
@@ -1259,6 +1305,10 @@ function TemplateView({
             onPointerMove={moveDraggingField}
             onPointerUp={() => setDraggingField(null)}
             onPointerCancel={() => setDraggingField(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setContextMenu(null);
+            }}
             style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
           >
             <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
@@ -1268,7 +1318,18 @@ function TemplateView({
                 <button
                   className={`field-anchor ${activeField === key ? 'active' : ''}`}
                   key={key}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveField(key);
+                  }}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setActiveField(key);
+                    setContextMenu({ fieldKey: key, x: event.clientX, y: event.clientY });
+                  }}
                   onPointerDown={(event) => {
+                    if (event.button !== 0) return;
                     event.stopPropagation();
                     setActiveField(key);
                     setDraggingField(key);
@@ -1288,6 +1349,19 @@ function TemplateView({
                 </button>
               );
             })}
+            {contextMenu && (
+              <div
+                className="field-context-menu"
+                style={{
+                  left: `${contextMenu.x}px`,
+                  top: `${contextMenu.y}px`,
+                }}
+              >
+                <button onClick={() => removePlacement(contextMenu.fieldKey)} type="button">Delete Field</button>
+                <button onClick={() => duplicatePlacement(contextMenu.fieldKey)} type="button">Duplicate Field</button>
+                <button onClick={() => bringPlacementForward(contextMenu.fieldKey)} type="button">Bring To Front</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1346,7 +1420,22 @@ function TemplateView({
             <label>Align<select value={selectedPlacement.textAlign} onChange={(event) => updatePlacement(activeField, { textAlign: event.target.value as TextAlign })}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
           </div>
           <label>Color<input type="color" value={selectedPlacement.color} onChange={(event) => updatePlacement(activeField, { color: event.target.value })} /></label>
-          <button disabled={!placements[activeField]} onClick={removePlacement} type="button">Remove Field</button>
+          <div className="template-action-row">
+            <button disabled={!placements[activeField]} onClick={() => removePlacement(activeField)} type="button">Delete Field</button>
+            <button disabled={!placements[activeField]} onClick={() => duplicatePlacement(activeField)} type="button">Duplicate</button>
+          </div>
+        </div>
+        <div className="template-settings layers-panel">
+          <strong>Layers ({Object.keys(placements).length})</strong>
+          {Object.entries(placements).reverse().map(([key]) => {
+            const field = fieldOptions.find((item) => item.key === key);
+            return (
+              <div className={activeField === key ? 'layer-row active' : 'layer-row'} key={key}>
+                <button onClick={() => setActiveField(key)} type="button">{field?.label ?? key.replace(/_copy_\d+$/, ' Copy')}</button>
+                <button onClick={() => removePlacement(key)} type="button">Delete</button>
+              </div>
+            );
+          })}
         </div>
         <div className="add-field">
           <strong>Add Custom Field</strong>
