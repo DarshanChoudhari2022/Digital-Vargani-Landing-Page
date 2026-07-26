@@ -1721,82 +1721,84 @@ kbd {
 }
 
 .adhyaksh-shell {
-  background: #faf8f2;
-  grid-template-columns: 360px minmax(0, 1fr);
+  background: #fffbd2;
+  grid-template-columns: 316px minmax(0, 1fr);
 }
 
 .adhyaksh-sidebar {
-  background: #fff;
-  padding: 40px 20px 20px;
+  background: #fffdf6;
+  border-right: 1px solid #dfd6bf;
+  padding: 22px 14px 16px;
 }
 
 .mandal-identity {
   align-items: center;
   display: flex;
-  gap: 16px;
-  padding: 0 20px 18px;
+  gap: 14px;
+  padding: 0 14px 14px;
 }
 
 .mandal-seal {
   align-items: center;
-  background: #eff6ff;
-  border: 1px solid #d9e6ff;
-  border-radius: 6px;
-  color: #1d4ed8;
+  background: #ff4b12;
+  border: 1px solid #ff4b12;
+  border-radius: 18px;
+  color: #fff;
   display: flex;
-  flex: 0 0 72px;
+  flex: 0 0 58px;
   font-weight: 950;
-  height: 72px;
+  height: 58px;
   justify-content: center;
-  width: 72px;
+  width: 58px;
 }
 
 .mandal-identity strong {
-  color: #1d4ed8;
+  color: #211f1c;
   display: block;
-  font-size: 24px;
+  font-size: clamp(20px, 1.5vw, 24px);
   font-weight: 950;
+  line-height: 1.06;
 }
 
 .mandal-identity small,
 .mandal-contact-card span {
-  color: #1d4ed8;
+  color: #6f6a61;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .mandal-contact-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  border: 1px solid #dfd6bf;
+  border-radius: 18px;
   display: grid;
   gap: 8px;
-  margin: 0 20px 40px;
+  margin: 0 14px 26px;
   padding: 14px 16px;
 }
 
 .adhyaksh-nav {
-  gap: 22px;
-  max-height: calc(100vh - 330px);
+  gap: 12px;
+  max-height: calc(100vh - 286px);
   overflow: auto;
-  padding: 0 6px 24px;
+  padding: 0 6px 16px;
 }
 
 .adhyaksh-nav button {
-  border-radius: 14px;
-  color: #5e6a7c;
-  font-size: 14px;
-  letter-spacing: 0.16em;
-  min-height: 64px;
+  border-radius: 18px;
+  color: #585652;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  min-height: 54px;
   text-transform: uppercase;
 }
 
 .adhyaksh-nav button.active {
-  background: #e9efff;
-  color: #1d4ed8;
+  background: #ffe8dc;
+  color: #ff4b12;
 }
 
 .adhyaksh-nav button.active::after {
-  background: #1d4ed8;
+  background: #ff4b12;
   left: 0;
   right: auto;
 }
@@ -1807,47 +1809,42 @@ kbd {
 }
 
 .adhyaksh-nav button.active svg {
-  color: #1d4ed8;
+  color: #ff4b12;
 }
 
 .adhyaksh-nav button svg {
   color: #9aa3b2;
-  height: 34px;
+  height: 32px;
   padding: 6px;
-  width: 34px;
+  width: 32px;
 }
 
 .adhyaksh-content {
-  gap: 40px;
-  padding: 0 60px 56px;
+  gap: 28px;
+  padding: 0 clamp(24px, 4vw, 46px) 44px;
 }
 
 .adhyaksh-header {
   align-items: center;
   background: #fff;
-  border-bottom: 1px solid #eef0f4;
+  border-bottom: 1px solid #dfd6bf;
   display: flex;
   justify-content: space-between;
-  margin: 0 -60px;
-  min-height: 78px;
-  padding: 0 60px;
-}
-
-.adhyaksh-header h1,
-.adhyaksh-page h2 {
-  font-family: Georgia, "Times New Roman", serif;
-  letter-spacing: -0.02em;
+  margin: 0 calc(-1 * clamp(24px, 4vw, 46px));
+  min-height: 72px;
+  padding: 0 clamp(24px, 4vw, 46px);
 }
 
 .adhyaksh-header h1 {
-  font-size: 32px;
+  font-size: clamp(26px, 2.2vw, 34px);
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
 .year-select {
   align-items: center;
   display: flex;
-  gap: 18px;
+  gap: 12px;
 }
 
 .year-select span,
@@ -1855,26 +1852,26 @@ kbd {
 .metric-card span,
 .wide-card span {
   color: #697386;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 950;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .year-select select {
   background: #fff;
   border: 1px solid #dce1ea;
-  border-radius: 14px;
+  border-radius: 16px;
   color: #1f2937;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 850;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 18px;
 }
 
 .adhyaksh-page {
   display: grid;
-  gap: 34px;
+  gap: 28px;
 }
 
 .wide-card,
@@ -1882,13 +1879,13 @@ kbd {
 .ops-table,
 .insight-card {
   background: #fff;
-  border: 1px solid #eceef3;
+  border: 1px solid #dfd6bf;
   border-radius: 22px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .wide-card {
-  padding: 28px 22px;
+  padding: 24px 22px;
 }
 
 .action-card {
@@ -1899,14 +1896,15 @@ kbd {
 }
 
 .wide-card h2 {
-  font-size: 29px;
-  margin: 0 0 18px;
+  font-size: clamp(22px, 1.8vw, 28px);
+  line-height: 1.12;
+  margin: 0 0 12px;
 }
 
 .blue-action {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  box-shadow: 0 14px 24px rgba(29, 78, 216, 0.18);
+  background: #ff4b12;
+  border-color: #ff4b12;
+  box-shadow: 0 14px 24px rgba(255, 75, 18, 0.18);
   color: #fff;
   font-weight: 950;
   text-transform: uppercase;
@@ -1914,28 +1912,29 @@ kbd {
 
 .metric-strip {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .metric-strip.six {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
 }
 
 .metric-strip.five-cols {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
 }
 
 .metric-card {
-  min-height: 156px;
-  padding: 30px;
+  min-height: 132px;
+  padding: 22px 20px;
 }
 
 .metric-card strong {
   color: #06122d;
   display: block;
-  font-size: 30px;
-  margin-top: 18px;
+  font-size: clamp(25px, 2.1vw, 34px);
+  line-height: 1.05;
+  margin-top: 16px;
 }
 
 .metric-card.green strong,
@@ -1951,11 +1950,11 @@ kbd {
 
 .metric-card.blue strong,
 .pill.mode {
-  color: #1d4ed8;
+  color: #ff4b12;
 }
 
 .metric-card small {
-  color: #6b85ff;
+  color: #ff6c35;
   display: block;
   margin-top: 8px;
 }
@@ -1968,9 +1967,9 @@ kbd {
 .ops-row {
   align-items: center;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   min-width: 920px;
-  padding: 18px 22px;
+  padding: 16px 20px;
 }
 
 .ops-head {
@@ -2004,7 +2003,7 @@ kbd {
 .ops-row strong {
   color: #07132e;
   display: grid;
-  font-size: 18px;
+  font-size: 16px;
   gap: 4px;
 }
 
@@ -2016,7 +2015,7 @@ kbd {
 
 .ops-row b {
   color: #06122d;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .pill {
@@ -2055,9 +2054,9 @@ kbd {
 .row-actions button,
 .mini-link {
   background: #fff;
-  border: 1px solid #dbe4f0;
+  border: 1px solid #ffd0bd;
   border-radius: 9px;
-  color: #1d4ed8;
+  color: #ff4b12;
   font-size: 12px;
   font-weight: 950;
   min-height: 34px;
@@ -2082,8 +2081,8 @@ kbd {
 }
 
 .insight-card.blue {
-  background: #eef6ff;
-  border-color: #c8dcff;
+  background: #fff2e9;
+  border-color: #ffc7ad;
 }
 
 .segmented {
@@ -2103,7 +2102,7 @@ kbd {
 }
 
 .segmented button.active {
-  background: #1d4ed8;
+  background: #ff4b12;
   color: #fff;
 }
 
@@ -2125,9 +2124,9 @@ kbd {
 }
 
 .avatar.tiny {
-  height: 48px;
+  height: 42px;
   margin-right: 14px;
-  width: 48px;
+  width: 42px;
 }
 
 .real-time {
@@ -2186,6 +2185,11 @@ kbd {
 
   .hero-actions {
     justify-content: flex-start;
+  }
+
+  .metric-strip.six,
+  .metric-strip.five-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .adhyaksh-content {
@@ -2420,7 +2424,7 @@ kbd {
   }
 
   .metric-card strong {
-    font-size: 26px;
+    font-size: 24px;
   }
 
   .ops-head,
