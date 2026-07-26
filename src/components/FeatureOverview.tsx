@@ -5,88 +5,77 @@ export const FeatureOverview: React.FC = () => {
     {
       icon: 'person_search',
       title: 'Donor Profiles & History',
-      desc: 'Instant donor lookup by mobile number or name. Access multi-year giving trends and festive donor status.',
-      accent: 'var(--festival-orange)',
-      bg: 'var(--festival-light)',
-      border: 'border-t-4 border-[var(--festival-orange)]',
-    },
-    {
-      icon: 'qr_code_2',
-      title: 'Instant UPI Integration',
-      desc: 'Dynamic QR codes mapping vargani directly into your mandal bank account with zero intermediary delay.',
-      accent: 'var(--marigold-deep)',
-      bg: 'var(--marigold-light)',
-      border: 'border-t-4 border-[var(--marigold-deep)]',
+      desc: 'Instant donor lookup by mobile number or name. Access multi-year contribution history instantly.',
+      color: 'text-blue-600',
+      bg: 'bg-blue-50'
     },
     {
       icon: 'receipt_long',
-      title: 'Digital Receipts on WhatsApp',
-      desc: 'Instant digital slip delivery via WhatsApp & SMS with custom mandal headers and tax exemption notices.',
-      accent: 'var(--secondary)',
-      bg: 'var(--secondary-container)',
-      border: 'border-t-4 border-[var(--secondary)]',
+      title: 'Configurable Receipts',
+      desc: 'Dynamic slip numbering, local language support, and custom mandal logos printed on every receipt.',
+      color: 'text-orange-600',
+      bg: 'bg-orange-50'
     },
     {
-      icon: 'account_balance_wallet',
-      title: 'Mandal Expense Auditing',
-      desc: 'Track idol costs, pandal setup, prasad distribution, and sound system permits with photo receipts.',
-      accent: 'var(--festival-deep)',
-      bg: 'var(--festival-light)',
-      border: 'border-t-4 border-[var(--festival-deep)]',
+      icon: 'sync_alt',
+      title: 'Real-Time Sync',
+      desc: 'Offline-first architecture. Collect vargani without internet; auto-syncs when back online.',
+      color: 'text-green-600',
+      bg: 'bg-green-50'
     },
     {
-      icon: 'group_work',
-      title: 'Member Field Permissions',
-      desc: 'Assign collection targets to 50-300 volunteers with granular permission rules and location tags.',
-      accent: 'var(--marigold)',
-      bg: 'var(--marigold-light)',
-      border: 'border-t-4 border-[var(--marigold)]',
+      icon: 'account_balance',
+      title: 'Expense Management',
+      desc: 'Log daily expenses like mandap, DJ, and prasad. Instantly see remaining balance vs collected vargani.',
+      color: 'text-purple-600',
+      bg: 'bg-purple-50'
     },
     {
-      icon: 'analytics',
-      title: 'Real-time Daily Dashboard',
-      desc: 'Live collection speed tracking, category-wise breakdowns (Shops vs Residents vs Sponsors), and export to Excel.',
-      accent: 'var(--charcoal)',
-      bg: 'var(--surface-container-high)',
-      border: 'border-t-4 border-[var(--charcoal)]',
+      icon: 'monitoring',
+      title: 'Collection Analytics',
+      desc: 'Compare daily trends with previous years. Know your peak collection days and top performing areas.',
+      color: 'text-pink-600',
+      bg: 'bg-pink-50'
     },
+    {
+      icon: 'security',
+      title: 'Role-Based Access',
+      desc: 'Granular permissions. Members can only collect, while admins can view total tally and approve expenses.',
+      color: 'text-slate-600',
+      bg: 'bg-slate-100'
+    }
   ];
 
   return (
-    <section id="features" className="py-16 md:py-24 relative">
+    <section id="features" className="py-24 bg-[var(--surface-50)] relative">
       <div className="container-max">
-        
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--marigold-light)] text-[var(--marigold-deep)] font-label-sm">
-            <span className="material-symbols-outlined text-sm">handcrafted</span>
-            <span>Purpose-Built for Indian Mandals</span>
-          </div>
-          <h2 className="font-headline-md text-[var(--charcoal)]">The Vargani Experience</h2>
-          <p className="font-body-md text-[var(--on-surface-variant)]">
-            Replacing paper receipt books with transparent, instant, and spiritually fulfilling digital workflows.
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <h2 className="font-headline-md text-[var(--charcoal-900)] mb-4">
+            Everything you need for a seamless festival
+          </h2>
+          <p className="font-body-lg text-[var(--charcoal-600)]">
+            Digital Mandal replaces 10+ disjointed tools with one unified, mobile-first platform built specifically for local committees.
           </p>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((item, idx) => (
-            <div
-              key={idx}
-              className={`bg-white p-8 rounded-2xl card-warm hover-lift ${item.border}`}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feat, idx) => (
+            <div 
+              key={idx} 
+              className="bg-white p-8 rounded-2xl saas-shadow saas-shadow-hover group"
             >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                style={{ backgroundColor: item.bg, color: item.accent }}
-              >
-                <span className="material-symbols-outlined text-3xl">{item.icon}</span>
+              <div className={`w-12 h-12 rounded-xl ${feat.bg} ${feat.color} flex items-center justify-center mb-6 transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-2xl">{feat.icon}</span>
               </div>
-              <h3 className="font-headline-sm text-[var(--charcoal)] mb-3">{item.title}</h3>
-              <p className="font-body-md text-[var(--on-surface-variant)]">{item.desc}</p>
+              <h3 className="font-headline-sm text-[var(--charcoal-900)] mb-3">
+                {feat.title}
+              </h3>
+              <p className="font-body-md text-[var(--charcoal-600)] leading-relaxed">
+                {feat.desc}
+              </p>
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );

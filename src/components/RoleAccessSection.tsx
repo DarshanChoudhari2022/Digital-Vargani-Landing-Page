@@ -8,134 +8,127 @@ export const RoleAccessSection: React.FC = () => {
       id: 'super-admin',
       name: 'Super Admin',
       icon: 'shield_person',
-      scale: 'Platform Operators',
-      description: 'Full system oversight across all onboarded mandals nationwide.',
-      permissions: [
-        'Global Mandal Onboarding & Suspension',
-        'Festival Master Template Configuration',
-        'Cross-Mandal Audit Log Inspection',
-        'Subscription & Payment Gateway Rules',
-      ],
+      desc: 'Platform owner managing all mandals',
+      color: 'blue'
     },
     {
       id: 'mandal-admin',
       name: 'Mandal Admin',
-      icon: 'account_balance',
-      scale: '1-5 per Mandal',
-      description: 'Mandal office bearers (President, Treasurer, Secretary).',
-      permissions: [
-        'Member Account Creation & Credentials',
-        'Receipt Book Series Allocation',
-        'Bank Account & Dynamic UPI Setup',
-        'Expense Approvals & Daily Reconciliation',
-      ],
+      icon: 'admin_panel_settings',
+      desc: 'President / Treasurer of a specific mandal',
+      color: 'orange'
     },
     {
-      id: 'field-member',
-      name: 'Field Member / Collector',
+      id: 'member',
+      name: 'Collector',
       icon: 'badge',
-      scale: '50-300 per Mandal',
-      description: 'Active volunteers collecting vargani door-to-door.',
-      permissions: [
-        'Mobile Slip Issuance (Cash / UPI)',
-        'WhatsApp Receipt Link Triggering',
-        'Donor Mobile Search & Quick Select',
-        'Personal Daily Collection History',
-      ],
-    },
-    {
-      id: 'donor',
-      name: 'Resident / Sponsor / Donor',
-      icon: 'favorite',
-      scale: 'Lakhs nationwide',
-      description: 'Local residents, shops, and corporate sponsors.',
-      permissions: [
-        'Digital PDF Receipt Download',
-        'QR Code Authenticity Verification',
-        'Opt-in Digital Wall of Honor',
-        'WhatsApp Festive Greetings & Updates',
-      ],
-    },
+      desc: 'Volunteer collecting vargani on the field',
+      color: 'emerald'
+    }
   ];
 
-  const current = roles.find((r) => r.id === selectedRole)!;
+  const permissions = [
+    { action: 'Create New Mandal', 'super-admin': true, 'mandal-admin': false, 'member': false },
+    { action: 'Configure Receipt Template', 'super-admin': true, 'mandal-admin': true, 'member': false },
+    { action: 'Add/Remove Members', 'super-admin': true, 'mandal-admin': true, 'member': false },
+    { action: 'Log Mandal Expenses', 'super-admin': true, 'mandal-admin': true, 'member': false },
+    { action: 'Generate Vargani Slip', 'super-admin': true, 'mandal-admin': true, 'member': true },
+    { action: 'View Own Collection History', 'super-admin': true, 'mandal-admin': true, 'member': true },
+    { action: 'View Total Mandal Tally', 'super-admin': true, 'mandal-admin': true, 'member': false }
+  ];
 
   return (
-    <section className="py-16 md:py-24 bg-[var(--surface-container-low)]">
+    <section className="py-24 bg-white border-y border-[var(--surface-200)]">
       <div className="container-max">
-        
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--marigold-light)] text-[var(--marigold-deep)] font-label-sm">
-            <span className="material-symbols-outlined text-sm">lock_open</span>
-            <span>Granular Security Model</span>
-          </div>
-          <h2 className="font-headline-md text-[var(--charcoal)]">Role-Based Access Control</h2>
-          <p className="font-body-md text-[var(--on-surface-variant)]">
-            Tailored interfaces for every stakeholder from national platform managers to festival volunteers.
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <h2 className="font-headline-md text-[var(--charcoal-900)] mb-4">
+            Granular access control
+          </h2>
+          <p className="font-body-lg text-[var(--charcoal-600)]">
+            Built-in hierarchy ensures data privacy. Volunteers only see what they collect, while admins have full visibility.
           </p>
         </div>
 
-        {/* Role Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {roles.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setSelectedRole(r.id)}
-              className={`p-6 rounded-2xl text-left transition-all card-warm ${
-                selectedRole === r.id
-                  ? 'bg-white border-2 border-[var(--festival-orange)] shadow-md scale-105'
-                  : 'bg-[var(--surface-container)] hover:bg-white border border-transparent'
-              }`}
-            >
-              <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                  selectedRole === r.id
-                    ? 'bg-[var(--festival-orange)] text-white'
-                    : 'bg-[var(--surface-container-high)] text-[var(--charcoal)]'
+        <div className="max-w-4xl mx-auto">
+          {/* Role Selector Tabs (Mobile/Tablet) */}
+          <div className="flex md:hidden bg-[var(--surface-50)] p-1 rounded-xl mb-6 overflow-x-auto snap-x">
+            {roles.map(role => (
+              <button
+                key={role.id}
+                onClick={() => setSelectedRole(role.id)}
+                className={`flex-1 min-w-[120px] snap-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  selectedRole === role.id 
+                    ? 'bg-white text-[var(--charcoal-900)] shadow-sm' 
+                    : 'text-[var(--charcoal-600)] hover:text-[var(--charcoal-900)]'
                 }`}
               >
-                <span className="material-symbols-outlined text-2xl">{r.icon}</span>
-              </div>
-              <div className="font-headline-sm text-[var(--charcoal)]" style={{ fontSize: '18px' }}>
-                {r.name}
-              </div>
-              <div className="font-label-sm text-[var(--on-surface-variant)] mt-1">{r.scale}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Selected Role Detail Box */}
-        <div className="bg-white rounded-3xl p-8 md:p-10 card-warm border border-[var(--outline-variant)]/40">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 mb-6 border-b border-[var(--outline-variant)]/30">
-            <div>
-              <span className="font-label-sm text-[var(--festival-deep)] uppercase tracking-wider">
-                {current.scale}
-              </span>
-              <h3 className="font-headline-md text-[var(--charcoal)]">{current.name} Permissions</h3>
-            </div>
-            <span className="px-4 py-1.5 rounded-full bg-[var(--surface-container)] text-[var(--charcoal)] font-label-md">
-              Scoped Permissions Matrix
-            </span>
-          </div>
-
-          <p className="font-body-md text-[var(--on-surface-variant)] mb-6">{current.description}</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {current.permissions.map((p, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 p-4 rounded-xl bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)]/30"
-              >
-                <span className="w-6 h-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center text-xs font-bold">
-                  ✓
-                </span>
-                <span className="font-label-md text-[var(--charcoal)]">{p}</span>
-              </div>
+                {role.name}
+              </button>
             ))}
           </div>
-        </div>
 
+          {/* Matrix Table */}
+          <div className="bg-white border border-[var(--surface-200)] rounded-2xl saas-shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-[var(--surface-50)] border-b border-[var(--surface-200)]">
+                    <th className="p-4 sm:p-6 w-1/3">
+                      <span className="text-xs font-semibold text-[var(--charcoal-500)] uppercase tracking-wider">Permission</span>
+                    </th>
+                    {roles.map((role) => (
+                      <th 
+                        key={role.id} 
+                        className={`p-4 sm:p-6 text-center ${
+                          selectedRole !== role.id ? 'hidden md:table-cell' : 'table-cell'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-${role.color}-50 text-${role.color}-600`}>
+                            <span className="material-symbols-outlined">{role.icon}</span>
+                          </div>
+                          <div>
+                            <div className="font-headline-sm text-[var(--charcoal-900)] text-sm sm:text-base">{role.name}</div>
+                            <div className="text-[10px] sm:text-xs text-[var(--charcoal-500)] font-normal mt-0.5 max-w-[120px] mx-auto leading-tight hidden lg:block">
+                              {role.desc}
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--surface-100)]">
+                  {permissions.map((perm, idx) => (
+                    <tr key={idx} className="hover:bg-[var(--surface-50)]/50 transition-colors">
+                      <td className="p-4 sm:p-6 font-body-md text-[var(--charcoal-700)]">
+                        {perm.action}
+                      </td>
+                      {roles.map((role) => (
+                        <td 
+                          key={role.id} 
+                          className={`p-4 sm:p-6 text-center ${
+                            selectedRole !== role.id ? 'hidden md:table-cell' : 'table-cell'
+                          }`}
+                        >
+                          {perm[role.id as keyof typeof perm] ? (
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700">
+                              <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-400">
+                              <span className="material-symbols-outlined text-[14px]">remove</span>
+                            </span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

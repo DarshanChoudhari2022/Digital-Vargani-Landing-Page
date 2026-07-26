@@ -15,7 +15,7 @@ export function App() {
   const [demoOpen, setDemoOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col mandala-bg antialiased">
+    <div className="min-h-screen flex flex-col antialiased bg-[var(--surface-white)]">
       {/* Top Navbar */}
       <Header onOpenDemo={() => setDemoOpen(true)} />
 
@@ -24,20 +24,17 @@ export function App() {
         {/* 1. Hero Section */}
         <HeroSection onOpenDemo={() => setDemoOpen(true)} />
 
-        {/* Rangoli Divider */}
-        <div className="rangoli-divider my-4" />
+
 
         {/* 2. Feature Overview (Vargani Experience) */}
         <FeatureOverview />
 
-        {/* Garland Wave Divider */}
-        <div className="garland-divider my-4" />
+
 
         {/* 3. Volunteer Collector Leaderboard */}
         <LeaderboardSection />
 
-        {/* Rangoli Divider */}
-        <div className="rangoli-divider my-4" />
+
 
         {/* 4. PRD Modules Showcase (Super Admin, Mandal Admin, Member, Donor) */}
         <PRDModulesSection />
@@ -51,8 +48,7 @@ export function App() {
         {/* 7. Multi-Festival Capabilities */}
         <FestivalGallerySection />
 
-        {/* Rangoli Divider */}
-        <div className="rangoli-divider my-4" />
+
 
         {/* 8. Frequently Asked Questions */}
         <FAQSection />

@@ -7,193 +7,173 @@ export const LeaderboardSection: React.FC = () => {
     {
       rank: 1,
       name: 'Amit Kulkarni',
-      location: 'Girgaon Hub',
-      receipts: 142,
-      amount: '₹ 72,400',
-      avatar: 'AK',
-      badge: 'Mandal Guardian',
-      bg: 'var(--marigold-light)',
-      text: 'var(--marigold-deep)',
+      area: 'Shivaji Nagar',
+      amount: '₹ 1,45,000',
+      slips: 142,
+      trend: '+12%',
+      avatar: 'bg-blue-100 text-blue-700'
     },
     {
       rank: 2,
-      name: 'Sneha Rao',
-      location: 'Dadar West',
-      receipts: 118,
-      amount: '₹ 54,100',
-      avatar: 'SR',
-      badge: 'Gold Driver',
-      bg: 'var(--secondary-container)',
-      text: 'var(--secondary)',
+      name: 'Rahul Deshmukh',
+      area: 'Kothrud',
+      amount: '₹ 98,500',
+      slips: 89,
+      trend: '+5%',
+      avatar: 'bg-emerald-100 text-emerald-700'
     },
     {
       rank: 3,
-      name: 'Vijay Jha',
-      location: 'Thane Central',
-      receipts: 94,
-      amount: '₹ 38,900',
-      avatar: 'VJ',
-      badge: 'Silver Driver',
-      bg: 'var(--festival-light)',
-      text: 'var(--festival-deep)',
+      name: 'Suresh Patil',
+      area: 'Deccan',
+      amount: '₹ 76,200',
+      slips: 65,
+      trend: '+18%',
+      avatar: 'bg-purple-100 text-purple-700'
     },
     {
       rank: 4,
-      name: 'Rahul Deshmukh',
-      location: 'Pune Camp',
-      receipts: 81,
-      amount: '₹ 32,500',
-      avatar: 'RD',
-      badge: 'Active Member',
-      bg: 'var(--surface-container-high)',
-      text: 'var(--charcoal)',
-    },
-    {
-      rank: 5,
-      name: 'Priya Joshi',
-      location: 'Nashik Road',
-      receipts: 67,
-      amount: '₹ 28,000',
-      avatar: 'PJ',
-      badge: 'Active Member',
-      bg: 'var(--surface-container-high)',
-      text: 'var(--charcoal)',
-    },
+      name: 'Vikram Joshi',
+      area: 'Aundh',
+      amount: '₹ 45,000',
+      slips: 41,
+      trend: '-2%',
+      avatar: 'bg-amber-100 text-amber-700'
+    }
   ];
 
   return (
-    <section id="leaderboard" className="py-16 md:py-24 bg-[var(--surface-container-low)]">
-      <div className="container-max">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--festival-light)] text-[var(--festival-deep)] font-label-sm mb-3">
-              <span className="material-symbols-outlined text-sm">emoji_events</span>
-              <span>Volunteer Engagement</span>
-            </div>
-            <h2 className="font-headline-md text-[var(--charcoal)]">Collector Leaderboard</h2>
-            <p className="font-body-md text-[var(--on-surface-variant)]">
-              Celebrating top volunteers driving maximum vargani collections across sectors.
-            </p>
-          </div>
+    <section id="leaderboard" className="py-24 bg-white border-y border-[var(--surface-200)] relative overflow-hidden">
+      {/* Subtle Background Accent */}
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-[var(--surface-50)] to-transparent pointer-events-none" />
 
-          {/* Toggle */}
-          <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-[var(--outline-variant)]/40 shadow-sm">
-            <button
-              onClick={() => setFilter('overall')}
-              className={`px-5 py-2 rounded-lg font-label-md transition-all ${
-                filter === 'overall'
-                  ? 'bg-[var(--festival-orange)] text-white shadow-sm'
-                  : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
-              }`}
-            >
-              Overall Festival
-            </button>
-            <button
-              onClick={() => setFilter('daily')}
-              className={`px-5 py-2 rounded-lg font-label-md transition-all ${
-                filter === 'daily'
-                  ? 'bg-[var(--festival-orange)] text-white shadow-sm'
-                  : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
-              }`}
-            >
-              Today's Speed
-            </button>
-          </div>
-        </div>
-
-        {/* Grid Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="container-max relative z-10">
+        <div className="grid lg:grid-cols-12 gap-16 items-center">
           
-          {/* Table Container */}
-          <div className="lg:col-span-8 bg-white rounded-2xl overflow-hidden card-warm border border-[var(--outline-variant)]/40">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[var(--surface-container)] border-b border-[var(--outline-variant)]/40">
-                    <th className="p-5 font-label-md text-[var(--charcoal)]">Rank</th>
-                    <th className="p-5 font-label-md text-[var(--charcoal)]">Collector</th>
-                    <th className="p-5 font-label-md text-[var(--charcoal)]">Slips Issued</th>
-                    <th className="p-5 font-label-md text-[var(--charcoal)] text-right">Total Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--outline-variant)]/30">
-                  {topCollectors.map((c) => (
-                    <tr key={c.rank} className="hover:bg-[var(--surface-container-low)] transition-colors">
-                      <td className="p-5 font-headline-sm text-[var(--festival-orange)]" style={{ fontSize: '18px' }}>
-                        #{c.rank}
-                      </td>
-                      <td className="p-5">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold font-label-md"
-                            style={{ backgroundColor: c.bg, color: c.text }}
-                          >
-                            {c.avatar}
-                          </div>
-                          <div>
-                            <div className="font-label-md text-[var(--charcoal)] flex items-center gap-2">
-                              {c.name}
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-container)] text-[var(--on-surface-variant)] font-normal">
-                                {c.badge}
-                              </span>
-                            </div>
-                            <div className="text-xs text-[var(--on-surface-variant)]">{c.location}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-5 font-body-md text-[var(--charcoal)]">
-                        <span className="font-semibold">{c.receipts}</span> Receipts
-                      </td>
-                      <td className="p-5 font-headline-sm text-[var(--charcoal)] text-right" style={{ fontSize: '18px' }}>
-                        {c.amount}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Left: Copy & Context */}
+          <div className="lg:col-span-5">
+            <h2 className="font-headline-md text-[var(--charcoal-900)] mb-6">
+              Gamify collections with real-time leaderboards
+            </h2>
+            <p className="font-body-lg text-[var(--charcoal-600)] mb-8">
+              Motivate your mandal members during peak festival days. Track who is collecting the most vargani and automatically generate daily top performer reports.
+            </p>
+
+            <ul className="space-y-5 mb-10">
+              {[
+                'Member-wise collection tally',
+                'Area-wise performance heatmaps',
+                'Automated daily WhatsApp reports'
+              ].map((feature, i) => (
+                <li key={i} className="flex items-center gap-3 font-body-md text-[var(--charcoal-700)]">
+                  <div className="w-6 h-6 rounded-full bg-[var(--festival-orange-subtle)] flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-[14px] text-[var(--festival-orange-hover)]">check</span>
+                  </div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Reward Feature Card */}
-          <div className="lg:col-span-4 bg-[var(--charcoal)] text-white rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden card-warm">
-            <span
-              className="material-symbols-outlined absolute -top-6 -right-6 text-9xl opacity-10 rotate-12 pointer-events-none"
-              style={{ fontSize: '180px', color: 'var(--marigold-dim)' }}
-            >
-              emoji_events
-            </span>
-
-            <div className="relative z-10 space-y-4">
-              <span className="px-3 py-1 rounded-full bg-[var(--marigold-deep)] text-[var(--marigold-dim)] font-label-sm inline-block">
-                Festive Motivation
-              </span>
-              <h3 className="font-headline-md text-white">Gamified Volunteer Rewards</h3>
-              <p className="font-body-md text-white/80">
-                Recognize top performing field members with automatic "Mandal Guardian" digital certificates &amp; preferred seating at festival Aarti events.
-              </p>
-            </div>
-
-            <div className="relative z-10 pt-8">
-              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-md space-y-2 mb-6">
-                <div className="flex justify-between text-xs text-white/80">
-                  <span>Target Festival Vargani</span>
-                  <span className="font-semibold text-[var(--marigold-dim)]">78% Reached</span>
+          {/* Right: Interactive Component Mockup */}
+          <div className="lg:col-span-7">
+            <div className="bg-white rounded-2xl saas-shadow border border-[var(--surface-200)] overflow-hidden">
+              
+              {/* Card Header */}
+              <div className="p-6 border-b border-[var(--surface-200)] bg-[var(--surface-50)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-headline-sm text-[var(--charcoal-900)]">Top Collectors</h3>
+                  <p className="text-sm text-[var(--charcoal-500)] mt-1">Live updates from the field</p>
                 </div>
-                <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden">
-                  <div className="h-full progress-marigold w-[78%] rounded-full" />
+                
+                {/* Segmented Control */}
+                <div className="flex bg-[var(--surface-200)] p-1 rounded-lg">
+                  <button 
+                    onClick={() => setFilter('overall')}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      filter === 'overall' 
+                        ? 'bg-white text-[var(--charcoal-900)] shadow-sm' 
+                        : 'text-[var(--charcoal-600)] hover:text-[var(--charcoal-900)]'
+                    }`}
+                  >
+                    Overall
+                  </button>
+                  <button 
+                    onClick={() => setFilter('daily')}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      filter === 'daily' 
+                        ? 'bg-white text-[var(--charcoal-900)] shadow-sm' 
+                        : 'text-[var(--charcoal-600)] hover:text-[var(--charcoal-900)]'
+                    }`}
+                  >
+                    Today
+                  </button>
                 </div>
               </div>
 
-              <button className="w-full py-3.5 rounded-xl bg-[var(--festival-orange)] hover:bg-[var(--festival-deep)] font-label-md text-white transition-all text-center">
-                Onboard Volunteer Team
-              </button>
+              {/* Table Body */}
+              <div className="p-0">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[var(--surface-200)] bg-[var(--surface-50)]/50 text-xs font-semibold text-[var(--charcoal-500)] uppercase tracking-wider">
+                      <th className="px-6 py-4">Rank</th>
+                      <th className="px-6 py-4">Collector</th>
+                      <th className="px-6 py-4 text-right">Slips</th>
+                      <th className="px-6 py-4 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--surface-100)]">
+                    {topCollectors.map((collector) => (
+                      <tr key={collector.rank} className="hover:bg-[var(--surface-50)] transition-colors group">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            collector.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                            collector.rank === 2 ? 'bg-slate-100 text-slate-700' :
+                            collector.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                            'text-slate-400 font-medium'
+                          }`}>
+                            #{collector.rank}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${collector.avatar}`}>
+                              {collector.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-[var(--charcoal-900)] group-hover:text-[var(--festival-orange)] transition-colors">
+                                {collector.name}
+                              </div>
+                              <div className="text-xs text-[var(--charcoal-500)]">{collector.area}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="text-sm font-medium text-[var(--charcoal-700)]">{collector.slips}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="font-semibold text-[var(--charcoal-900)]">{collector.amount}</div>
+                          <div className={`text-xs ${collector.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                            {collector.trend} today
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Card Footer */}
+              <div className="p-4 border-t border-[var(--surface-200)] bg-[var(--surface-50)] text-center">
+                <a href="#" className="text-sm font-medium text-[var(--festival-orange)] hover:text-[var(--festival-orange-hover)] inline-flex items-center gap-1 transition-colors">
+                  View Full Report <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </a>
+              </div>
+              
             </div>
           </div>
 
         </div>
-
       </div>
     </section>
   );

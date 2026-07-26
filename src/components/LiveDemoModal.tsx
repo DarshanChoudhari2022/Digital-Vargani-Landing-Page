@@ -7,317 +7,273 @@ interface LiveDemoModalProps {
 }
 
 export const LiveDemoModal: React.FC<LiveDemoModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'issue' | 'expense' | 'stats'>('issue');
-  const [donorName, setDonorName] = useState('Rajesh Shinde');
-  const [phone, setPhone] = useState('9820198201');
-  const [amount, setAmount] = useState('1001');
-  const [mode, setMode] = useState('UPI');
-  const [isGenerated, setIsGenerated] = useState(false);
+  const [activeTab, setActiveTab] = useState<'collect' | 'expense'>('collect');
+  const [amount, setAmount] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [mode, setMode] = useState<'upi' | 'cash'>('upi');
+  
+  const [expenseTitle, setExpenseTitle] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
 
-  // Expense tab state
-  const [expenseTitle, setExpenseTitle] = useState('Modak & Prasad Batch');
-  const [expenseAmount, setExpenseAmount] = useState('12500');
-  const [expenseVendor, setVendor] = useState('Kaka Sweets');
-  const [expenses, setExpenses] = useState([
-    { title: 'Pandal Bamboo Structure', amount: '₹ 45,000', vendor: 'Shree Decorators', status: 'Approved' },
-    { title: 'Sound & Mic System Permit', amount: '₹ 18,000', vendor: 'Rhythm Sound', status: 'Approved' },
+  const [tally, setTally] = useState(145000);
+  const [recent, setRecent] = useState([
+    { name: 'Rahul Deshmukh', amount: 5001, type: 'in', time: 'Just now' }
   ]);
+
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   if (!isOpen) return null;
 
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsGenerated(true);
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  const fireConfetti = () => {
     confetti({
-      particleCount: 80,
+      particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#ff5722', '#c08600', '#ffdeac', '#ffffff'],
+      colors: ['#f97316', '#fb923c', '#fdba74']
     });
   };
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const handleCollectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setExpenses([
-      { title: expenseTitle, amount: `₹ ${expenseAmount}`, vendor: expenseVendor, status: 'Pending Review' },
-      ...expenses,
-    ]);
-    setExpenseTitle('');
-    setExpenseAmount('');
-    setVendor('');
+    if (!amount || !name) return;
+    
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setTally(prev => prev + parseInt(amount));
+      setRecent(prev => [{ name, amount: parseInt(amount), type: 'in', time: 'Just now' }, ...prev].slice(0, 3));
+      fireConfetti();
+      setSuccessMsg(`Successfully collected ₹${amount} from ${name}`);
+      setAmount('');
+      setName('');
+      setPhone('');
+      
+      setTimeout(() => setSuccessMsg(''), 4000);
+    }, 800);
+  };
+
+  const handleExpenseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseAmount || !expenseTitle) return;
+    
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setTally(prev => prev - parseInt(expenseAmount));
+      setRecent(prev => [{ name: expenseTitle, amount: parseInt(expenseAmount), type: 'out', time: 'Just now' }, ...prev].slice(0, 3));
+      setSuccessMsg(`Logged expense: ${expenseTitle} for ₹${expenseAmount}`);
+      setExpenseAmount('');
+      setExpenseTitle('');
+      
+      setTimeout(() => setSuccessMsg(''), 4000);
+    }, 800);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-scale-in">
-      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto card-warm border border-[var(--outline-variant)]/40 relative">
+    <div 
+      className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-up"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-[var(--surface-50)] rounded-3xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden shadow-2xl relative my-auto animate-scale-in">
         
-        {/* Modal Header */}
-        <div className="sticky top-0 bg-[#1c1b1b] text-white p-6 rounded-t-3xl flex justify-between items-center z-10">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--festival-orange)] text-2xl">science</span>
-            <div>
-              <h3 className="font-headline-sm text-white">Digital Vargani Interactive Sandbox</h3>
-              <p className="text-xs text-white/70">Test real-time slip generation and mandal expense audit</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[var(--charcoal-500)] hover:text-[var(--charcoal-900)] saas-shadow transition-colors"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
 
-        {/* Modal Navigation Tabs */}
-        <div className="flex border-b border-[var(--outline-variant)]/30 px-6 pt-4 bg-[var(--surface-container-low)] gap-3">
-          <button
-            onClick={() => setActiveTab('issue')}
-            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
-              activeTab === 'issue'
-                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
-                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
-            }`}
-          >
-            1. Issue Slip (Field Member)
-          </button>
-          <button
-            onClick={() => setActiveTab('expense')}
-            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
-              activeTab === 'expense'
-                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
-                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
-            }`}
-          >
-            2. Mandal Expense Log
-          </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
-              activeTab === 'stats'
-                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
-                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
-            }`}
-          >
-            3. Live Dashboard Tally
-          </button>
-        </div>
+        {/* Left Side: Real-time Dashboard */}
+        <div className="md:w-5/12 bg-[var(--charcoal-900)] p-8 text-white flex flex-col justify-center relative overflow-hidden">
+           {/* Abstract Glow */}
+           <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--festival-orange)] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
 
-        {/* Tab 1: Issue Slip */}
-        {activeTab === 'issue' && (
-          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <form onSubmit={handleGenerate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Donor Name</label>
-                <input
-                  type="text"
-                  value={donorName}
-                  onChange={(e) => setDonorName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md"
-                  required
-                />
+           <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-white mb-8 border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Live Demo Environment
               </div>
 
+              <div className="mb-10">
+                <div className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Total Mandal Balance</div>
+                <div className="font-display-lg text-white tabular-nums tracking-tight">
+                  ₹ {tally.toLocaleString('en-IN')}
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/10 backdrop-blur-sm">
+                <div className="text-sm font-medium text-slate-300 mb-4">Recent Activity</div>
+                <div className="space-y-4">
+                  {recent.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center animate-fade-up">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.type === 'in' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          <span className="material-symbols-outlined text-[16px]">
+                            {item.type === 'in' ? 'arrow_downward' : 'arrow_upward'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-white">{item.name}</div>
+                          <div className="text-[10px] text-slate-400">{item.time}</div>
+                        </div>
+                      </div>
+                      <div className={`text-sm font-semibold tabular-nums ${item.type === 'in' ? 'text-green-400' : 'text-red-400'}`}>
+                        {item.type === 'in' ? '+' : '-'} ₹{item.amount.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Right Side: Interactive Forms */}
+        <div className="md:w-7/12 bg-white p-8 sm:p-12">
+          
+          <div className="flex gap-2 mb-8 bg-[var(--surface-100)] p-1.5 rounded-xl">
+            <button 
+              onClick={() => setActiveTab('collect')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'collect' 
+                  ? 'bg-white text-[var(--charcoal-900)] saas-shadow' 
+                  : 'text-[var(--charcoal-500)] hover:text-[var(--charcoal-900)]'
+              }`}
+            >
+              Collect Vargani
+            </button>
+            <button 
+              onClick={() => setActiveTab('expense')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'expense' 
+                  ? 'bg-white text-[var(--charcoal-900)] saas-shadow' 
+                  : 'text-[var(--charcoal-500)] hover:text-[var(--charcoal-900)]'
+              }`}
+            >
+              Log Expense
+            </button>
+          </div>
+
+          {successMsg && (
+            <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-xl flex items-center gap-3 animate-scale-in">
+              <span className="material-symbols-outlined text-green-500">check_circle</span>
+              <span className="text-sm font-medium">{successMsg}</span>
+            </div>
+          )}
+
+          {activeTab === 'collect' ? (
+            <form onSubmit={handleCollectSubmit} className="space-y-5 animate-fade-up">
               <div>
-                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Mobile Number (WhatsApp)</label>
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md"
+                <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Contribution Amount (₹)</label>
+                <input 
+                  type="number" 
                   required
+                  placeholder="e.g. 5001"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  className="w-full bg-[var(--surface-50)] border border-[var(--surface-200)] px-4 py-3 rounded-xl focus:outline-none focus:border-[var(--festival-orange)] focus:ring-2 focus:ring-[var(--festival-orange)]/20 transition-all font-body-md text-[var(--charcoal-900)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Amount (₹)</label>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md font-bold text-[var(--festival-orange)]"
+                  <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Donor Name</label>
+                  <input 
+                    type="text" 
                     required
+                    placeholder="Enter name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full bg-[var(--surface-50)] border border-[var(--surface-200)] px-4 py-3 rounded-xl focus:outline-none focus:border-[var(--festival-orange)] focus:ring-2 focus:ring-[var(--festival-orange)]/20 transition-all text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Payment Mode</label>
-                  <select
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md bg-white"
-                  >
-                    <option value="UPI">UPI Direct</option>
-                    <option value="Cash">Cash Handover</option>
-                    <option value="Cheque">Bank Cheque</option>
-                  </select>
+                  <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    placeholder="For WhatsApp receipt"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    className="w-full bg-[var(--surface-50)] border border-[var(--surface-200)] px-4 py-3 rounded-xl focus:outline-none focus:border-[var(--festival-orange)] focus:ring-2 focus:ring-[var(--festival-orange)]/20 transition-all text-sm"
+                  />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 rounded-xl font-label-md text-white shadow-md hover-lift transition-all"
-                style={{ backgroundColor: 'var(--festival-orange)' }}
+              <div>
+                <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Payment Mode</label>
+                <div className="flex gap-4">
+                  <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
+                    mode === 'upi' ? 'border-[var(--festival-orange)] bg-[var(--festival-orange-subtle)] text-[var(--festival-orange-hover)]' : 'border-[var(--surface-200)] text-[var(--charcoal-600)] hover:bg-[var(--surface-50)]'
+                  }`}>
+                    <input type="radio" name="mode" className="hidden" checked={mode === 'upi'} onChange={() => setMode('upi')} />
+                    <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                    <span className="font-medium text-sm">UPI</span>
+                  </label>
+                  <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
+                    mode === 'cash' ? 'border-[var(--festival-orange)] bg-[var(--festival-orange-subtle)] text-[var(--festival-orange-hover)]' : 'border-[var(--surface-200)] text-[var(--charcoal-600)] hover:bg-[var(--surface-50)]'
+                  }`}>
+                    <input type="radio" name="mode" className="hidden" checked={mode === 'cash'} onChange={() => setMode('cash')} />
+                    <span className="material-symbols-outlined text-[20px]">payments</span>
+                    <span className="font-medium text-sm">Cash</span>
+                  </label>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-[var(--festival-orange)] hover:bg-[var(--festival-orange-hover)] text-white py-4 rounded-xl font-semibold text-base transition-colors saas-shadow mt-4 disabled:opacity-70 flex justify-center items-center h-[56px]"
               >
-                Generate &amp; Send WhatsApp Slip
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Generate Vargani Slip'}
               </button>
+              <p className="text-center text-[11px] text-[var(--charcoal-500)] mt-3 flex items-center justify-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">lock</span>
+                Demo mode: No actual data is saved.
+              </p>
             </form>
-
-            {/* Slip Preview Box */}
-            <div className="bg-[var(--surface-container-low)] p-6 rounded-2xl border border-[var(--outline-variant)]/40 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center pb-3 mb-3 border-b border-[var(--outline-variant)]/30 text-xs font-label-sm text-[var(--on-surface-variant)]">
-                  <span>Lalbaugcha Raja Mandal</span>
-                  <span className="text-green-700 font-bold">LIVE PREVIEW</span>
-                </div>
-
-                {isGenerated ? (
-                  <div className="space-y-3 bg-white p-5 rounded-xl border border-green-200 shadow-sm animate-scale-in">
-                    <div className="flex items-center gap-2 text-green-700 font-label-md text-sm">
-                      <span className="material-symbols-outlined text-lg">check_circle</span>
-                      Receipt #VG-2026-9041 Generated
-                    </div>
-
-                    <div className="text-2xl font-display-lg text-[var(--charcoal)]">{donorName}</div>
-                    <div className="text-3xl font-display-lg text-[var(--festival-orange)]">₹ {amount}</div>
-
-                    <div className="text-xs text-[var(--on-surface-variant)] space-y-1 font-body-md pt-2 border-t border-gray-100">
-                      <div>Phone: +91 {phone}</div>
-                      <div>Mode: {mode} Direct</div>
-                      <div>Date: {new Date().toLocaleDateString('en-IN')}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-xs text-[var(--on-surface-variant)]">
-                    Fill the form on the left to simulate instant slip creation.
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 text-center">
-                <span className="text-[11px] text-[var(--on-surface-variant)]">
-                  Simulating WhatsApp API dispatch &amp; SMS delivery pipeline
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Expense Log */}
-        {activeTab === 'expense' && (
-          <div className="p-8 space-y-6">
-            <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-[var(--surface-container-low)] p-4 rounded-2xl border border-[var(--outline-variant)]/40">
-              <div>
-                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Expense Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Modak Prasad"
-                  value={expenseTitle}
-                  onChange={(e) => setExpenseTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md"
+          ) : (
+            <form onSubmit={handleExpenseSubmit} className="space-y-5 animate-fade-up">
+               <div>
+                <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Expense Amount (₹)</label>
+                <input 
+                  type="number" 
                   required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Amount (₹)</label>
-                <input
-                  type="number"
-                  placeholder="12500"
+                  placeholder="e.g. 15000"
                   value={expenseAmount}
-                  onChange={(e) => setExpenseAmount(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md font-bold"
-                  required
+                  onChange={e => setExpenseAmount(e.target.value)}
+                  className="w-full bg-[var(--surface-50)] border border-[var(--surface-200)] px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all font-body-md text-[var(--charcoal-900)]"
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Vendor / Payee</label>
-                <input
-                  type="text"
-                  placeholder="Kaka Sweets"
-                  value={expenseVendor}
-                  onChange={(e) => setVendor(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md"
+                <label className="block text-sm font-semibold text-[var(--charcoal-700)] mb-2">Expense Description</label>
+                <input 
+                  type="text" 
                   required
+                  placeholder="e.g. Mandap Decoration Advance"
+                  value={expenseTitle}
+                  onChange={e => setExpenseTitle(e.target.value)}
+                  className="w-full bg-[var(--surface-50)] border border-[var(--surface-200)] px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all text-sm"
                 />
               </div>
-              <button
-                type="submit"
-                className="py-2.5 rounded-xl font-label-md text-white text-xs shadow-sm"
-                style={{ backgroundColor: 'var(--festival-orange)' }}
+
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-xl font-semibold text-base transition-colors saas-shadow mt-4 disabled:opacity-70 flex justify-center items-center h-[56px]"
               >
-                Log Expense Voucher
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Log Expense & Update Tally'}
               </button>
             </form>
+          )}
 
-            <div className="space-y-3">
-              <h4 className="font-headline-sm text-sm text-[var(--charcoal)]">Mandal Expense Audit Ledger</h4>
-              <div className="bg-white rounded-2xl border border-[var(--outline-variant)]/40 overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="bg-[var(--surface-container)]">
-                    <tr>
-                      <th className="p-3 font-label-md">Item Description</th>
-                      <th className="p-3 font-label-md">Vendor</th>
-                      <th className="p-3 font-label-md">Amount</th>
-                      <th className="p-3 font-label-md">Audit Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {expenses.map((exp, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="p-3 font-semibold text-[var(--charcoal)]">{exp.title}</td>
-                        <td className="p-3 text-[var(--on-surface-variant)]">{exp.vendor}</td>
-                        <td className="p-3 font-bold text-[var(--festival-deep)]">{exp.amount}</td>
-                        <td className="p-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-label-sm bg-yellow-100 text-yellow-800">
-                            {exp.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Live Dashboard Tally */}
-        {activeTab === 'stats' && (
-          <div className="p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--festival-orange)]">
-                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Total Vargani Collected</div>
-                <div className="text-3xl font-display-lg text-[var(--festival-orange)] mt-2">₹ 4,82,500</div>
-                <div className="text-[11px] text-green-700 mt-1 font-label-md">↑ +18% vs Last Festival</div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--marigold-deep)]">
-                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Receipt Slips Issued</div>
-                <div className="text-3xl font-display-lg text-[var(--charcoal)] mt-2">842 Slips</div>
-                <div className="text-[11px] text-[var(--on-surface-variant)] mt-1 font-label-md">Avg ₹573 / slip</div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--secondary)]">
-                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Active Field Collectors</div>
-                <div className="text-3xl font-display-lg text-[var(--charcoal)] mt-2">48 Volunteers</div>
-                <div className="text-[11px] text-[var(--on-surface-variant)] mt-1 font-label-md">Peak speed: 42 slips/hr</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Footer */}
-        <div className="p-6 bg-[var(--surface-container-low)] rounded-b-3xl border-t border-[var(--outline-variant)]/30 flex justify-between items-center text-xs">
-          <span className="text-[var(--on-surface-variant)]">
-            Digital Mandal Sandbox — Multi-tenant Audit Engine
-          </span>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-[var(--charcoal)] text-white font-label-md hover:bg-black transition-colors"
-          >
-            Close Sandbox
-          </button>
         </div>
-
       </div>
     </div>
   );
