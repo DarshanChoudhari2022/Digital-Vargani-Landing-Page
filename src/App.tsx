@@ -164,6 +164,23 @@ interface DemoMandal {
   name: string;
 }
 
+interface LocalExpense {
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+  paidBy: string;
+  refund: string;
+  vendor: string;
+}
+
+interface LocalTask {
+  assignee: string;
+  due: string;
+  status: string;
+  task: string;
+}
+
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const DEMO_MANDALS_KEY = 'digital-vargani-demo-mandals';
@@ -492,25 +509,6 @@ const adhyakshNavItems: Array<{ id: AdhyakshScreen; icon: ReactNode; label: stri
   { id: 'logs', icon: <ClipboardList size={20} />, label: 'System Logs' },
 ];
 
-const demoMemberRows = [
-  { contact: '9284729592', name: 'Pramod', paid: false, role: 'Member', vargani: 1500 },
-  { contact: '7263988364', name: 'Karan Barathe', paid: false, role: 'Member', vargani: 1500 },
-  { contact: '9822737812', name: 'Sahil Dhiwar', paid: false, role: 'Member', vargani: 1500 },
-  { contact: '9922931393', name: 'Shubham Barathe', paid: false, role: 'Member', vargani: 1500 },
-  { contact: '9284729593', name: 'Amit Jadhav', paid: true, role: 'Khajindar', vargani: 2100 },
-];
-
-const demoTasks = [
-  { assignee: 'Decoration Team', due: '28/07/2026', status: 'OPEN', task: 'Finalize Ganpati idol transport route' },
-  { assignee: 'Sound Team', due: '30/07/2026', status: 'IN PROGRESS', task: 'Collect speaker vendor quotations' },
-  { assignee: 'Khajindar', due: '01/08/2026', status: 'OPEN', task: 'Verify pending shop collections in Ramtekdi' },
-];
-
-const demoExpenses = [
-  { amount: 3500, category: 'Miscellaneous', date: '2026-03-18', description: 'System', paidBy: 'Pramod', refund: 'PENDING', vendor: 'Creative Mark' },
-  { amount: 12500, category: 'Decoration', date: '2026-07-20', description: 'Mandap advance', paidBy: 'Khajindar', refund: 'APPROVED', vendor: 'Pune Decor' },
-];
-
 function AdhyakshApp({
   activeTemplate,
   activeForm,
@@ -564,21 +562,101 @@ function AdhyakshApp({
   const [entryOpen, setEntryOpen] = useState(false);
   const [memberOpen, setMemberOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
-  const memberRows = members.length > 0
-    ? members.map((member) => ({
-      contact: member.user?.phone ?? member.phone ?? '-',
-      name: member.displayName,
-      paid: false,
-      role: member.user?.role.replaceAll('_', ' ') ?? 'Member',
-      vargani: 1500,
-    }))
-    : demoMemberRows;
-  const slipRows = slips.length > 0 ? slips : demoSlipRows();
-  const totalSlipCollection = slipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0);
+  const [localNotice, setLocalNotice] = useState('');
+  const [slipFilter, setSlipFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [hiddenSlipIds, setHiddenSlipIds] = useState<string[]>([]);
+  const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
+  const [localTasks, setLocalTasks] = useState<LocalTask[]>([]);
+  const memberRows = members.map((member) => ({
+    contact: member.user?.phone ?? member.phone ?? '-',
+    name: member.displayName,
+    paid: false,
+    role: member.user?.role.replaceAll('_', ' ') ?? 'Member',
+    vargani: 0,
+  }));
+  const slipRows = slips.filter((slip) => !hiddenSlipIds.includes(slip.id));
+  const paidSlipRows = slipRows.filter(isSlipPaid);
+  const pendingSlipRows = slipRows.filter((slip) => !isSlipPaid(slip));
+  const filteredSlipRows =
+    slipFilter === 'paid' ? paidSlipRows : slipFilter === 'pending' ? pendingSlipRows : slipRows;
+  const totalSlipCollection = paidSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0);
   const memberVargani = memberRows.filter((member) => member.paid).reduce((sum, member) => sum + member.vargani, 0);
   const pendingMemberVargani = memberRows.filter((member) => !member.paid).reduce((sum, member) => sum + member.vargani, 0);
-  const expensesTotal = demoExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const expensesTotal = localExpenses.reduce((sum, item) => sum + item.amount, 0);
   const balance = Number(report?.balance ?? totalSlipCollection + memberVargani - expensesTotal);
+  const displayNotice = busy ? 'Working...' : localNotice || notice;
+  const userRows = [
+    {
+      email: 'current-login',
+      entries: slipRows.length,
+      joined: 'Active now',
+      name: session.user.name,
+      role: session.user.role.replaceAll('_', ' '),
+    },
+    ...members.map((member) => ({
+      email: member.user?.email ?? '-',
+      entries: slipRows.filter((slip) => slip.contributorPhone && slip.contributorPhone === (member.phone ?? member.user?.phone)).length,
+      joined: 'Live member',
+      name: member.displayName,
+      role: member.user?.role.replaceAll('_', ' ') ?? 'MEMBER',
+    })),
+  ];
+
+  function showToast(message: string) {
+    setLocalNotice(message);
+    window.setTimeout(() => setLocalNotice(''), 2800);
+  }
+
+  function saveTemplate(placements: Record<string, TemplatePlacement>) {
+    window.localStorage.setItem('digital-vargani-adhyaksh-template', JSON.stringify({
+      placements,
+      savedAt: new Date().toISOString(),
+      templatePreview,
+    }));
+    showToast('Template saved successfully.');
+  }
+
+  function saveExpense(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const expense: LocalExpense = {
+      amount: Number(form.get('amount') || 0),
+      category: String(form.get('category') || 'Miscellaneous'),
+      date: String(form.get('date') || new Date().toISOString().slice(0, 10)),
+      description: String(form.get('description') || 'Expense'),
+      paidBy: String(form.get('paidBy') || session.user.name),
+      refund: 'PENDING',
+      vendor: String(form.get('vendor') || '-'),
+    };
+    setLocalExpenses((current) => [expense, ...current]);
+    setExpenseOpen(false);
+    showToast('Expense saved successfully.');
+  }
+
+  function addTask() {
+    const title = window.prompt('Task name');
+    if (!title?.trim()) return;
+    setLocalTasks((current) => [{
+      assignee: session.user.name,
+      due: new Date().toISOString().slice(0, 10),
+      status: 'OPEN',
+      task: title.trim(),
+    }, ...current]);
+    showToast('Task added successfully.');
+  }
+
+  function completeTask(taskName: string) {
+    setLocalTasks((current) => current.map((task) => (
+      task.task === taskName ? { ...task, status: 'DONE' } : task
+    )));
+    showToast('Task marked complete.');
+  }
+
+  async function shareSlip(slip: Slip) {
+    const text = `Vargani slip ${slip.slipNumber} - ${slip.contributorName} - ${money(Number(slip.amount))}`;
+    await navigator.clipboard?.writeText(text);
+    showToast('Slip share text copied.');
+  }
 
   function closeSidebar() {
     setSidebarOpen(false);
@@ -648,7 +726,7 @@ function AdhyakshApp({
             <div className="top-user mini"><span>{session.user.name.charAt(0)}</span><div><strong>{session.user.name}</strong><small>{session.user.role.replaceAll('_', ' ')}</small></div></div>
           </div>
         </header>
-        <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
+        <div className={`notice ${displayNotice ? 'show' : ''} ${busy ? 'busy' : ''}`}>{displayNotice || 'Ready.'}</div>
 
         {screen === 'members' && (
           <section className="adhyaksh-page">
@@ -674,7 +752,11 @@ function AdhyakshApp({
                   <strong>{member.name}<small>{member.role}</small></strong>
                   <span>{member.contact}</span>
                   <span><b>{money(member.vargani)}</b><i className={member.paid ? 'pill paid' : 'pill pending'}>{member.paid ? 'Paid' : 'Pending'}</i></span>
-                  <span className="row-actions"><button type="button"><Edit3 size={16} /></button><button type="button"><MessageSquare size={16} /></button><button type="button"><Trash2 size={16} /></button></span>
+                  <span className="row-actions">
+                    <button onClick={() => showToast('Member edit action opened.')} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => showToast(`Reminder prepared for ${member.name}.`)} type="button"><MessageSquare size={16} /></button>
+                    <button onClick={() => showToast('Member delete requires backend permission.')} type="button"><Trash2 size={16} /></button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -685,19 +767,23 @@ function AdhyakshApp({
           <section className="adhyaksh-page">
             <div className="wide-card action-card">
               <div><h2>Task Board (2026)</h2><span>Assign festival work and monitor open responsibilities.</span></div>
-              <button className="blue-action" type="button"><Plus size={18} />Add Task</button>
+              <button className="blue-action" onClick={addTask} type="button"><Plus size={18} />Add Task</button>
             </div>
             <div className="metric-strip">
-              <Metric label="Open Tasks" value={String(demoTasks.filter((task) => task.status !== 'DONE').length)} />
-              <Metric blue label="Teams Assigned" value={String(new Set(demoTasks.map((task) => task.assignee)).size)} />
-              <Metric green label="This Week" value="3" />
+              <Metric label="Open Tasks" value={String(localTasks.filter((task) => task.status !== 'DONE').length)} />
+              <Metric blue label="Teams Assigned" value={String(new Set(localTasks.map((task) => task.assignee)).size)} />
+              <Metric green label="This Week" value={String(localTasks.length)} />
             </div>
             <div className="ops-table">
               <div className="ops-head five"><span>Task</span><span>Assignee</span><span>Due Date</span><span>Status</span><span>Actions</span></div>
-              {demoTasks.map((task) => (
+              {localTasks.length === 0 && <EmptyTableState message="No tasks added yet." />}
+              {localTasks.map((task) => (
                 <div className="ops-row five" key={task.task}>
                   <strong>{task.task}</strong><span>{task.assignee}</span><span>{task.due}</span><i className="pill pending">{task.status}</i>
-                  <span className="row-actions"><button type="button"><CheckCircle2 size={16} /></button><button type="button"><Edit3 size={16} /></button></span>
+                  <span className="row-actions">
+                    <button onClick={() => completeTask(task.task)} type="button"><CheckCircle2 size={16} /></button>
+                    <button onClick={() => showToast('Task edit action opened.')} type="button"><Edit3 size={16} /></button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -712,10 +798,14 @@ function AdhyakshApp({
             </div>
             <div className="ops-table expenses-table">
               <div className="ops-head six"><span>Description</span><span>Vendor</span><span>Paid By</span><span>Category</span><span>Date</span><span>Amount</span><span>Refund?</span><span>Actions</span></div>
-              {demoExpenses.map((expense) => (
-                <div className="ops-row six" key={`${expense.description}-${expense.amount}`}>
+              {localExpenses.length === 0 && <EmptyTableState message="No expenses added yet." />}
+              {localExpenses.map((expense, index) => (
+                <div className="ops-row six" key={`${expense.description}-${expense.amount}-${index}`}>
                   <strong>{expense.description}</strong><span>{expense.vendor}</span><i className="pill role">{expense.paidBy}</i><span>{expense.category}</span><span>{expense.date}</span><b>{money(expense.amount)}</b><i className="pill pending">{expense.refund}</i>
-                  <span className="row-actions"><button type="button"><Edit3 size={16} /></button><button type="button"><Trash2 size={16} /></button></span>
+                  <span className="row-actions">
+                    <button onClick={() => showToast('Expense edit action opened.')} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => { setLocalExpenses((current) => current.filter((_, itemIndex) => itemIndex !== index)); showToast('Expense removed.'); }} type="button"><Trash2 size={16} /></button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -737,6 +827,7 @@ function AdhyakshApp({
               latestTemplateVersion={latestTemplateVersion}
               onAddField={() => undefined}
               onPreviewChange={onPreviewChange}
+              onSaveTemplate={saveTemplate}
               templatePreview={templatePreview}
             />
           </section>
@@ -750,32 +841,46 @@ function AdhyakshApp({
             </div>
             <div className="metric-strip five-cols">
               <Metric label="Total Entries" value={String(slipRows.length)} />
-              <Metric green label="Collected" note={`${slipRows.length} Paid`} value={money(totalSlipCollection)} />
-              <Metric red label="Pending" note="88 Pending" value={money(46726)} />
-              <Metric green label="Paid Slips" value={String(slipRows.length)} />
-              <Metric blue label="Pending Slips" value="88" />
+              <Metric green label="Collected" note={`${paidSlipRows.length} Paid`} value={money(totalSlipCollection)} />
+              <Metric red label="Pending" note={`${pendingSlipRows.length} Pending`} value={money(pendingSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0))} />
+              <Metric green label="Paid Slips" value={String(paidSlipRows.length)} />
+              <Metric blue label="Pending Slips" value={String(pendingSlipRows.length)} />
             </div>
             <div className="slip-insights">
               <div className="insight-card warning">
-                <strong>Pending Location-wise (₹46,726)</strong>
-                <div className="chips"><span>Vasti ₹32,800</span><span>Lucky wines ₹4,453</span><span>Vihar ₹3,453</span><span>Marathi school ₹1,209</span><span>Church ₹1,204</span></div>
+                <strong>Pending Location-wise ({money(pendingSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0))})</strong>
+                <div className="chips">
+                  {pendingSlipRows.length === 0 ? <span>No pending slips</span> : pendingSlipRows.map((slip) => (
+                    <span key={`${slip.id}-pending`}>{slip.areaName || 'No area'} {money(Number(slip.amount || 0))}</span>
+                  ))}
+                </div>
               </div>
               <div className="insight-card blue">
-                <strong>Slips Generated By Admin</strong>
-                <div className="chips"><span>shubham 154 Slips</span><span>sahil 20 Slips</span><span>choudharidarshan 1 Slip</span></div>
+                <strong>Slips Generated</strong>
+                <div className="chips">{slipRows.length === 0 ? <span>No slips generated</span> : <span>{slipRows.length} Live Slips</span>}</div>
               </div>
             </div>
             <div className="table-toolbar">
-              <div className="segmented"><button className="active" type="button">All ({slipRows.length})</button><button type="button">Paid</button><button type="button">Pending</button></div>
+              <div className="segmented">
+                <button className={slipFilter === 'all' ? 'active' : ''} onClick={() => setSlipFilter('all')} type="button">All ({slipRows.length})</button>
+                <button className={slipFilter === 'paid' ? 'active' : ''} onClick={() => setSlipFilter('paid')} type="button">Paid ({paidSlipRows.length})</button>
+                <button className={slipFilter === 'pending' ? 'active' : ''} onClick={() => setSlipFilter('pending')} type="button">Pending ({pendingSlipRows.length})</button>
+              </div>
               <label className="search-inline"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, location, admin, date..." /></label>
             </div>
             <div className="ops-table slips-table">
               <div className="ops-head six"><span>Slip #</span><span>Name / Shop</span><span>Amount</span><span>Mobile</span><span>Status / Mode</span><span>Date / Info</span><span>Actions</span></div>
-              {slipRows.map((slip) => (
+              {filteredSlipRows.length === 0 && <EmptyTableState message="No slips found for this filter." />}
+              {filteredSlipRows.map((slip) => (
                 <div className="ops-row six" key={slip.id}>
                   <b>{slip.slipNumber}</b><strong>{slip.contributorName}<small>{slip.shopName ?? '-'}</small></strong><b>{money(Number(slip.amount))}</b><span>{slip.contributorPhone ?? '-'}</span>
-                  <span><i className="pill paid">Paid</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
-                  <span className="row-actions"><button onClick={() => setSelectedSlip(slip)} type="button"><Edit3 size={16} />Edit</button><a className="mini-link" href={selectedSlip?.id === slip.id ? receiptUrl : '#'} target="_blank"><Download size={16} />Slip</a><button type="button"><Share2 size={16} />Share</button></span>
+                  <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
+                  <span className="row-actions">
+                    <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
+                    <a className="mini-link" href={selectedSlip?.id === slip.id ? receiptUrl : '#'} onClick={() => { setSelectedSlip(slip); if (selectedSlip?.id !== slip.id) showToast('Slip selected. Click Slip again to open the receipt.'); }} target="_blank"><Download size={16} />Slip</a>
+                    <button onClick={() => { void shareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
+                    <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -789,18 +894,18 @@ function AdhyakshApp({
               <label className="search-inline"><Search size={18} /><input placeholder="Search users..." /></label>
             </div>
             <div className="metric-strip">
-              <Metric label="Total Users" value="10" />
-              <Metric blue label="Admins" value="2" />
-              <Metric blue label="Sub-admins" value="8" />
+              <Metric label="Total Users" value={String(userRows.length)} />
+              <Metric blue label="Admins" value={String(userRows.filter((user) => user.role.includes('ADMIN')).length)} />
+              <Metric blue label="Members" value={String(userRows.filter((user) => !user.role.includes('ADMIN')).length)} />
               <Metric green label="Total Entries" value={String(slipRows.length)} />
             </div>
             <div className="ops-table users-table">
               <div className="ops-head five"><span>User</span><span>Email</span><span>Role</span><span>Entries</span><span>Actions</span></div>
-              {['choudharidarshan556', 'darshanchoudhari47', 'digitalwithpr', 'test'].map((user, index) => (
-                <div className="ops-row five" key={user}>
-                  <strong><span className="avatar tiny">{user.charAt(0).toUpperCase()}</span>{user}<small>Joined {13 + index}/3/2026</small></strong>
-                  <span>{user}@gmail.com</span><i className="pill role">{index % 2 === 0 ? 'Admin' : 'Sub-admin'}</i><span>{index === 0 ? 1 : 0}</span>
-                  <span className="row-actions"><button type="button"><UserCog size={16} />Edit Role</button></span>
+              {userRows.map((user) => (
+                <div className="ops-row five" key={`${user.name}-${user.email}`}>
+                  <strong><span className="avatar tiny">{user.name.charAt(0).toUpperCase()}</span>{user.name}<small>{user.joined}</small></strong>
+                  <span>{user.email}</span><i className="pill role">{user.role}</i><span>{user.entries}</span>
+                  <span className="row-actions"><button onClick={() => showToast('Role edit action opened.')} type="button"><UserCog size={16} />Edit Role</button></span>
                 </div>
               ))}
             </div>
@@ -815,6 +920,7 @@ function AdhyakshApp({
             </div>
             <div className="ops-table logs-table">
               <div className="ops-head"><span>Time & Date</span><span>User</span><span>Action</span><span>Details</span></div>
+              {slipRows.length === 0 && <EmptyTableState message="No activity yet." />}
               {slipRows.slice(0, 8).map((slip, index) => (
                 <div className="ops-row" key={`${slip.id}-log`}>
                   <span><b>{slip.createdAt.slice(0, 10)}</b><small>{index + 4}:09 PM</small></span>
@@ -865,15 +971,15 @@ function AdhyakshApp({
 
       {expenseOpen && (
         <div className="modal-backdrop">
-          <form className="vargani-modal adhyaksh-modal" onSubmit={(event) => { event.preventDefault(); setExpenseOpen(false); }}>
+          <form className="vargani-modal adhyaksh-modal" onSubmit={saveExpense}>
             <button className="modal-close" onClick={() => setExpenseOpen(false)} type="button"><X size={20} /></button>
             <h2>Add Expense</h2>
-            <label>Description<input required placeholder="Expense description" /></label>
-            <label>Vendor<input placeholder="Vendor name" /></label>
-            <label>Paid By<input placeholder="Member name" /></label>
-            <label>Category<input placeholder="Decoration, sound..." /></label>
-            <label>Date<input type="date" /></label>
-            <label>Amount<input inputMode="numeric" required placeholder="3500" /></label>
+            <label>Description<input name="description" required placeholder="Expense description" /></label>
+            <label>Vendor<input name="vendor" placeholder="Vendor name" /></label>
+            <label>Paid By<input name="paidBy" placeholder="Member name" /></label>
+            <label>Category<input name="category" placeholder="Decoration, sound..." /></label>
+            <label>Date<input name="date" type="date" /></label>
+            <label>Amount<input name="amount" inputMode="numeric" required placeholder="3500" /></label>
             <div className="modal-actions"><button type="button" onClick={() => setExpenseOpen(false)}>Cancel</button><button className="blue-action" type="submit">Save Expense</button></div>
           </form>
         </div>
@@ -892,14 +998,13 @@ function Metric({ blue, green, label, note, red, value }: { blue?: boolean; gree
   );
 }
 
-function demoSlipRows(): Slip[] {
-  return [
-    { amount: 1500, areaName: 'Ramtekdi', contributorName: 'Darshan OKNDk', contributorPhone: '8601605165', createdAt: '2026-07-26T16:09:00.000Z', id: 'demo-1', paymentMode: 'CASH', shopName: 'sdc', slipNumber: '020PEA' },
-    { amount: 498, areaName: 'Ramtekdi', contributorName: 'Embassy', contributorPhone: '8605899626', createdAt: '2026-07-26T16:09:00.000Z', id: 'demo-2', paymentMode: 'UPI', shopName: 'Pratik', slipNumber: 'QM6GH1' },
-    { amount: 2000, areaName: 'Market', contributorName: 'Vikas Barathe', contributorPhone: '9595013131', createdAt: '2026-04-13T16:09:00.000Z', id: 'demo-3', paymentMode: 'CASH', shopName: 'Vikas Barathe', slipNumber: 'MNLR8H' },
-    { amount: 500, areaName: 'Market', contributorName: 'Major Sameer Scrap', contributorPhone: '9922891559', createdAt: '2026-04-10T16:09:00.000Z', id: 'demo-4', paymentMode: 'CASH', shopName: 'Major Sameer Scrap', slipNumber: 'PMQOSG' },
-    { amount: 500, areaName: 'Market', contributorName: 'Lucky Scrap', contributorPhone: '9823505495', createdAt: '2026-04-10T16:09:00.000Z', id: 'demo-5', paymentMode: 'CASH', shopName: 'Lucky scrap', slipNumber: 'HYMUE9' },
-  ];
+function EmptyTableState({ message }: { message: string }) {
+  return (
+    <div className="empty-state inline">
+      <ReceiptText size={28} />
+      <strong>{message}</strong>
+    </div>
+  );
 }
 
 function AdminTopbar({ session }: { session: AuthSession }) {
@@ -1520,6 +1625,7 @@ function TemplateView({
   latestTemplateVersion,
   onAddField,
   onPreviewChange,
+  onSaveTemplate,
   templatePreview,
 }: {
   activeForm: ActiveForm | null;
@@ -1527,6 +1633,7 @@ function TemplateView({
   latestTemplateVersion?: Template['versions'][number];
   onAddField: (label: string, required?: boolean) => void;
   onPreviewChange: (url: string) => void;
+  onSaveTemplate?: (placements: Record<string, TemplatePlacement>) => void;
   templatePreview: string;
 }) {
   type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -1870,7 +1977,7 @@ function TemplateView({
             />
           </label>
           <button type="button"><SlidersHorizontal size={18} />Slip Size</button>
-          <button type="button"><CheckCircle2 size={18} />Save Template</button>
+          <button onClick={() => onSaveTemplate?.(placements)} type="button"><CheckCircle2 size={18} />Save Template</button>
         </div>
         <div className="template-canvas">
           <div
@@ -2184,6 +2291,10 @@ function sampleFieldValue(key: string, label: string) {
   };
 
   return samples[key] ?? label;
+}
+
+function isSlipPaid(slip: Slip) {
+  return (slip.status ?? 'PAID').toUpperCase() !== 'PENDING';
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {

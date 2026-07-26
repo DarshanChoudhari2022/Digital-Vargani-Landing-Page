@@ -692,6 +692,13 @@ kbd {
   font-size: 20px;
 }
 
+.empty-state.inline {
+  border-top: 1px solid #edf0f3;
+  grid-column: 1 / -1;
+  min-height: 160px;
+  padding: 30px 18px;
+}
+
 .toolbar,
 .table-toolbar {
   align-items: center;
