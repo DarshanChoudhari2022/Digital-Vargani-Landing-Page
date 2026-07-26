@@ -12,41 +12,41 @@ export const HeroSection: React.FC = () => {
         textAlign: 'center',
       }}
     >
-      {/* Background radial glow effect */}
+      {/* Warm festival radial glow effect */}
       <div
         style={{
           position: 'absolute',
           top: '-15%',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 800,
-          height: 600,
-          background: 'radial-gradient(ellipse at center, rgba(254, 215, 170, 0.4) 0%, rgba(253, 230, 138, 0.15) 50%, transparent 75%)',
+          width: 900,
+          height: 650,
+          background: 'radial-gradient(ellipse at center, rgba(254, 215, 170, 0.45) 0%, rgba(253, 230, 138, 0.2) 50%, transparent 75%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
       />
 
-      <div className="container-main" style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-        {/* Top Badge Pill */}
+      <div className="container-main" style={{ position: 'relative', zIndex: 1, maxWidth: 1050 }}>
+        {/* Top Festival Pill Badge */}
         <div
           className="anim-fade-up"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
-            padding: '6px 16px',
+            gap: 8,
+            padding: '6px 18px',
             borderRadius: 999,
             background: '#ffedd5',
             color: '#ea580c',
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             letterSpacing: '0.02em',
             marginBottom: 20,
             border: '1px solid #fed7aa',
           }}
         >
-          <span style={{ fontSize: 14 }}>🚩</span> Ultimate Festival OS
+          <span style={{ fontSize: 16 }}>🚩</span> श्री उत्सव व्यवस्थापन सिस्टीम · Festival OS
         </div>
 
         {/* Hero Title */}
@@ -59,15 +59,15 @@ export const HeroSection: React.FC = () => {
             letterSpacing: '-0.035em',
             color: '#0f172a',
             margin: '0 auto 20px',
-            maxWidth: 820,
+            maxWidth: 860,
             fontFamily: 'var(--font-body)',
           }}
         >
-          Effortless <br />
+          Effortless Festival <br />
           Collection{' '}
           <span
             style={{
-              background: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #d97706 100%)',
+              background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
@@ -82,13 +82,13 @@ export const HeroSection: React.FC = () => {
           style={{
             fontSize: 'clamp(16px, 2vw, 19px)',
             color: '#64748b',
-            maxWidth: 580,
+            maxWidth: 600,
             margin: '0 auto 36px',
             lineHeight: 1.6,
             fontWeight: 400,
           }}
         >
-          Experience seamless financial management. Replace paper receipt books with instant Eksutra Vargani slips and live committee tracking.
+          Replace paper receipt books with authentic digital Vargani slips, instant WhatsApp receipt sharing, and real-time committee tracking.
         </p>
 
         {/* Action CTAs */}
@@ -116,11 +116,11 @@ export const HeroSection: React.FC = () => {
               fontSize: 15,
               fontWeight: 700,
               textDecoration: 'none',
-              boxShadow: '0 8px 25px rgba(234, 88, 12, 0.3)',
+              boxShadow: '0 8px 25px rgba(234, 88, 12, 0.35)',
               transition: 'transform 0.2s, box-shadow 0.2s',
             }}
           >
-            Get Started
+            Get Started Now
             <span style={{ fontSize: 16 }}>➔</span>
           </a>
 
@@ -145,7 +145,7 @@ export const HeroSection: React.FC = () => {
           </a>
         </div>
 
-        {/* Main Interactive Phone Showcase with Festival Badges */}
+        {/* Main Interactive Phone Showcase with Authentic Festival Graphic Cards */}
         <div
           className="anim-fade-up anim-delay-4"
           style={{
@@ -153,77 +153,88 @@ export const HeroSection: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            maxWidth: 900,
+            maxWidth: 960,
             margin: '0 auto',
           }}
         >
-          {/* Left Festival Logos / Badges */}
+          {/* Left Festival Graphics */}
           <div
             className="desktop-nav"
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 18,
               position: 'absolute',
-              left: 10,
-              top: '45%',
+              left: 0,
+              top: '48%',
               transform: 'translateY(-50%)',
             }}
           >
-            {/* Ganesh Utsav Badge */}
+            {/* Ganesh Utsav Graphic Card */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
-                padding: '10px 16px',
-                borderRadius: 16,
+                gap: 12,
+                padding: '12px 18px',
+                borderRadius: 20,
                 background: '#ffffff',
-                border: '1px solid #fed7aa',
-                boxShadow: '0 10px 25px rgba(249,115,22,0.12)',
+                border: '2px solid #fed7aa',
+                boxShadow: '0 12px 30px rgba(249,115,22,0.15)',
               }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ffedd5', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>temple_hindu</span>
+              {/* Ganesh / Marigold Icon Illustration */}
+              <div style={{
+                width: 42, height: 42, borderRadius: 14,
+                background: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
+                color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C9.5 2 7.5 4 7.5 6.5C7.5 8.5 9 10.2 11 10.8V14.5C9.5 14.5 8 13.8 7 12.5L5.5 13.7C6.9 15.6 9.1 16.5 11 16.5V20H13V16.5C14.9 16.5 17.1 15.6 18.5 13.7L17 12.5C16 13.8 14.5 14.5 13 14.5V10.8C15 10.2 16.5 8.5 16.5 6.5C16.5 4 14.5 2 12 2ZM12 4C13.4 4 14.5 5.1 14.5 6.5C14.5 7.9 13.4 9 12 9C10.6 9 9.5 7.9 9.5 6.5C9.5 5.1 10.6 4 12 4Z" fill="#ea580c"/>
+                </svg>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Ganesh Utsav</div>
-                <div style={{ fontSize: 10, color: '#ea580c', fontWeight: 600 }}>8,400+ Mandals</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>श्री गणेशोत्सव</div>
+                <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700 }}>8,400+ मंडळे</div>
               </div>
             </div>
 
-            {/* Navratri Utsav Badge */}
+            {/* Navratri Garba Graphic Card */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
-                padding: '10px 16px',
-                borderRadius: 16,
+                gap: 12,
+                padding: '12px 18px',
+                borderRadius: 20,
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+                border: '1px solid #fef3c7',
+                boxShadow: '0 12px 30px rgba(217,119,6,0.1)',
               }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>celebration</span>
+              <div style={{
+                width: 42, height: 42, borderRadius: 14,
+                background: '#fef3c7', color: '#d97706',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>celebration</span>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Navratri Utsav</div>
-                <div style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>3,200+ Mandals</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>नवरात्र उत्सव</div>
+                <div style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>3,200+ मंडळे</div>
               </div>
             </div>
           </div>
 
-          {/* CENTERED PHONE FRAME */}
+          {/* CENTERED PHONE FRAME (iPhone style matching screenshot) */}
           <div
             style={{
-              width: 320,
-              height: 580,
-              background: '#090d16',
+              width: 330,
+              height: 600,
+              background: '#0f172a',
               borderRadius: 44,
               border: '8px solid #1e293b',
-              boxShadow: '0 25px 60px -15px rgba(15,23,42,0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+              boxShadow: '0 30px 70px -15px rgba(15,23,42,0.35), 0 0 0 1px rgba(255,255,255,0.1)',
               overflow: 'hidden',
               position: 'relative',
               margin: '0 auto',
@@ -264,7 +275,7 @@ export const HeroSection: React.FC = () => {
             </div>
 
             {/* App Header inside Phone */}
-            <div style={{ padding: '16px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
                 <div
                   style={{
@@ -283,15 +294,15 @@ export const HeroSection: React.FC = () => {
                   R
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff' }}>Rahul Deshmukh</div>
-                  <div style={{ fontSize: 10, color: '#94a3b8' }}>Verified Collector</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>राहुल देशमुख (Collector)</div>
+                  <div style={{ fontSize: 10, color: '#fb923c', fontWeight: 600 }}>जय गणेश उत्सव मंडळ, पुणे</div>
                 </div>
               </div>
 
               <div
                 style={{
-                  width: 32,
-                  height: 32,
+                  width: 30,
+                  height: 30,
                   borderRadius: '50%',
                   background: '#1e293b',
                   color: '#e2e8f0',
@@ -300,171 +311,180 @@ export const HeroSection: React.FC = () => {
                   justifyContent: 'center',
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>notifications</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>notifications</span>
               </div>
             </div>
 
-            {/* VARGANI SLIP CARD STACK */}
-            <div style={{ padding: '12px 18px', position: 'relative', marginTop: 10 }}>
-              {/* Stack Card 3 (Back layer) */}
+            {/* AUTHENTIC VARGANI SLIP CARD (100% REMOVED ALL DEBIT CARD LOOK!) */}
+            <div style={{ padding: '10px 14px', position: 'relative' }}>
+              {/* Main Authentic Festival Slip Card Container */}
               <div
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 36,
-                  right: 36,
-                  height: 150,
+                  background: '#fff7ed',
+                  border: '2px solid #fed7aa',
                   borderRadius: 20,
-                  background: 'linear-gradient(135deg, #78350f 0%, #b45309 100%)',
-                  opacity: 0.5,
-                }}
-              />
-
-              {/* Stack Card 2 (Middle layer) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  left: 26,
-                  right: 26,
-                  height: 155,
-                  borderRadius: 20,
-                  background: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-                  opacity: 0.85,
-                }}
-              />
-
-              {/* Front Main Vargani Slip Card */}
-              <div
-                style={{
-                  position: 'relative',
-                  marginTop: 12,
-                  background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%)',
-                  borderRadius: 22,
-                  padding: '20px 20px 18px',
-                  color: '#ffffff',
-                  boxShadow: '0 15px 30px rgba(234, 88, 12, 0.4)',
+                  padding: '16px 16px 14px',
+                  color: '#0f172a',
+                  boxShadow: '0 12px 30px rgba(234, 88, 12, 0.25)',
                   textAlign: 'left',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                {/* Top header on card */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>temple_hindu</span>
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>EKSUTRA VARGANI</span>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: 999 }}>VERIFIED SLIP</span>
-                </div>
+                {/* Decorative Marigold / Festive Header Pattern */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+                  background: 'linear-gradient(90deg, #ea580c, #f59e0b, #ea580c, #f59e0b)'
+                }} />
 
-                {/* Serial Number */}
-                <div
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 17,
-                    fontWeight: 700,
-                    letterSpacing: '0.14em',
-                    marginBottom: 24,
-                    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  }}
-                >
-                  2781 8191 6671 3190
-                </div>
-
-                {/* Bottom details on card */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                {/* Mandal & Festival Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontSize: 9, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Donor Name</div>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>Suresh Patil</div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#ea580c', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      🚩 श्री गणेशोत्सव २०२६
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
+                      जय गणेश मंडळ
+                    </div>
+                  </div>
+                  <div style={{
+                    background: '#ffedd5', color: '#c2410c',
+                    padding: '3px 8px', borderRadius: 8, fontSize: 10, fontWeight: 700,
+                    border: '1px solid #fed7aa'
+                  }}>
+                    अधिकृत पावती
+                  </div>
+                </div>
+
+                {/* Receipt Serial & Date */}
+                <div style={{
+                  background: '#ffffff', borderRadius: 10, padding: '8px 12px',
+                  border: '1px solid #ffedd5', marginBottom: 12,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}>
+                  <div>
+                    <div style={{ fontSize: 9, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>पावती क्रमांक</div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>#JGM-2026-0342</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 9, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</div>
-                    <div style={{ fontSize: 16, fontWeight: 800 }}>₹ 11,000</div>
+                    <div style={{ fontSize: 9, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>दिनांक</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>२६ जुलै २०२६</div>
                   </div>
+                </div>
+
+                {/* Donor Name & Amount Details */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div style={{ background: '#ffffff', padding: '8px 10px', borderRadius: 10, border: '1px solid #f1f5f9' }}>
+                    <div style={{ fontSize: 9, color: '#64748b', fontWeight: 600 }}>वर्गणीदार (Donor)</div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>सुरेश पाटील</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8' }}>कोथरुड, पुणे</div>
+                  </div>
+
+                  <div style={{ background: '#ffedd5', padding: '8px 10px', borderRadius: 10, border: '1px solid #fed7aa' }}>
+                    <div style={{ fontSize: 9, color: '#ea580c', fontWeight: 700 }}>रक्कम (Vargani)</div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: '#c2410c', marginTop: 2 }}>₹ ११,००१</div>
+                  </div>
+                </div>
+
+                {/* Status Footer Stamp */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  paddingTop: 8, borderTop: '1px dashed #fed7aa', fontSize: 10
+                }}>
+                  <span style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    ✓ WhatsApp पावती पाठवली
+                  </span>
+                  <span style={{ color: '#64748b', fontWeight: 600 }}>प्रकार: UPI</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Action Pills under Slip Card */}
-            <div style={{ padding: '16px 20px', marginTop: 'auto', marginBottom: 20 }}>
+            <div style={{ padding: '12px 16px', marginTop: 'auto', marginBottom: 16 }}>
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-around',
                   alignItems: 'center',
                   background: '#1e293b',
-                  padding: '8px 12px',
+                  padding: '10px 12px',
                   borderRadius: 999,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#e2e8f0' }}>
-                  Add <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#334155', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>+</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#ffffff' }}>
+                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#ea580c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'white' }}>➕</span>
+                  नवीन जमा
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#e2e8f0' }}>
-                  Send <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#ea580c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'white' }}>💬</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#e2e8f0' }}>
-                  Receipt <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#334155', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🧾</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#ffffff' }}>
+                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#22c55e', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'white' }}>💬</span>
+                  WhatsApp
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Festival Logos / Badges */}
+          {/* Right Festival Graphics */}
           <div
             className="desktop-nav"
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 18,
               position: 'absolute',
-              right: 10,
-              top: '45%',
+              right: 0,
+              top: '48%',
               transform: 'translateY(-50%)',
             }}
           >
-            {/* Dahi Handi Badge */}
+            {/* Dahi Handi Graphic Card */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
-                padding: '10px 16px',
-                borderRadius: 16,
+                gap: 12,
+                padding: '12px 18px',
+                borderRadius: 20,
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+                border: '1px solid #e0f2fe',
+                boxShadow: '0 12px 30px rgba(2,132,199,0.1)',
               }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>sports_kabaddi</span>
+              <div style={{
+                width: 42, height: 42, borderRadius: 14,
+                background: '#e0f2fe', color: '#0284c7',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>sports_kabaddi</span>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Dahi Handi</div>
-                <div style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>1,500+ Pathaks</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>दहीहंडी उत्सव</div>
+                <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 600 }}>1,500+ पथके</div>
               </div>
             </div>
 
-            {/* Shiv Jayanti Badge */}
+            {/* Shiv Jayanti Graphic Card */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
-                padding: '10px 16px',
-                borderRadius: 16,
+                gap: 12,
+                padding: '12px 18px',
+                borderRadius: 20,
                 background: '#ffffff',
-                border: '1px solid #fed7aa',
-                boxShadow: '0 10px 25px rgba(249,115,22,0.12)',
+                border: '2px solid #fed7aa',
+                boxShadow: '0 12px 30px rgba(249,115,22,0.15)',
               }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ffedd5', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>fort</span>
+              <div style={{
+                width: 42, height: 42, borderRadius: 14,
+                background: '#ffedd5', color: '#ea580c',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>fort</span>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Shiv Jayanti</div>
-                <div style={{ fontSize: 10, color: '#ea580c', fontWeight: 600 }}>Community Welfare</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>शिवजयंती उत्सव</div>
+                <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700 }}>सामाजिक उपक्रम</div>
               </div>
             </div>
           </div>
