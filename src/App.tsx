@@ -148,6 +148,7 @@ export default function App() {
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
   const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
+  const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   const mandalId = session?.user.mandalId;
@@ -225,7 +226,10 @@ export default function App() {
       setSlips(slipList.items);
       setSelectedSlip(slipList.items[0] ?? null);
 
-      if (currentSession.user.mandalId) {
+      if (
+        currentSession.user.mandalId &&
+        ['KHAJINDAR', 'MANDAL_ADMIN', 'SUPER_ADMIN'].includes(currentSession.user.role)
+      ) {
         const base = `/mandals/${currentSession.user.mandalId}/festivals/${form.festival.id}`;
         const [nextGroups, nextMembers, nextTemplates, nextReport] = await Promise.all([
           apiRequest<Group[]>(`${base}/groups`, {}, currentSession),
@@ -408,6 +412,25 @@ export default function App() {
 
   const receiptUrl = selectedSlip ? `${API_BASE_URL}/vargani/slips/${selectedSlip.id}/receipt.html` : '';
 
+  if (session?.user.role === 'MEMBER') {
+    return (
+      <MemberCollectorApp
+        activeForm={activeForm}
+        busy={busy}
+        modalOpen={collectorModalOpen}
+        notice={notice}
+        onGenerate={generateSlip}
+        onLogout={logout}
+        onModalChange={setCollectorModalOpen}
+        receiptUrl={receiptUrl}
+        selectedSlip={selectedSlip}
+        session={session}
+        setSelectedSlip={setSelectedSlip}
+        slips={slips}
+      />
+    );
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -540,6 +563,181 @@ export default function App() {
           </>
         )}
       </section>
+    </main>
+  );
+}
+
+function MemberCollectorApp({
+  activeForm,
+  busy,
+  modalOpen,
+  notice,
+  onGenerate,
+  onLogout,
+  onModalChange,
+  receiptUrl,
+  selectedSlip,
+  session,
+  setSelectedSlip,
+  slips,
+}: {
+  activeForm: ActiveForm | null;
+  busy: boolean;
+  modalOpen: boolean;
+  notice: string;
+  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
+  onLogout: () => void;
+  onModalChange: (open: boolean) => void;
+  receiptUrl: string;
+  selectedSlip: Slip | null;
+  session: AuthSession;
+  setSelectedSlip: (slip: Slip) => void;
+  slips: Slip[];
+}) {
+  const collected = slips.reduce((sum, slip) => sum + Number(slip.amount), 0);
+  const paidSlips = slips.length;
+
+  return (
+    <main className="member-shell">
+      <aside className="member-sidebar">
+        <div className="mandal-profile">
+          <div className="mandal-logo">DV</div>
+          <div>
+            <h2>Akhilnayak Mitra Mandal</h2>
+            <p>Ramtekdi, Pune</p>
+          </div>
+        </div>
+        <div className="mandal-contact">
+          <span>Prathama Building, S.R.P.F. Gate No. 1</span>
+          <span>+91 9890978952</span>
+        </div>
+        <nav className="member-nav">
+          <button className="active" type="button">
+            <ReceiptText size={20} />
+            Vargani Slips
+          </button>
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <span>{session.user.name.charAt(0)}</span>
+            <div>
+              <strong>{session.user.name}</strong>
+              <small>Collection Member</small>
+            </div>
+          </div>
+          <button className="logout" onClick={onLogout} type="button">
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <section className="member-content">
+        <header className="member-header">
+          <div>
+            <h1>Vargani Slips</h1>
+            <p>{activeForm?.festival.name ?? 'Active Festival'}</p>
+          </div>
+          <select defaultValue="2026" aria-label="Active year">
+            <option value="2026">Year 2026</option>
+          </select>
+        </header>
+
+        <section className="member-hero">
+          <div>
+            <h2>Vargani Slips</h2>
+            <p>Generate and manage your vargani receipts</p>
+          </div>
+          <button className="primary" onClick={() => onModalChange(true)} type="button">
+            <Plus size={18} />
+            New Vargani Entry
+          </button>
+        </section>
+
+        <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
+
+        <section className="member-stats">
+          <Stat icon={<ReceiptText />} label="Total Entries" note="Your slips" value={String(slips.length)} />
+          <Stat icon={<BadgeIndianRupee />} label="Collected" note={`${paidSlips} paid`} value={money(collected)} />
+          <Stat icon={<CheckCircle2 />} label="Paid Slips" note="Generated receipts" value={String(paidSlips)} />
+          <Stat icon={<FileText />} label="Pending Slips" note="No slip until paid" value="0" />
+        </section>
+
+        <section className="member-table-card">
+          <div className="table-toolbar">
+            <div className="tab-strip">
+              <button className="active" type="button">All ({slips.length})</button>
+              <button type="button">Paid ({paidSlips})</button>
+              <button type="button">Pending (0)</button>
+            </div>
+            <div className="search-box"><Search size={18} /><input placeholder="Search by name, shop, location..." /></div>
+          </div>
+          <div className="member-slip-table">
+            <div className="member-slip-head">
+              <span>Slip #</span><span>Name / Shop</span><span>Amount</span><span>Mobile</span><span>Status / Mode</span><span>Date</span><span>Actions</span>
+            </div>
+            {slips.map((slip) => (
+              <button
+                className={selectedSlip?.id === slip.id ? 'member-slip-row selected' : 'member-slip-row'}
+                key={slip.id}
+                onClick={() => setSelectedSlip(slip)}
+                type="button"
+              >
+                <strong>{slip.slipNumber}</strong>
+                <span>{slip.contributorName}<small>{slip.shopName || slip.areaName || '-'}</small></span>
+                <b>{money(Number(slip.amount))}</b>
+                <span>{slip.contributorPhone || '-'}</span>
+                <em>Paid · {slip.paymentMode}</em>
+                <span>{new Date(slip.createdAt).toLocaleDateString('en-IN')}</span>
+                <a className={selectedSlip?.id === slip.id && receiptUrl ? '' : 'disabled'} href={receiptUrl || '#'} target="_blank">Slip</a>
+              </button>
+            ))}
+          </div>
+        </section>
+      </section>
+
+      {modalOpen && (
+        <div className="modal-backdrop">
+          <form
+            className="vargani-modal"
+            onSubmit={(event) => {
+              onGenerate(event);
+              onModalChange(false);
+            }}
+          >
+            <button className="modal-close" onClick={() => onModalChange(false)} type="button">x</button>
+            <div className="panel-title">
+              <ReceiptText size={22} />
+              <div>
+                <strong>New Vargani Entry</strong>
+                <span>Fill contribution details and generate slip.</span>
+              </div>
+            </div>
+            <label>Name *<input name="contributorName" required placeholder="Enter full name" /></label>
+            <label>Shop Name<input name="shopName" placeholder="Enter shop / business name" /></label>
+            <label>Amount (Rs.) *<input inputMode="numeric" name="amount" required placeholder="e.g. 1500" /></label>
+            <label>Location *<input name="areaName" required placeholder="e.g. Ramtekdi, Pune" /></label>
+            <label>Address<textarea name="contributorAddress" placeholder="Full address (optional)" /></label>
+            <label>WhatsApp Number<input name="contributorPhone" placeholder="+91 10 digit WhatsApp number" /></label>
+            {(activeForm?.customFields ?? []).map((field) => (
+              <label key={field.id}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>
+            ))}
+            <label>
+              Payment Mode *
+              <select name="paymentMode" defaultValue="CASH">
+                <option value="CASH">Cash</option>
+                <option value="UPI">Online / UPI</option>
+                <option value="CHEQUE">Cheque</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+              </select>
+            </label>
+            <div className="modal-actions">
+              <button onClick={() => onModalChange(false)} type="button">Cancel</button>
+              <button className="success" disabled={busy} type="submit"><CheckCircle2 size={18} />Confirm & Generate Slip</button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
