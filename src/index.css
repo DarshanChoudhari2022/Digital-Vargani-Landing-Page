@@ -1267,3 +1267,209 @@ kbd {
     font-size: 34px;
   }
 }
+
+@media (min-width: 1181px) {
+  button,
+  a {
+    border-radius: 12px;
+    min-height: 40px;
+    padding: 0 13px;
+  }
+
+  input,
+  select,
+  textarea {
+    border-radius: 10px;
+    min-height: 40px;
+  }
+
+  .shell {
+    grid-template-columns: 276px minmax(0, 1fr);
+  }
+
+  .sidebar,
+  .member-sidebar {
+    padding: 14px;
+  }
+
+  .brand {
+    border-radius: 18px;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .brand > span,
+  .auth-brand > span,
+  .mandal-logo,
+  .avatar {
+    border-radius: 14px;
+    height: 48px;
+    width: 48px;
+  }
+
+  .brand strong,
+  .auth-brand strong {
+    font-size: 19px;
+  }
+
+  nav {
+    gap: 7px;
+    padding: 18px 0;
+  }
+
+  nav button {
+    font-size: 15px;
+    min-height: 46px;
+    padding: 0 12px;
+  }
+
+  nav button svg {
+    height: 32px;
+    padding: 7px;
+    width: 32px;
+  }
+
+  .content {
+    gap: 16px;
+    padding: 0 22px 24px;
+  }
+
+  .app-topbar {
+    gap: 12px;
+    margin: 0 -22px;
+    min-height: 58px;
+    padding: 8px 22px;
+  }
+
+  .top-search,
+  .join-code,
+  .top-user {
+    border-radius: 13px;
+    min-height: 40px;
+    padding: 0 11px;
+  }
+
+  .top-user > span {
+    height: 34px;
+    width: 34px;
+  }
+
+  .page-header h1 {
+    font-size: 34px;
+  }
+
+  .page-header p {
+    font-size: 15px;
+    margin-top: 8px;
+  }
+
+  .notice {
+    border-radius: 14px;
+    padding: 12px 16px;
+  }
+
+  .command-hero {
+    border-radius: 22px;
+    gap: 18px;
+    min-height: 170px;
+    padding: 22px;
+  }
+
+  .command-hero span {
+    margin-bottom: 14px;
+    padding: 7px 12px;
+  }
+
+  .command-hero h2 {
+    font-size: clamp(30px, 3.3vw, 48px);
+    line-height: 1;
+  }
+
+  .command-hero p {
+    font-size: 15px;
+    margin-top: 12px;
+  }
+
+  .card,
+  .stat,
+  .mandal-card,
+  .login-panel,
+  .member-hero,
+  .member-table-card,
+  .template-stage,
+  .settings-panel,
+  .phone-preview,
+  .login-help {
+    border-radius: 20px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .panel-title {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .panel-title strong {
+    font-size: 20px;
+  }
+
+  .stats-grid,
+  .operations-grid,
+  .mandal-page-grid,
+  .split-grid,
+  .template-grid {
+    gap: 14px;
+  }
+
+  .stat {
+    min-height: 128px;
+    padding: 16px;
+  }
+
+  .stat div {
+    border-radius: 14px;
+    height: 38px;
+    margin-bottom: 8px;
+    width: 38px;
+  }
+
+  .stat strong {
+    font-size: 27px;
+  }
+
+  .status-line {
+    padding: 9px 0;
+  }
+
+  .mandal-card {
+    grid-template-columns: auto minmax(0, 1fr) 96px;
+    padding: 18px;
+  }
+
+  .mandal-card h3 {
+    font-size: 21px;
+  }
+
+  .template-canvas {
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .slip-head,
+  .member-slip-head {
+    padding: 12px 14px;
+  }
+
+  .slip-row {
+    min-height: 56px;
+    padding: 10px 14px;
+  }
+
+  .empty-state {
+    min-height: 160px;
+    padding: 24px 16px;
+  }
+}
