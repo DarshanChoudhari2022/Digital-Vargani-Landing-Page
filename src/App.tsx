@@ -150,6 +150,7 @@ interface CollectionReport {
 }
 
 interface DemoMandal {
+  _count?: { festivals?: number; members?: number; slips?: number };
   additionalMembers: string;
   address: string;
   adhyakshName: string;
@@ -163,6 +164,9 @@ interface DemoMandal {
   locality: string;
   memberCount?: string;
   name: string;
+  id?: string;
+  slug?: string;
+  status?: string;
 }
 
 interface LocalExpense {
@@ -184,10 +188,8 @@ interface LocalTask {
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
-const DEMO_MANDALS_KEY = 'digital-vargani-demo-mandals';
 const LANGUAGE_KEY = 'digital-vargani-language';
 const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
-const SUPER_ADMIN_IDENTIFIER = 'owner@digitalvargani.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
@@ -312,13 +314,7 @@ export default function App() {
     const stored = window.localStorage.getItem(SESSION_KEY);
     if (!stored) return;
     const parsed = JSON.parse(stored) as AuthSession;
-    setSession(parsed);
-    void loadWorkspace(parsed);
-  }, []);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(DEMO_MANDALS_KEY);
-    if (stored) setDemoMandals(JSON.parse(stored) as DemoMandal[]);
+    void restoreSession(parsed);
   }, []);
 
   useEffect(() => {
@@ -335,6 +331,19 @@ export default function App() {
     setNotice('Template saved successfully.');
   }
 
+  async function restoreSession(storedSession: AuthSession) {
+    try {
+      const profile = await apiRequest<{ user: AuthSession['user'] }>('/auth/me', {}, storedSession);
+      const liveSession = { ...storedSession, user: profile.user };
+      setSession(liveSession);
+      await loadWorkspace(liveSession);
+    } catch {
+      window.localStorage.removeItem(SESSION_KEY);
+      setSession(null);
+      setNotice('Session expired. Login again to continue.');
+    }
+  }
+
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -342,18 +351,6 @@ export default function App() {
     const password = String(form.get('password') || '');
     setBusy(true);
     try {
-      if (identifier === SUPER_ADMIN_IDENTIFIER && password === DEMO_PASSWORD) {
-        const ownerSession: AuthSession = {
-          accessToken: 'demo-super-admin-token',
-          refreshToken: 'demo-super-admin-refresh',
-          user: { id: 'super-admin-demo', mandalId: null, name: 'Digital Vargani Owner', role: 'SUPER_ADMIN' },
-        };
-        window.localStorage.setItem(SESSION_KEY, JSON.stringify(ownerSession));
-        setSession(ownerSession);
-        setNotice('Logged in as Digital Vargani owner.');
-        return;
-      }
-
       const nextSession = await apiRequest<AuthSession>('/auth/login', {
         body: JSON.stringify({
           identifier,
@@ -389,7 +386,16 @@ export default function App() {
   async function loadWorkspace(currentSession = session) {
     if (!currentSession) return;
     if (currentSession.user.role === 'SUPER_ADMIN' && !currentSession.user.mandalId) {
-      setNotice('Owner workspace loaded. Manage all onboarded mandals from here.');
+      setBusy(true);
+      try {
+        const response = await apiRequest<{ items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }> }>('/mandals?limit=100', {}, currentSession);
+        setDemoMandals(response.items.map(mapBackendMandal));
+        setNotice('Owner workspace loaded. Manage all onboarded mandals from here.');
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Could not load mandals.');
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     setBusy(true);
@@ -478,19 +484,41 @@ export default function App() {
     };
 
     if (session?.user.role === 'SUPER_ADMIN') {
-      const nextMandals = [newMandal, ...demoMandals];
-      setDemoMandals(nextMandals);
-      window.localStorage.setItem(DEMO_MANDALS_KEY, JSON.stringify(nextMandals));
-      event.currentTarget.reset();
-      setNotice(`${newMandal.name} added to owner dashboard.`);
+      setBusy(true);
+      try {
+        await apiRequest(
+          '/mandals',
+          {
+            body: JSON.stringify({
+              address: newMandal.address || undefined,
+              admin: {
+                email: newMandal.adminEmail,
+                name: newMandal.adhyakshName || `${newMandal.name} Admin`,
+                password: newMandal.adminPassword,
+                phone: newMandal.contactPhone || undefined,
+              },
+              city: newMandal.city || undefined,
+              contactName: newMandal.adhyakshName || undefined,
+              contactPhone: newMandal.contactPhone || undefined,
+              locality: newMandal.locality || undefined,
+              name: newMandal.name,
+              plan: 'starter',
+              state: 'Maharashtra',
+            }),
+            method: 'POST',
+          },
+          session,
+        );
+        event.currentTarget.reset();
+        await loadWorkspace(session);
+        setNotice(`${newMandal.name} added to backend and owner dashboard.`);
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Could not add mandal.');
+      } finally {
+        setBusy(false);
+      }
       return;
     }
-
-    const nextMandals = [newMandal, ...demoMandals];
-    setDemoMandals(nextMandals);
-    window.localStorage.setItem(DEMO_MANDALS_KEY, JSON.stringify(nextMandals));
-    event.currentTarget.reset();
-    setNotice(`${newMandal.name} added to the onboarding demo list.`);
   }
 
   async function generateSlip(event: FormEvent<HTMLFormElement>) {
@@ -1178,21 +1206,7 @@ function SuperAdminApp({
   sidebarOpen: boolean;
   templatePreview: string;
 }) {
-  const seedMandal: DemoMandal = {
-    additionalMembers: 'Secretary, Treasurer, Decorator Lead',
-    address: 'Prathama Building, S.R.P.F. Gate No. 1, Ramtekdi, Pune',
-    adhyakshName: 'Akhilnayak Adhyaksh',
-    adminEmail: 'admin@akhilnayak.local',
-    adminPassword: DEMO_PASSWORD,
-    city: 'Pune',
-    contactEmail: 'contact@akhilnayak.local',
-    contactPhone: '+91 9890978952',
-    khajindarName: 'Akhilnayak Khajindar',
-    locality: 'Ramtekdi',
-    memberCount: '7',
-    name: 'Akhilnayak Mitra Mandal',
-  };
-  const mandals = demoMandals.length ? demoMandals : [seedMandal];
+  const mandals = demoMandals;
   const [ownerScreen, setOwnerScreen] = useState<OwnerScreen>('dashboard');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [detailTab, setDetailTab] = useState<OwnerMandalTab>('overview');
@@ -1200,11 +1214,11 @@ function SuperAdminApp({
   const [managedIndex, setManagedIndex] = useState<number | null>(null);
   const [ownerQuery, setOwnerQuery] = useState('');
   const [mandalLogins, setMandalLogins] = useState<Record<string, Array<{ role: string; username: string; password: string }>>>({});
-  const selectedMandal = mandals[Math.min(selectedIndex, mandals.length - 1)] ?? seedMandal;
-  const selectedKey = selectedMandal.name;
+  const selectedMandal = mandals[Math.min(selectedIndex, mandals.length - 1)];
+  const selectedKey = selectedMandal?.id ?? selectedMandal?.name ?? '';
   const extraLogins = mandalLogins[selectedKey] ?? [];
-  const totalMembers = mandals.reduce((sum, mandal) => sum + Number(mandal.memberCount || 0), 0);
-  const totalSlipsGenerated = 0;
+  const totalMembers = mandals.reduce((sum, mandal) => sum + Number(mandal._count?.members ?? mandal.memberCount ?? 0), 0);
+  const totalSlipsGenerated = mandals.reduce((sum, mandal) => sum + Number(mandal._count?.slips ?? 0), 0);
   const filteredMandals = mandals
     .map((mandal, index) => ({ index, mandal }))
     .filter(({ mandal }) => {
@@ -1231,14 +1245,35 @@ function SuperAdminApp({
     setSidebarOpen(false);
   }
 
-  function createLogin(event: FormEvent<HTMLFormElement>) {
+  async function createLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selectedMandal?.id) return;
     const form = new FormData(event.currentTarget);
     const nextLogin = {
       password: String(form.get('password') || DEMO_PASSWORD),
       role: String(form.get('role') || 'Khajindar'),
       username: String(form.get('username') || ''),
     };
+    const roleMap: Record<string, UserRole> = {
+      'Group Leader': 'GROUP_LEADER',
+      Khajindar: 'KHAJINDAR',
+      Karyakari: 'GROUP_LEADER',
+      Member: 'MEMBER',
+    };
+    await apiRequest(
+      `/mandals/${selectedMandal.id}/users`,
+      {
+        body: JSON.stringify({
+          email: nextLogin.username.includes('@') ? nextLogin.username : undefined,
+          name: String(form.get('name') || nextLogin.role),
+          password: nextLogin.password,
+          phone: nextLogin.username.includes('@') ? undefined : nextLogin.username,
+          role: roleMap[nextLogin.role] ?? 'MEMBER',
+        }),
+        method: 'POST',
+      },
+      session,
+    );
     setMandalLogins((current) => ({
       ...current,
       [selectedKey]: [nextLogin, ...(current[selectedKey] ?? [])],
@@ -1342,6 +1377,9 @@ function SuperAdminApp({
                 <label>{t(language, 'Phone No.')}<input name="contactPhone" placeholder="+91..." /></label>
                 <label>Contact Email<input name="contactEmail" placeholder="contact@mandal.local" /></label>
                 <label>No. of Members<input name="memberCount" inputMode="numeric" placeholder="50" /></label>
+                <label>Adhyaksh Name<input name="adhyakshName" placeholder="Main admin name" /></label>
+                <label>Adhyaksh Email *<input name="adminEmail" required placeholder="admin@mandal.local" /></label>
+                <label className="full">Adhyaksh Password *<input name="adminPassword" required type="password" placeholder="Minimum 12 characters" /></label>
                 <label className="full">Mandal Logo<input accept="image/*" name="logo" type="file" /></label>
                 <button className="primary full" type="submit"><Plus size={18} />{t(language, 'Add Mandal')}</button>
               </form>
@@ -1357,7 +1395,7 @@ function SuperAdminApp({
           </>
         )}
 
-        {ownerScreen === 'mandals' && managedIndex !== null && (
+        {ownerScreen === 'mandals' && managedIndex !== null && selectedMandal && (
           <section className="owner-managed-view">
             <button className="back-link" onClick={() => setManagedIndex(null)} type="button">
               <ArrowLeft size={20} />{t(language, 'Back to Mandals')}
@@ -1387,7 +1425,7 @@ function SuperAdminApp({
                     </div>
                     <StatusLine label={t(language, 'Login URL')} value="digital-vargani-landing-page.vercel.app" />
                     <StatusLine label={t(language, 'Username')} value={selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`} />
-                    <StatusLine label={t(language, 'Password')} value={selectedMandal.adminPassword || DEMO_PASSWORD} />
+                    <StatusLine label={t(language, 'Password')} value={selectedMandal.adminPassword || 'Stored securely in backend'} />
                   </div>
                   <form className="card form-grid" onSubmit={createLogin}>
                     <div className="panel-title full">
@@ -1398,8 +1436,9 @@ function SuperAdminApp({
                       </div>
                     </div>
                     <label>Role<select name="role"><option>Khajindar</option><option>Karyakari</option><option>Group Leader</option><option>Member</option></select></label>
+                    <label>Name<input name="name" required placeholder="User name" /></label>
                     <label>Username<input name="username" required placeholder="khajindar@mandal.local" /></label>
-                    <label>Password<input name="password" defaultValue={DEMO_PASSWORD} /></label>
+                    <label>Password<input name="password" required type="password" placeholder="Minimum 8 characters" /></label>
                     <button className="primary" type="submit"><Plus size={18} />{t(language, 'Generate Login')}</button>
                   </form>
                   <div className="table-list">
@@ -1722,7 +1761,7 @@ function LoginPanel({
               <input
                 name="identifier"
                 required
-                defaultValue={isOwner ? SUPER_ADMIN_IDENTIFIER : isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
+                defaultValue={isOwner ? '' : isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
               />
             </label>
             <label>
@@ -2462,6 +2501,34 @@ function normalizeApiBaseUrl(value?: string) {
   if (/\/api\/v\d+$/.test(baseUrl)) return baseUrl;
   if (baseUrl.endsWith('/api')) return `${baseUrl}/v1`;
   return `${baseUrl}/api/v1`;
+}
+
+function mapBackendMandal(
+  mandal: DemoMandal & {
+    contactName?: string | null;
+    contactPhone?: string | null;
+    logoUrl?: string | null;
+  },
+): DemoMandal {
+  return {
+    _count: mandal._count,
+    additionalMembers: mandal.additionalMembers ?? '',
+    address: mandal.address ?? '',
+    adhyakshName: mandal.contactName ?? mandal.adhyakshName ?? '',
+    adminEmail: mandal.adminEmail,
+    adminPassword: mandal.adminPassword,
+    city: mandal.city ?? '',
+    contactEmail: mandal.contactEmail ?? '',
+    contactPhone: mandal.contactPhone ?? '',
+    id: mandal.id,
+    khajindarName: mandal.khajindarName ?? '',
+    logoUrl: mandal.logoUrl ?? '',
+    locality: mandal.locality ?? '',
+    memberCount: String(mandal._count?.members ?? mandal.memberCount ?? 0),
+    name: mandal.name,
+    slug: mandal.slug,
+    status: mandal.status,
+  };
 }
 
 function money(value: number) {
