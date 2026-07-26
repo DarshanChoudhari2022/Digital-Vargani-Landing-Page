@@ -3,22 +3,30 @@ import {
   BadgeIndianRupee,
   Building2,
   CheckCircle2,
+  ClipboardList,
   Copy,
+  Download,
+  Edit3,
   FileText,
+  History,
   LayoutDashboard,
   LogIn,
   LogOut,
   Menu,
+  MessageSquare,
   Plus,
-  Printer,
   ReceiptText,
   RefreshCw,
   Search,
   Settings,
+  Share2,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   Upload,
+  UserCog,
   UsersRound,
+  WalletCards,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +37,7 @@ type TextAlign = 'left' | 'center' | 'right';
 type TextWrapMode = 'single' | 'wrap' | 'shrink';
 type TextDecoration = 'none' | 'underline' | 'line-through';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
-type Screen = 'dashboard' | 'mandals' | 'members' | 'template' | 'generate' | 'slips';
+type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'slips' | 'users' | 'logs';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 
@@ -164,23 +172,13 @@ const SUPER_ADMIN_IDENTIFIER = 'owner@digitalvargani.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
-const navItems: Array<{ id: Screen; icon: ReactNode; label: string }> = [
-  { id: 'dashboard', icon: <LayoutDashboard size={19} />, label: 'Dashboard' },
-  { id: 'mandals', icon: <Building2 size={19} />, label: 'Mandals' },
-  { id: 'members', icon: <UsersRound size={19} />, label: 'Members' },
-  { id: 'template', icon: <FileText size={19} />, label: 'Vargani Template' },
-  { id: 'generate', icon: <ReceiptText size={19} />, label: 'Generate' },
-  { id: 'slips', icon: <BadgeIndianRupee size={19} />, label: 'Latest Slips' },
-];
-
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [activeScreen, setActiveScreen] = useState<Screen>('dashboard');
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [slips, setSlips] = useState<Slip[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<Slip | null>(null);
   const [templatePreview, setTemplatePreview] = useState(TEMPLATE_IMAGE);
@@ -197,15 +195,6 @@ export default function App() {
     const haystack = `${slip.slipNumber} ${slip.contributorName} ${slip.shopName ?? ''} ${slip.areaName ?? ''}`;
     return haystack.toLowerCase().includes(query.toLowerCase());
   });
-  const totalCollection = useMemo(
-    () => slips.reduce((sum, slip) => sum + Number(slip.amount), 0),
-    [slips],
-  );
-  const activeTemplate = templates.find((template) =>
-    template.versions.some((version) => version.isActive),
-  );
-  const latestTemplateVersion = activeTemplate?.versions.find((version) => version.isActive);
-
   useEffect(() => {
     const stored = window.localStorage.getItem(SESSION_KEY);
     if (!stored) return;
@@ -377,34 +366,6 @@ export default function App() {
     setNotice(`${newMandal.name} added to the onboarding demo list.`);
   }
 
-  async function createCustomField(label: string, required = true) {
-    if (!session || !mandalId || !festivalId || !label.trim()) return;
-    setBusy(true);
-    try {
-      await apiRequest(
-        `/mandals/${mandalId}/festivals/${festivalId}/custom-fields`,
-        {
-          body: JSON.stringify({
-            dashboardFilter: true,
-            label: label.trim(),
-            printOnSlip: true,
-            required,
-            sortOrder: (activeForm?.customFields.length ?? 0) + 1,
-            type: 'TEXT',
-          }),
-          method: 'POST',
-        },
-        session,
-      );
-      await loadWorkspace(session);
-      setNotice(`${label} field added to the live template form.`);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not add field.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function generateSlip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) return;
@@ -437,7 +398,6 @@ export default function App() {
       );
       setSlips((current) => [slip, ...current]);
       setSelectedSlip(slip);
-      setActiveScreen('slips');
       event.currentTarget.reset();
       await loadWorkspace(session);
       setNotice(`Slip ${slip.slipNumber} generated successfully.`);
@@ -490,28 +450,160 @@ export default function App() {
   }
 
   return (
-    <main className={`shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
+    <AdhyakshApp
+      activeForm={activeForm}
+      busy={busy}
+      groups={groups}
+      members={members}
+      notice={notice}
+      onCreateMember={createMember}
+      onGenerate={generateSlip}
+      onLogout={logout}
+      onRefresh={() => loadWorkspace()}
+      query={query}
+      receiptUrl={receiptUrl}
+      report={report}
+      selectedSlip={selectedSlip}
+      session={session}
+      setQuery={setQuery}
+      setSelectedSlip={setSelectedSlip}
+      setSidebarOpen={setSidebarOpen}
+      sidebarOpen={sidebarOpen}
+      slips={filteredSlips}
+    />
+  );
+}
+
+const adhyakshNavItems: Array<{ id: AdhyakshScreen; icon: ReactNode; label: string }> = [
+  { id: 'members', icon: <UsersRound size={20} />, label: 'Members & Vargani' },
+  { id: 'tasks', icon: <ShieldCheck size={20} />, label: 'Tasks' },
+  { id: 'expenses', icon: <WalletCards size={20} />, label: 'Expenses' },
+  { id: 'slips', icon: <BadgeIndianRupee size={20} />, label: 'Vargani Slips' },
+  { id: 'users', icon: <UserCog size={20} />, label: 'User Management' },
+  { id: 'logs', icon: <ClipboardList size={20} />, label: 'System Logs' },
+];
+
+const demoMemberRows = [
+  { contact: '9284729592', name: 'Pramod', paid: false, role: 'Member', vargani: 1500 },
+  { contact: '7263988364', name: 'Karan Barathe', paid: false, role: 'Member', vargani: 1500 },
+  { contact: '9822737812', name: 'Sahil Dhiwar', paid: false, role: 'Member', vargani: 1500 },
+  { contact: '9922931393', name: 'Shubham Barathe', paid: false, role: 'Member', vargani: 1500 },
+  { contact: '9284729593', name: 'Amit Jadhav', paid: true, role: 'Khajindar', vargani: 2100 },
+];
+
+const demoTasks = [
+  { assignee: 'Decoration Team', due: '28/07/2026', status: 'OPEN', task: 'Finalize Ganpati idol transport route' },
+  { assignee: 'Sound Team', due: '30/07/2026', status: 'IN PROGRESS', task: 'Collect speaker vendor quotations' },
+  { assignee: 'Khajindar', due: '01/08/2026', status: 'OPEN', task: 'Verify pending shop collections in Ramtekdi' },
+];
+
+const demoExpenses = [
+  { amount: 3500, category: 'Miscellaneous', date: '2026-03-18', description: 'System', paidBy: 'Pramod', refund: 'PENDING', vendor: 'Creative Mark' },
+  { amount: 12500, category: 'Decoration', date: '2026-07-20', description: 'Mandap advance', paidBy: 'Khajindar', refund: 'APPROVED', vendor: 'Pune Decor' },
+];
+
+function AdhyakshApp({
+  activeForm,
+  busy,
+  groups,
+  members,
+  notice,
+  onCreateMember,
+  onGenerate,
+  onLogout,
+  onRefresh,
+  query,
+  receiptUrl,
+  report,
+  selectedSlip,
+  session,
+  setQuery,
+  setSelectedSlip,
+  setSidebarOpen,
+  sidebarOpen,
+  slips,
+}: {
+  activeForm: ActiveForm | null;
+  busy: boolean;
+  groups: Group[];
+  members: Member[];
+  notice: string;
+  onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
+  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
+  onLogout: () => void;
+  onRefresh: () => void;
+  query: string;
+  receiptUrl: string;
+  report: CollectionReport | null;
+  selectedSlip: Slip | null;
+  session: AuthSession;
+  setQuery: (value: string) => void;
+  setSelectedSlip: (slip: Slip) => void;
+  setSidebarOpen: (value: boolean | ((open: boolean) => boolean)) => void;
+  sidebarOpen: boolean;
+  slips: Slip[];
+}) {
+  const [screen, setScreen] = useState<AdhyakshScreen>('members');
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [memberOpen, setMemberOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const memberRows = members.length > 0
+    ? members.map((member) => ({
+      contact: member.user?.phone ?? member.phone ?? '-',
+      name: member.displayName,
+      paid: false,
+      role: member.user?.role.replaceAll('_', ' ') ?? 'Member',
+      vargani: 1500,
+    }))
+    : demoMemberRows;
+  const slipRows = slips.length > 0 ? slips : demoSlipRows();
+  const totalSlipCollection = slipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0);
+  const memberVargani = memberRows.filter((member) => member.paid).reduce((sum, member) => sum + member.vargani, 0);
+  const pendingMemberVargani = memberRows.filter((member) => !member.paid).reduce((sum, member) => sum + member.vargani, 0);
+  const expensesTotal = demoExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const balance = Number(report?.balance ?? totalSlipCollection + memberVargani - expensesTotal);
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+  }
+
+  function pageTitle() {
+    return {
+      expenses: 'Expenses',
+      logs: 'Logs',
+      members: 'Members',
+      slips: 'Vargani Slips',
+      tasks: 'Tasks',
+      users: 'User Management',
+    }[screen];
+  }
+
+  return (
+    <main className={`member-shell adhyaksh-shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <button className="mobile-menu-toggle" onClick={() => setSidebarOpen((open) => !open)} type="button">
         {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
       {sidebarOpen && <button aria-label="Close menu" className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} type="button" />}
-      <aside className="sidebar">
-        <div className="brand">
-          <span>DV</span>
+      <aside className="member-sidebar adhyaksh-sidebar">
+        <div className="mandal-identity">
+          <span className="mandal-seal">DV</span>
           <div>
-            <strong>Digital Vargani</strong>
-            <small>Festival Collection OS</small>
+            <strong>{activeForm?.festival?.name ? 'राहुल मित्र मंडळ' : 'Akhilnayak Mitra Mandal'}</strong>
+            <small>दापोडी, पुणे</small>
           </div>
         </div>
-
-        <nav>
-          {navItems.map((item) => (
+        <div className="mandal-contact-card">
+          <span>Ramtekdi, Pune-32.</span>
+          <span>+91 9284729592</span>
+        </div>
+        <nav className="adhyaksh-nav">
+          {adhyakshNavItems.map((item) => (
             <button
-              className={activeScreen === item.id ? 'active' : ''}
+              className={screen === item.id ? 'active' : ''}
               key={item.id}
               onClick={() => {
-                setActiveScreen(item.id);
-                setSidebarOpen(false);
+                setScreen(item.id);
+                closeSidebar();
               }}
               type="button"
             >
@@ -520,100 +612,256 @@ export default function App() {
             </button>
           ))}
         </nav>
-
         <div className="sidebar-footer">
-          <div className="user-chip">
-            <span>{session.user.name.charAt(0)}</span>
-            <div>
-              <strong>{session.user.name}</strong>
-              <small>{session.user.role.replaceAll('_', ' ')}</small>
-            </div>
-          </div>
-          <button className="logout" onClick={() => { setSidebarOpen(false); logout(); }} type="button">
+          <button className="logout" onClick={() => { closeSidebar(); onLogout(); }} type="button">
             <LogOut size={18} />
             Logout
           </button>
         </div>
       </aside>
 
-      <section className="content">
-        <AdminTopbar session={session} />
-        <header className="page-header">
-          <div>
-            <h1>{screenTitle(activeScreen)}</h1>
-            <p>{screenSubtitle(activeScreen)}</p>
-          </div>
-          <div className="header-actions">
-            <button disabled={busy} onClick={() => loadWorkspace()} type="button">
-              <RefreshCw size={18} />
-              Refresh
-            </button>
-            <a className={receiptUrl ? 'primary' : 'primary disabled'} href={receiptUrl || '#'} target="_blank">
-              <Printer size={18} />
-              Open Receipt
-            </a>
+      <section className="member-content adhyaksh-content">
+        <header className="adhyaksh-header">
+          <h1>{pageTitle()}</h1>
+          <div className="year-select">
+            <button disabled={busy} onClick={onRefresh} type="button"><RefreshCw size={17} />Refresh</button>
+            <span>Active Year</span>
+            <select defaultValue="2026"><option>Year 2026</option><option>Year 2027</option></select>
+            <div className="top-user mini"><span>{session.user.name.charAt(0)}</span><div><strong>{session.user.name}</strong><small>{session.user.role.replaceAll('_', ' ')}</small></div></div>
           </div>
         </header>
-
         <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
 
-        <>
-          {activeScreen === 'dashboard' && (
-            <Dashboard
-              groups={groups}
-              members={members}
-              report={report}
-              slips={slips}
-              templates={templates}
-              totalCollection={totalCollection}
-            />
-          )}
-          {activeScreen === 'mandals' && (
-            <MandalsView
-              activeForm={activeForm}
-              demoMandals={demoMandals}
-              groups={groups}
-              members={members}
-              onCreateMandal={createMandal}
-              report={report}
-              templates={templates}
-            />
-          )}
-          {activeScreen === 'members' && (
-            <MembersView groups={groups} members={members} onCreateMember={createMember} />
-          )}
-          {activeScreen === 'template' && (
-            <TemplateView
-              activeForm={activeForm}
-              activeTemplate={activeTemplate}
-              latestTemplateVersion={latestTemplateVersion}
-              onAddField={createCustomField}
-              onPreviewChange={setTemplatePreview}
-              templatePreview={templatePreview}
-            />
-          )}
-          {activeScreen === 'generate' && (
-            <GenerateView
-              activeForm={activeForm}
-              busy={busy}
-              onGenerate={generateSlip}
-              templatePreview={templatePreview}
-            />
-          )}
-          {activeScreen === 'slips' && (
-            <SlipsView
-              query={query}
-              receiptUrl={receiptUrl}
-              selectedSlip={selectedSlip}
-              setQuery={setQuery}
-              setSelectedSlip={setSelectedSlip}
-              slips={filteredSlips}
-            />
-          )}
-        </>
+        {screen === 'members' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div>
+                <h2>Member Directory (2026)</h2>
+                <span>Track member vargani commitments and payment status.</span>
+              </div>
+              <button className="blue-action" onClick={() => setMemberOpen(true)} type="button"><Plus size={18} />Add Member</button>
+            </div>
+            <div className="metric-strip six">
+              <Metric label="Total Members" value={String(memberRows.length)} />
+              <Metric green label="Member Vargani" note={`${memberRows.filter((member) => member.paid).length} Members Paid`} value={money(memberVargani)} />
+              <Metric green label="Slip Vargani" note={`${slipRows.length} Slips Paid`} value={money(totalSlipCollection)} />
+              <Metric red label="Pending (Members)" note={`${memberRows.filter((member) => !member.paid).length} Pending`} value={money(pendingMemberVargani)} />
+              <Metric blue label="Mandal Expenses" note="Paid by Mandal" value={money(expensesTotal)} />
+              <Metric blue label="Remaining Balance" note="Available Funds" value={money(balance)} />
+            </div>
+            <div className="ops-table members-table">
+              <div className="ops-head"><span>Name & Role</span><span>Contact</span><span>Vargani (2026)</span><span>Actions</span></div>
+              {memberRows.map((member) => (
+                <div className="ops-row" key={member.name}>
+                  <strong>{member.name}<small>{member.role}</small></strong>
+                  <span>{member.contact}</span>
+                  <span><b>{money(member.vargani)}</b><i className={member.paid ? 'pill paid' : 'pill pending'}>{member.paid ? 'Paid' : 'Pending'}</i></span>
+                  <span className="row-actions"><button type="button"><Edit3 size={16} /></button><button type="button"><MessageSquare size={16} /></button><button type="button"><Trash2 size={16} /></button></span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {screen === 'tasks' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div><h2>Task Board (2026)</h2><span>Assign festival work and monitor open responsibilities.</span></div>
+              <button className="blue-action" type="button"><Plus size={18} />Add Task</button>
+            </div>
+            <div className="metric-strip">
+              <Metric label="Open Tasks" value={String(demoTasks.filter((task) => task.status !== 'DONE').length)} />
+              <Metric blue label="Teams Assigned" value={String(new Set(demoTasks.map((task) => task.assignee)).size)} />
+              <Metric green label="This Week" value="3" />
+            </div>
+            <div className="ops-table">
+              <div className="ops-head five"><span>Task</span><span>Assignee</span><span>Due Date</span><span>Status</span><span>Actions</span></div>
+              {demoTasks.map((task) => (
+                <div className="ops-row five" key={task.task}>
+                  <strong>{task.task}</strong><span>{task.assignee}</span><span>{task.due}</span><i className="pill pending">{task.status}</i>
+                  <span className="row-actions"><button type="button"><CheckCircle2 size={16} /></button><button type="button"><Edit3 size={16} /></button></span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {screen === 'expenses' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div><h2>Expenses (2026)</h2><span>Total for 2026: <b>{money(expensesTotal)}</b></span></div>
+              <button className="blue-action" onClick={() => setExpenseOpen(true)} type="button"><Plus size={18} />Add Expense</button>
+            </div>
+            <div className="ops-table expenses-table">
+              <div className="ops-head six"><span>Description</span><span>Vendor</span><span>Paid By</span><span>Category</span><span>Date</span><span>Amount</span><span>Refund?</span><span>Actions</span></div>
+              {demoExpenses.map((expense) => (
+                <div className="ops-row six" key={`${expense.description}-${expense.amount}`}>
+                  <strong>{expense.description}</strong><span>{expense.vendor}</span><i className="pill role">{expense.paidBy}</i><span>{expense.category}</span><span>{expense.date}</span><b>{money(expense.amount)}</b><i className="pill pending">{expense.refund}</i>
+                  <span className="row-actions"><button type="button"><Edit3 size={16} /></button><button type="button"><Trash2 size={16} /></button></span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {screen === 'slips' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div><h2>Vargani Slips</h2><span>Generate and manage vargani receipts.</span></div>
+              <button className="blue-action" onClick={() => setEntryOpen(true)} type="button"><Plus size={18} />New Vargani Entry</button>
+            </div>
+            <div className="metric-strip five-cols">
+              <Metric label="Total Entries" value={String(slipRows.length)} />
+              <Metric green label="Collected" note={`${slipRows.length} Paid`} value={money(totalSlipCollection)} />
+              <Metric red label="Pending" note="88 Pending" value={money(46726)} />
+              <Metric green label="Paid Slips" value={String(slipRows.length)} />
+              <Metric blue label="Pending Slips" value="88" />
+            </div>
+            <div className="slip-insights">
+              <div className="insight-card warning">
+                <strong>Pending Location-wise (₹46,726)</strong>
+                <div className="chips"><span>Vasti ₹32,800</span><span>Lucky wines ₹4,453</span><span>Vihar ₹3,453</span><span>Marathi school ₹1,209</span><span>Church ₹1,204</span></div>
+              </div>
+              <div className="insight-card blue">
+                <strong>Slips Generated By Admin</strong>
+                <div className="chips"><span>shubham 154 Slips</span><span>sahil 20 Slips</span><span>choudharidarshan 1 Slip</span></div>
+              </div>
+            </div>
+            <div className="table-toolbar">
+              <div className="segmented"><button className="active" type="button">All ({slipRows.length})</button><button type="button">Paid</button><button type="button">Pending</button></div>
+              <label className="search-inline"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, location, admin, date..." /></label>
+            </div>
+            <div className="ops-table slips-table">
+              <div className="ops-head six"><span>Slip #</span><span>Name / Shop</span><span>Amount</span><span>Mobile</span><span>Status / Mode</span><span>Date / Info</span><span>Actions</span></div>
+              {slipRows.map((slip) => (
+                <div className="ops-row six" key={slip.id}>
+                  <b>{slip.slipNumber}</b><strong>{slip.contributorName}<small>{slip.shopName ?? '-'}</small></strong><b>{money(Number(slip.amount))}</b><span>{slip.contributorPhone ?? '-'}</span>
+                  <span><i className="pill paid">Paid</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
+                  <span className="row-actions"><button onClick={() => setSelectedSlip(slip)} type="button"><Edit3 size={16} />Edit</button><a className="mini-link" href={selectedSlip?.id === slip.id ? receiptUrl : '#'} target="_blank"><Download size={16} />Slip</a><button type="button"><Share2 size={16} />Share</button></span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {screen === 'users' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div><h2>User Management</h2><span>Admins, sub-admins, and collection access.</span></div>
+              <label className="search-inline"><Search size={18} /><input placeholder="Search users..." /></label>
+            </div>
+            <div className="metric-strip">
+              <Metric label="Total Users" value="10" />
+              <Metric blue label="Admins" value="2" />
+              <Metric blue label="Sub-admins" value="8" />
+              <Metric green label="Total Entries" value={String(slipRows.length)} />
+            </div>
+            <div className="ops-table users-table">
+              <div className="ops-head five"><span>User</span><span>Email</span><span>Role</span><span>Entries</span><span>Actions</span></div>
+              {['choudharidarshan556', 'darshanchoudhari47', 'digitalwithpr', 'test'].map((user, index) => (
+                <div className="ops-row five" key={user}>
+                  <strong><span className="avatar tiny">{user.charAt(0).toUpperCase()}</span>{user}<small>Joined {13 + index}/3/2026</small></strong>
+                  <span>{user}@gmail.com</span><i className="pill role">{index % 2 === 0 ? 'Admin' : 'Sub-admin'}</i><span>{index === 0 ? 1 : 0}</span>
+                  <span className="row-actions"><button type="button"><UserCog size={16} />Edit Role</button></span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {screen === 'logs' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div><h2>Activity History</h2><span>Real-time logs for receipts, payments, and users.</span></div>
+              <span className="real-time"><History size={18} />Real-time Logs</span>
+            </div>
+            <div className="ops-table logs-table">
+              <div className="ops-head"><span>Time & Date</span><span>User</span><span>Action</span><span>Details</span></div>
+              {slipRows.slice(0, 8).map((slip, index) => (
+                <div className="ops-row" key={`${slip.id}-log`}>
+                  <span><b>{slip.createdAt.slice(0, 10)}</b><small>{index + 4}:09 PM</small></span>
+                  <i className="pill role">{index % 2 ? 'SAHIL' : 'SHUBHAM'}</i>
+                  <strong>VARGANI SLIP CREATED</strong>
+                  <span>Slip {slip.slipNumber} for {slip.contributorName} - {money(Number(slip.amount))} (paid)</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </section>
+
+      {entryOpen && (
+        <div className="modal-backdrop">
+          <form className="vargani-modal adhyaksh-modal" onSubmit={(event) => { onGenerate(event); setEntryOpen(false); }}>
+            <button className="modal-close" onClick={() => setEntryOpen(false)} type="button"><X size={20} /></button>
+            <h2>New Vargani Entry</h2>
+            <label>Name<input name="contributorName" required placeholder="Enter full name" /></label>
+            <label>Shop Name<input name="shopName" placeholder="Enter shop / business name" /></label>
+            <label>Amount<input name="amount" inputMode="numeric" required placeholder="1500" /></label>
+            <label>Location<input name="areaName" required placeholder="Dapodi, Pune" /></label>
+            <label>Address<textarea name="contributorAddress" placeholder="Full address optional" /></label>
+            <label>WhatsApp Number<input name="contributorPhone" placeholder="10 digit WhatsApp number" /></label>
+            <label>Payment Mode<select name="paymentMode" defaultValue="CASH"><option value="CASH">Cash</option><option value="UPI">Online / UPI</option><option value="CHEQUE">Cheque</option></select></label>
+            {(activeForm?.customFields ?? []).map((field) => <label key={field.key}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>)}
+            <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className="success" type="submit">Confirm & Generate Slip</button></div>
+          </form>
+        </div>
+      )}
+
+      {memberOpen && (
+        <div className="modal-backdrop">
+          <form className="vargani-modal adhyaksh-modal" onSubmit={(event) => { onCreateMember(event); setMemberOpen(false); }}>
+            <button className="modal-close" onClick={() => setMemberOpen(false)} type="button"><X size={20} /></button>
+            <h2>Add Member</h2>
+            <label>Name<input name="name" required placeholder="Member name" /></label>
+            <label>Email<input name="email" required placeholder="member@mandal.local" /></label>
+            <label>Phone<input name="phone" placeholder="+91..." /></label>
+            <label>Password<input name="password" required defaultValue={DEMO_PASSWORD} /></label>
+            <label>Role<select name="role" defaultValue="MEMBER"><option value="KHAJINDAR">Khajindar</option><option value="GROUP_LEADER">Group Leader</option><option value="MEMBER">Member</option></select></label>
+            <label>Group<select name="groupId"><option value="">No group</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+            <label>Area<input name="areaName" placeholder="Ramtekdi Market" /></label>
+            <div className="modal-actions"><button type="button" onClick={() => setMemberOpen(false)}>Cancel</button><button className="blue-action" type="submit">Create Member Login</button></div>
+          </form>
+        </div>
+      )}
+
+      {expenseOpen && (
+        <div className="modal-backdrop">
+          <form className="vargani-modal adhyaksh-modal" onSubmit={(event) => { event.preventDefault(); setExpenseOpen(false); }}>
+            <button className="modal-close" onClick={() => setExpenseOpen(false)} type="button"><X size={20} /></button>
+            <h2>Add Expense</h2>
+            <label>Description<input required placeholder="Expense description" /></label>
+            <label>Vendor<input placeholder="Vendor name" /></label>
+            <label>Paid By<input placeholder="Member name" /></label>
+            <label>Category<input placeholder="Decoration, sound..." /></label>
+            <label>Date<input type="date" /></label>
+            <label>Amount<input inputMode="numeric" required placeholder="3500" /></label>
+            <div className="modal-actions"><button type="button" onClick={() => setExpenseOpen(false)}>Cancel</button><button className="blue-action" type="submit">Save Expense</button></div>
+          </form>
+        </div>
+      )}
     </main>
   );
+}
+
+function Metric({ blue, green, label, note, red, value }: { blue?: boolean; green?: boolean; label: string; note?: string; red?: boolean; value: string }) {
+  return (
+    <article className={`metric-card ${green ? 'green' : ''} ${red ? 'red' : ''} ${blue ? 'blue' : ''}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      {note && <small>{note}</small>}
+    </article>
+  );
+}
+
+function demoSlipRows(): Slip[] {
+  return [
+    { amount: 1500, areaName: 'Ramtekdi', contributorName: 'Darshan OKNDk', contributorPhone: '8601605165', createdAt: '2026-07-26T16:09:00.000Z', id: 'demo-1', paymentMode: 'CASH', shopName: 'sdc', slipNumber: '020PEA' },
+    { amount: 498, areaName: 'Ramtekdi', contributorName: 'Embassy', contributorPhone: '8605899626', createdAt: '2026-07-26T16:09:00.000Z', id: 'demo-2', paymentMode: 'UPI', shopName: 'Pratik', slipNumber: 'QM6GH1' },
+    { amount: 2000, areaName: 'Market', contributorName: 'Vikas Barathe', contributorPhone: '9595013131', createdAt: '2026-04-13T16:09:00.000Z', id: 'demo-3', paymentMode: 'CASH', shopName: 'Vikas Barathe', slipNumber: 'MNLR8H' },
+    { amount: 500, areaName: 'Market', contributorName: 'Major Sameer Scrap', contributorPhone: '9922891559', createdAt: '2026-04-10T16:09:00.000Z', id: 'demo-4', paymentMode: 'CASH', shopName: 'Major Sameer Scrap', slipNumber: 'PMQOSG' },
+    { amount: 500, areaName: 'Market', contributorName: 'Lucky Scrap', contributorPhone: '9823505495', createdAt: '2026-04-10T16:09:00.000Z', id: 'demo-5', paymentMode: 'CASH', shopName: 'Lucky scrap', slipNumber: 'HYMUE9' },
+  ];
 }
 
 function AdminTopbar({ session }: { session: AuthSession }) {
@@ -1228,237 +1476,6 @@ function LoginPanel({
   );
 }
 
-function Dashboard({
-  groups,
-  members,
-  report,
-  slips,
-  templates,
-  totalCollection,
-}: {
-  groups: Group[];
-  members: Member[];
-  report: CollectionReport | null;
-  slips: Slip[];
-  templates: Template[];
-  totalCollection: number;
-}) {
-  return (
-    <>
-      <section className="command-hero">
-        <div>
-          <span>Admin Command Center</span>
-          <h2>Akhilnayak Mitra Mandal Festival Collection OS</h2>
-          <p>Track vargani, member activity, template readiness, and live receipt generation from one focused console.</p>
-        </div>
-        <div className="hero-actions">
-          <button className="primary" type="button"><ReceiptText size={18} />Raise Vargani</button>
-          <button type="button"><SlidersHorizontal size={18} />View Reports</button>
-        </div>
-      </section>
-      <section className="stats-grid">
-        <Stat icon={<Building2 />} label="Total Mandals" note="Active demo mandal" value="1" />
-        <Stat icon={<UsersRound />} label="Total Members" note={`${groups.length} collection groups`} value={String(members.length)} />
-        <Stat icon={<ReceiptText />} label="Slips Generated" note="Latest live records" value={String(report?.slipCount ?? slips.length)} />
-        <Stat icon={<BadgeIndianRupee />} label="Total Vargani" note="Live Supabase amount" value={money(report?.totalCollection ?? totalCollection)} />
-      </section>
-      <section className="operations-grid">
-        <div className="card">
-          <div className="panel-title">
-            <CheckCircle2 size={22} />
-            <div>
-              <strong>Readiness</strong>
-              <span>Production services for demo</span>
-            </div>
-          </div>
-          <StatusLine label="Database" value="connected" />
-          <StatusLine label="API" value="connected" />
-          <StatusLine label="Template" value={templates.length ? 'ready' : 'pending'} />
-          <StatusLine label="Login" value="active" />
-        </div>
-        <div className="card">
-          <div className="panel-title">
-            <BadgeIndianRupee size={22} />
-            <div>
-              <strong>Collection By Payment</strong>
-              <span>Cash, UPI, cheque split</span>
-            </div>
-          </div>
-          {(report?.byPaymentMode ?? []).slice(0, 5).map((item) => (
-            <StatusLine key={item.paymentMode} label={item.paymentMode} value={money(Number(item.totalAmount))} />
-          ))}
-        </div>
-        <div className="card">
-          <div className="panel-title">
-            <ReceiptText size={22} />
-            <div>
-              <strong>Recent Slips</strong>
-              <span>Generated by mandal members</span>
-            </div>
-          </div>
-          {slips.slice(0, 5).map((slip) => (
-            <StatusLine key={slip.id} label={slip.contributorName} value={money(Number(slip.amount))} />
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function MandalsView({
-  activeForm,
-  demoMandals,
-  groups,
-  members,
-  onCreateMandal,
-  report,
-  templates,
-}: {
-  activeForm: ActiveForm | null;
-  demoMandals: DemoMandal[];
-  groups: Group[];
-  members: Member[];
-  onCreateMandal: (event: FormEvent<HTMLFormElement>) => void;
-  report: CollectionReport | null;
-  templates: Template[];
-}) {
-  return (
-    <>
-      <section className="stats-grid compact">
-        <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value={String(1 + demoMandals.length)} />
-        <Stat icon={<UsersRound />} label="Total Members" note="Collectors" value={String(members.length)} />
-        <Stat icon={<ReceiptText />} label="Slips" note="Active festival" value={String(report?.slipCount ?? 0)} />
-      </section>
-      <section className="mandal-page-grid">
-        <form className="card form-grid add-mandal-card" onSubmit={onCreateMandal}>
-          <div className="panel-title full">
-            <Plus size={22} />
-            <div>
-              <strong>Add Mandal</strong>
-              <span>Onboard mandal name, location, adhyaksh, khajindar and members.</span>
-            </div>
-          </div>
-          <label>Mandal Name<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
-          <label>Locality<input name="locality" required placeholder="Hadapsar, Pune" /></label>
-          <label>City<input name="city" required defaultValue="Pune" /></label>
-          <label>Contact Phone<input name="contactPhone" required placeholder="+919876543210" /></label>
-          <label>Adhyaksh Name<input name="adhyakshName" required placeholder="Adhyaksh full name" /></label>
-          <label>Khajindar Name<input name="khajindarName" required placeholder="Khajindar full name" /></label>
-          <label className="full">Full Address<input name="address" required placeholder="Building, road, area, city" /></label>
-          <label className="full">Additional Members<textarea name="additionalMembers" placeholder="Secretary, vice president, decorators, volunteers..." /></label>
-          <label>Admin Email<input name="adminEmail" placeholder="admin@mandal.local" /></label>
-          <label>Default Password<input name="adminPassword" defaultValue={DEMO_PASSWORD} /></label>
-          <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
-        </form>
-        <div className="mandal-grid">
-        <article className="mandal-card">
-          <div className="avatar">अ</div>
-          <div>
-            <h3>Akhilnayak Mitra Mandal</h3>
-            <p>Prathama Building, S.R.P.F. Gate No. 1, Ramtekdi, Pune</p>
-            <div className="chips">
-              <span>{members.length} members</span>
-              <span>{groups.length} groups</span>
-              <span>{templates.length ? 'Template Ready' : 'Template Pending'}</span>
-              <span>{activeForm?.festival.name ?? 'Ganpati Festival 2026'}</span>
-            </div>
-          </div>
-          <button type="button">Manage</button>
-        </article>
-          {demoMandals.map((mandal, index) => (
-            <article className="mandal-card" key={`${mandal.name}-${index}`}>
-              <div className="avatar">{mandal.name.charAt(0)}</div>
-              <div>
-                <h3>{mandal.name}</h3>
-                <p>{`${mandal.address || mandal.locality}, ${mandal.city}`}</p>
-                <div className="chips">
-                  <span>{mandal.additionalMembers ? mandal.additionalMembers.split(',').length + 2 : 2} members</span>
-                  <span>{mandal.adhyakshName} Adhyaksh</span>
-                  <span>{mandal.khajindarName} Khajindar</span>
-                  <span>Template Pending</span>
-                </div>
-              </div>
-              <button type="button">Manage</button>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function MembersView({
-  groups,
-  members,
-  onCreateMember,
-}: {
-  groups: Group[];
-  members: Member[];
-  onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <section className="split-grid">
-      <form className="card form-grid" onSubmit={onCreateMember}>
-        <div className="panel-title full">
-          <Plus size={22} />
-          <div>
-            <strong>Create Member Login</strong>
-            <span>Khajindar, group leader, and collection member accounts.</span>
-          </div>
-        </div>
-        <label>Name<input name="name" required placeholder="Rahul Shinde" /></label>
-        <label>Email<input name="email" required placeholder="rahul@mandal.local" /></label>
-        <label>Phone<input name="phone" placeholder="+919876543210" /></label>
-        <label>Password<input name="password" required defaultValue={DEMO_PASSWORD} /></label>
-        <label>
-          Role
-          <select name="role" defaultValue="MEMBER">
-            <option value="KHAJINDAR">Khajindar</option>
-            <option value="GROUP_LEADER">Group Leader</option>
-            <option value="MEMBER">Member</option>
-          </select>
-        </label>
-        <label>
-          Group
-          <select name="groupId">
-            <option value="">No group</option>
-            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
-          </select>
-        </label>
-        <label className="full">Area<input name="areaName" placeholder="Ramtekdi Market" /></label>
-        <button className="primary full" type="submit"><Plus size={18} />Create Login</button>
-      </form>
-      <div className="card">
-        <div className="panel-title">
-          <UsersRound size={22} />
-          <div>
-            <strong>Members</strong>
-            <span>{members.length} active collector logins</span>
-          </div>
-        </div>
-        <div className="table-list">
-          {members.length === 0 && (
-            <div className="empty-state">
-              <UsersRound size={28} />
-              <strong>No member logins yet</strong>
-              <span>Create collector accounts for khajindar, group leaders, and members.</span>
-            </div>
-          )}
-          {members.map((member) => (
-            <div className="table-row" key={member.id}>
-              <span className="avatar small">{member.displayName.charAt(0)}</span>
-              <strong>{member.displayName}</strong>
-              <span>{member.user?.role.replaceAll('_', ' ')}</span>
-              <span>{member.group?.name ?? member.areaName ?? 'No group'}</span>
-              <em>{member.user?.email ?? member.phone ?? '-'}</em>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function TemplateView({
   activeForm,
   activeTemplate,
@@ -2053,104 +2070,6 @@ function TemplateView({
   );
 }
 
-function GenerateView({
-  activeForm,
-  busy,
-  onGenerate,
-  templatePreview,
-}: {
-  activeForm: ActiveForm | null;
-  busy: boolean;
-  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
-  templatePreview: string;
-}) {
-  return (
-    <section className="split-grid">
-      <form className="card form-grid" onSubmit={onGenerate}>
-        <div className="panel-title full">
-          <ReceiptText size={22} />
-          <div>
-            <strong>Generate Vargani Slip</strong>
-            <span>Members fill this on mobile while collecting vargani.</span>
-          </div>
-        </div>
-        <label>Contributor Name<input disabled={busy} name="contributorName" required placeholder="Donor or shop owner" /></label>
-        <label>Shop / Company<input disabled={busy} name="shopName" placeholder="Optional" /></label>
-        <label>Mobile<input disabled={busy} name="contributorPhone" placeholder="+91..." /></label>
-        <label>Area<input disabled={busy} name="areaName" required placeholder="Ramtekdi" /></label>
-        <label>Amount<input disabled={busy} inputMode="numeric" name="amount" required placeholder="2100" /></label>
-        <label>
-          Payment
-          <select disabled={busy} name="paymentMode" defaultValue="UPI">
-            <option value="CASH">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="CHEQUE">Cheque</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </label>
-        <label className="full">Address<input disabled={busy} name="contributorAddress" placeholder="Building, lane, shop address" /></label>
-        {(activeForm?.customFields ?? []).map((field) => (
-          <label key={field.id}>
-            {field.label}
-            <input disabled={busy} name={`custom_${field.key}`} required={field.required} />
-          </label>
-        ))}
-        <button className="primary full" disabled={busy} type="submit"><ReceiptText size={18} />Generate Digital Slip</button>
-      </form>
-      <div className="card phone-preview">
-        <img alt="Vargani template preview" src={templatePreview} />
-      </div>
-    </section>
-  );
-}
-
-function SlipsView({
-  query,
-  receiptUrl,
-  selectedSlip,
-  setQuery,
-  setSelectedSlip,
-  slips,
-}: {
-  query: string;
-  receiptUrl: string;
-  selectedSlip: Slip | null;
-  setQuery: (value: string) => void;
-  setSelectedSlip: (slip: Slip) => void;
-  slips: Slip[];
-}) {
-  return (
-    <section className="card">
-      <div className="table-toolbar">
-        <div className="search-box"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search slip, name, shop, area..." /></div>
-        <a className={receiptUrl ? 'primary' : 'primary disabled'} href={receiptUrl || '#'} target="_blank"><Printer size={18} />Print Selected</a>
-      </div>
-      <div className="slip-table">
-        <div className="slip-head"><span>Slip No.</span><span>Name</span><span>Shop</span><span>Area</span><span>Amount</span><span>Payment</span><span>Action</span></div>
-        {slips.length === 0 && (
-          <div className="empty-state">
-            <ReceiptText size={28} />
-            <strong>No slips generated yet</strong>
-            <span>Generate the first vargani slip from the member or admin generator.</span>
-          </div>
-        )}
-        {slips.map((slip) => (
-          <button className={selectedSlip?.id === slip.id ? 'slip-row selected' : 'slip-row'} key={slip.id} onClick={() => setSelectedSlip(slip)} type="button">
-            <strong>{slip.slipNumber}</strong>
-            <span>{slip.contributorName}</span>
-            <span>{slip.shopName || '-'}</span>
-            <span>{slip.areaName || '-'}</span>
-            <span>{money(Number(slip.amount))}</span>
-            <em>{slip.paymentMode}</em>
-            <Copy size={17} />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Stat({ icon, label, note, value }: { icon: ReactNode; label: string; note: string; value: string }) {
   return (
     <article className="stat">
@@ -2242,28 +2161,6 @@ async function apiRequest<T>(path: string, options: RequestInit = {}, session?: 
   return response.json() as Promise<T>;
 }
 
-function screenTitle(screen: Screen) {
-  return {
-    dashboard: 'Dashboard',
-    generate: 'Generate Slip',
-    mandals: 'Mandals',
-    members: 'Members & Logins',
-    slips: 'Latest Slips',
-    template: 'Vargani Template',
-  }[screen];
-}
-
-function screenSubtitle(screen: Screen) {
-  return {
-    dashboard: "Welcome back. Here's your mandal overview.",
-    generate: 'Live vargani slip generator for collection members.',
-    mandals: 'Manage onboarded mandals and festival readiness.',
-    members: 'Create and manage khajindar, leader, and member logins.',
-    slips: 'All latest generated vargani slips from the mandal.',
-    template: 'Upload slip template and map custom fields accurately.',
-  }[screen];
-}
-
 function readErrorMessage(body: string, status: number) {
   try {
     const parsed = JSON.parse(body) as { error?: string; message?: string | string[] };
@@ -2295,3 +2192,4 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'mandal';
 }
+

@@ -1720,6 +1720,431 @@ kbd {
   font-weight: 950;
 }
 
+.adhyaksh-shell {
+  background: #faf8f2;
+  grid-template-columns: 360px minmax(0, 1fr);
+}
+
+.adhyaksh-sidebar {
+  background: #fff;
+  padding: 40px 20px 20px;
+}
+
+.mandal-identity {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  padding: 0 20px 18px;
+}
+
+.mandal-seal {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #d9e6ff;
+  border-radius: 6px;
+  color: #1d4ed8;
+  display: flex;
+  flex: 0 0 72px;
+  font-weight: 950;
+  height: 72px;
+  justify-content: center;
+  width: 72px;
+}
+
+.mandal-identity strong {
+  color: #1d4ed8;
+  display: block;
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.mandal-identity small,
+.mandal-contact-card span {
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mandal-contact-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+  margin: 0 20px 40px;
+  padding: 14px 16px;
+}
+
+.adhyaksh-nav {
+  gap: 22px;
+  max-height: calc(100vh - 330px);
+  overflow: auto;
+  padding: 0 6px 24px;
+}
+
+.adhyaksh-nav button {
+  border-radius: 14px;
+  color: #5e6a7c;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  min-height: 64px;
+  text-transform: uppercase;
+}
+
+.adhyaksh-nav button.active {
+  background: #e9efff;
+  color: #1d4ed8;
+}
+
+.adhyaksh-nav button.active::after {
+  background: #1d4ed8;
+  left: 0;
+  right: auto;
+}
+
+.adhyaksh-nav button.active svg,
+.adhyaksh-nav button svg {
+  background: transparent;
+}
+
+.adhyaksh-nav button.active svg {
+  color: #1d4ed8;
+}
+
+.adhyaksh-nav button svg {
+  color: #9aa3b2;
+  height: 34px;
+  padding: 6px;
+  width: 34px;
+}
+
+.adhyaksh-content {
+  gap: 40px;
+  padding: 0 60px 56px;
+}
+
+.adhyaksh-header {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #eef0f4;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -60px;
+  min-height: 78px;
+  padding: 0 60px;
+}
+
+.adhyaksh-header h1,
+.adhyaksh-page h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}
+
+.adhyaksh-header h1 {
+  font-size: 32px;
+  margin: 0;
+}
+
+.year-select {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+}
+
+.year-select span,
+.ops-head,
+.metric-card span,
+.wide-card span {
+  color: #697386;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.year-select select {
+  background: #fff;
+  border: 1px solid #dce1ea;
+  border-radius: 14px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 850;
+  min-height: 48px;
+  padding: 0 18px;
+}
+
+.adhyaksh-page {
+  display: grid;
+  gap: 34px;
+}
+
+.wide-card,
+.metric-card,
+.ops-table,
+.insight-card {
+  background: #fff;
+  border: 1px solid #eceef3;
+  border-radius: 22px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.wide-card {
+  padding: 28px 22px;
+}
+
+.action-card {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.wide-card h2 {
+  font-size: 29px;
+  margin: 0 0 18px;
+}
+
+.blue-action {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  box-shadow: 0 14px 24px rgba(29, 78, 216, 0.18);
+  color: #fff;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.metric-strip {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-strip.six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.metric-strip.five-cols {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.metric-card {
+  min-height: 156px;
+  padding: 30px;
+}
+
+.metric-card strong {
+  color: #06122d;
+  display: block;
+  font-size: 30px;
+  margin-top: 18px;
+}
+
+.metric-card.green strong,
+.pill.paid,
+.pill.role {
+  color: #069344;
+}
+
+.metric-card.red strong,
+.pill.pending {
+  color: #ef4444;
+}
+
+.metric-card.blue strong,
+.pill.mode {
+  color: #1d4ed8;
+}
+
+.metric-card small {
+  color: #6b85ff;
+  display: block;
+  margin-top: 8px;
+}
+
+.ops-table {
+  overflow: auto;
+}
+
+.ops-head,
+.ops-row {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  min-width: 920px;
+  padding: 18px 22px;
+}
+
+.ops-head {
+  background: #f1f0eb;
+}
+
+.ops-head,
+.ops-row {
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+}
+
+.ops-head.five,
+.ops-row.five {
+  grid-template-columns: 1.6fr 1fr 0.8fr 0.8fr 1fr;
+}
+
+.ops-head.six,
+.ops-row.six {
+  grid-template-columns: 0.75fr 1.35fr 0.8fr 1fr 1fr 0.85fr 1.35fr;
+}
+
+.expenses-table .ops-head.six,
+.expenses-table .ops-row.six {
+  grid-template-columns: 1.2fr 1fr 0.75fr 1fr 0.85fr 0.75fr 0.8fr 0.8fr;
+}
+
+.ops-row {
+  border-top: 1px solid #edf0f3;
+}
+
+.ops-row strong {
+  color: #07132e;
+  display: grid;
+  font-size: 18px;
+  gap: 4px;
+}
+
+.ops-row small {
+  color: #8390a4;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ops-row b {
+  color: #06122d;
+  font-size: 18px;
+}
+
+.pill {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+  justify-content: center;
+  margin-right: 8px;
+  min-height: 28px;
+  padding: 0 12px;
+  text-transform: uppercase;
+}
+
+.pill.paid,
+.pill.role {
+  background: #e5f9ee;
+}
+
+.pill.pending {
+  background: #ffeeee;
+}
+
+.pill.mode {
+  background: #eaf1ff;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.row-actions button,
+.mini-link {
+  background: #fff;
+  border: 1px solid #dbe4f0;
+  border-radius: 9px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 950;
+  min-height: 34px;
+  padding: 0 10px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.slip-insights {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.insight-card {
+  padding: 28px 22px;
+}
+
+.insight-card.warning {
+  background: #fff9e6;
+  border-color: #f3d27a;
+}
+
+.insight-card.blue {
+  background: #eef6ff;
+  border-color: #c8dcff;
+}
+
+.segmented {
+  background: #fff;
+  border: 1px solid #edf0f3;
+  border-radius: 16px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #697386;
+  min-height: 56px;
+}
+
+.segmented button.active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.search-inline {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dfe5ef;
+  border-radius: 16px;
+  display: flex;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 16px;
+}
+
+.search-inline input {
+  border: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.avatar.tiny {
+  height: 48px;
+  margin-right: 14px;
+  width: 48px;
+}
+
+.real-time {
+  align-items: center;
+  color: #8a93a3;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 950;
+  gap: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.adhyaksh-modal {
+  max-width: 640px;
+}
+
 @media (max-width: 1180px) {
   .shell,
   .member-shell,
@@ -1733,6 +2158,10 @@ kbd {
   .split-grid,
   .template-grid,
   .operations-grid,
+  .metric-strip,
+  .metric-strip.six,
+  .metric-strip.five-cols,
+  .slip-insights,
   .stats-grid,
   .stats-grid.compact,
   .member-stats {
@@ -1757,6 +2186,23 @@ kbd {
 
   .hero-actions {
     justify-content: flex-start;
+  }
+
+  .adhyaksh-content {
+    padding: 0 24px 32px;
+  }
+
+  .adhyaksh-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    height: auto;
+    margin: 0 -24px;
+    padding: 18px 24px;
+  }
+
+  .year-select {
+    flex-wrap: wrap;
   }
 }
 
@@ -1922,8 +2368,64 @@ kbd {
   }
 
   .page-header h1,
-  .member-header h1 {
+  .member-header h1,
+  .adhyaksh-header h1 {
     font-size: 30px;
+  }
+
+  .adhyaksh-content {
+    gap: 22px;
+    padding: 76px 14px 24px;
+  }
+
+  .adhyaksh-sidebar {
+    padding-bottom: 18px;
+  }
+
+  .adhyaksh-nav {
+    max-height: none;
+    padding-bottom: 14px;
+  }
+
+  .adhyaksh-nav button {
+    font-size: 13px;
+    min-height: 50px;
+  }
+
+  .mandal-identity {
+    gap: 10px;
+    padding: 0 10px 12px;
+  }
+
+  .mandal-identity strong {
+    font-size: 19px;
+  }
+
+  .mandal-contact-card {
+    margin: 0 10px 18px;
+  }
+
+  .wide-card h2 {
+    font-size: 24px;
+  }
+
+  .action-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .metric-card {
+    min-height: 112px;
+    padding: 18px;
+  }
+
+  .metric-card strong {
+    font-size: 26px;
+  }
+
+  .ops-head,
+  .ops-row {
+    min-width: 760px;
   }
 
   .page-header p,
