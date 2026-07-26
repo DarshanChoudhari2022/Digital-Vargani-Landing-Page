@@ -92,7 +92,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
             fontWeight: 400,
           }}
         >
-          Experience seamless financial management. Replace paper receipt books with instant digital Vargani slips and live committee tracking.
+          Experience seamless financial management. Replace paper receipt books with instant Eksutra Vargani slips and live committee tracking.
         </p>
 
         {/* App Store & Google Play Badges / CTAs */}
@@ -333,7 +333,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
                     <div style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 14 }}>temple_hindu</span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>DIGITAL VARGANI</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>EKSUTRA VARGANI</span>
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 999 }}>VERIFIED SLIP</span>
                 </div>

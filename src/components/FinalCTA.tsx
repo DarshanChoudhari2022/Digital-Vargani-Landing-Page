@@ -23,7 +23,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenDemo }) => {
           Ganesh Utsav is weeks away.<br />Is your mandal ready?
         </h2>
         <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 36 }}>
-          Set up your committee on Digital Mandal in under 5 minutes. Replace the receipt book before collection day.
+          Set up your committee on Eksutra in under 5 minutes. Replace the receipt book before collection day.
         </p>
 
         <button onClick={onOpenDemo} className="btn-primary" style={{

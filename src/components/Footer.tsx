@@ -1,4 +1,5 @@
 import React from 'react';
+import { EksutraLogo } from './EksutraLogo';
 
 export const Footer: React.FC = () => {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -9,15 +10,10 @@ export const Footer: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 48, marginBottom: 48 }} className="footer-grid">
           {/* Brand */}
           <div>
-            <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 16 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--saffron)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
-              </div>
-              <span style={{ fontSize: 16, fontWeight: 600, color: 'white' }}>
-                Digital<span style={{ color: 'var(--saffron)' }}>Mandal</span>
-              </span>
+            <a href="#" style={{ textDecoration: 'none', marginBottom: 16, display: 'inline-block' }}>
+              <EksutraLogo size={32} textColor="#ffffff" />
             </a>
-            <p style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 240 }}>
+            <p style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 240, marginTop: 12 }}>
               The financial operating system for Maharashtra's festival committees.
             </p>
           </div>
@@ -59,7 +55,7 @@ export const Footer: React.FC = () => {
             Made with <span style={{ color: 'var(--saffron)' }}>♥</span> in Maharashtra
           </div>
           <div style={{ fontSize: 13 }}>
-            © {new Date().getFullYear()} Digital Mandal. All rights reserved.
+            © {new Date().getFullYear()} Eksutra. All rights reserved.
           </div>
           <button
             onClick={scrollToTop}

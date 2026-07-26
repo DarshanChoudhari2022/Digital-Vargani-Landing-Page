@@ -15,7 +15,7 @@ export const HowItWorks: React.FC = () => {
     {
       num: '03',
       title: 'Start collecting',
-      desc: 'Your members download the app and start generating digital vargani slips immediately.',
+      desc: 'Your members download the app and start generating digital Eksutra slips immediately.',
     },
   ];
 

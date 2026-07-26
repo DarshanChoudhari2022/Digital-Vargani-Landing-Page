@@ -13,7 +13,7 @@ export const FAQSection: React.FC = () => {
       a: 'Yes, Android or iOS. The app is lightweight and runs well even on budget smartphones costing ₹6,000 or more.',
     },
     {
-      q: 'How much does Digital Mandal cost?',
+      q: 'How much does Eksutra cost?',
       a: 'Free during the current season. We\'ll announce transparent pricing well before it changes, and existing mandals will always get advance notice.',
     },
     {

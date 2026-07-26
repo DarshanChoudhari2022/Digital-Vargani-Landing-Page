@@ -9,7 +9,7 @@ export const FestivalGallerySection: React.FC = () => {
             Built for Ganesh Utsav. Ready for every celebration.
           </h2>
           <p className="t-body-lg">
-            While optimized for Ganesh Utsav, Digital Mandal adapts to any festival or community fundraising event.
+            While optimized for Ganesh Utsav, Eksutra adapts to any festival or community fundraising event.
           </p>
         </div>
 

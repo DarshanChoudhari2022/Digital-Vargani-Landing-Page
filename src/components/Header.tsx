@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { EksutraLogo } from './EksutraLogo';
 
 interface HeaderProps {
   onOpenDemo: () => void;
@@ -35,19 +36,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
     >
       <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Logo */}
-        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
-            color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(249,115,22,0.3)'
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 22, fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', fontFamily: 'var(--font-body)' }}>
-            Digital<span style={{ color: '#f97316' }}>Mandal</span>
-          </span>
+        <a href="#" style={{ textDecoration: 'none' }}>
+          <EksutraLogo size={36} />
         </a>
 
         {/* Floating Dark Pill Navbar (From attached visual reference) */}
