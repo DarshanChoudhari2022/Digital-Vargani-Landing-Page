@@ -2,55 +2,67 @@ import { useState } from 'react';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { FeatureOverview } from './components/FeatureOverview';
+import { LeaderboardSection } from './components/LeaderboardSection';
 import { PRDModulesSection } from './components/PRDModulesSection';
 import { RoleAccessSection } from './components/RoleAccessSection';
 import { ScaleStatsSection } from './components/ScaleStatsSection';
 import { FestivalGallerySection } from './components/FestivalGallerySection';
-import { PricingSection } from './components/PricingSection';
 import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { LiveDemoModal } from './components/LiveDemoModal';
 
 export function App() {
-  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] text-slate-900 selection:bg-orange-500 selection:text-white">
-      {/* Floating Header */}
-      <Header onOpenDemo={() => setDemoModalOpen(true)} />
+    <div className="min-h-screen flex flex-col mandala-bg antialiased">
+      {/* Top Navbar */}
+      <Header onOpenDemo={() => setDemoOpen(true)} />
 
-      {/* Hero Section matching attached image visual layout */}
-      <HeroSection onOpenDemo={() => setDemoModalOpen(true)} />
+      {/* Main Landing Page Content */}
+      <main className="flex-grow">
+        {/* 1. Hero Section */}
+        <HeroSection onOpenDemo={() => setDemoOpen(true)} />
 
-      {/* Feature Overview with live interactive generator */}
-      <FeatureOverview />
+        {/* Rangoli Divider */}
+        <div className="rangoli-divider my-4" />
 
-      {/* PRD Functional Modules Showcase */}
-      <PRDModulesSection />
+        {/* 2. Feature Overview (Vargani Experience) */}
+        <FeatureOverview />
 
-      {/* Role-Based Access Control Section */}
-      <RoleAccessSection />
+        {/* Garland Wave Divider */}
+        <div className="garland-divider my-4" />
 
-      {/* Multi-Festival Gallery & Gemini AI Visual Assets */}
-      <FestivalGallerySection />
+        {/* 3. Volunteer Collector Leaderboard */}
+        <LeaderboardSection />
 
-      {/* Scale & Technical Specs */}
-      <ScaleStatsSection />
+        {/* Rangoli Divider */}
+        <div className="rangoli-divider my-4" />
 
-      {/* Mandal Pricing License Plans */}
-      <PricingSection onOpenDemo={() => setDemoModalOpen(true)} />
+        {/* 4. PRD Modules Showcase (Super Admin, Mandal Admin, Member, Donor) */}
+        <PRDModulesSection />
 
-      {/* Frequently Asked Questions */}
-      <FAQSection />
+        {/* 5. Role-Based Access Control */}
+        <RoleAccessSection />
+
+        {/* 6. Technical Scale & Concurrency Specifications */}
+        <ScaleStatsSection />
+
+        {/* 7. Multi-Festival Capabilities */}
+        <FestivalGallerySection />
+
+        {/* Rangoli Divider */}
+        <div className="rangoli-divider my-4" />
+
+        {/* 8. Frequently Asked Questions */}
+        <FAQSection />
+      </main>
 
       {/* Footer */}
       <Footer />
 
-      {/* Interactive Modal Simulator */}
-      <LiveDemoModal
-        isOpen={demoModalOpen}
-        onClose={() => setDemoModalOpen(false)}
-      />
+      {/* Interactive Demo Sandbox Modal */}
+      <LiveDemoModal isOpen={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { X, Zap, Download, Share2, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface LiveDemoModalProps {
@@ -8,360 +7,315 @@ interface LiveDemoModalProps {
 }
 
 export const LiveDemoModal: React.FC<LiveDemoModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'generator' | 'dashboard' | 'expenses'>('generator');
-  
-  const [mandalName, setMandalName] = useState('Lalbaugcha Raja Mandal 2026');
-  const [donorName, setDonorName] = useState('Vijay Kolhe');
-  const [mobile, setMobile] = useState('9820198201');
-  const [amount, setAmount] = useState<number>(5001);
-  const [paymentMode, setPaymentMode] = useState('UPI Instant');
-  const [area, setArea] = useState('Shop #14, Diamond Market');
-  const [customFieldValue, setCustomFieldValue] = useState('Gold Sponsor Tag');
-  
-  const [generatedSlip, setGeneratedSlip] = useState<any>({
-    slipNumber: 'SLIP-LRM-2026-9812',
-    mandalName: 'Lalbaugcha Raja Mandal 2026',
-    donorName: 'Vijay Kolhe',
-    mobile: '9820198201',
-    amount: 5001,
-    paymentMode: 'UPI Instant',
-    area: 'Shop #14, Diamond Market',
-    customField: 'Gold Sponsor Tag',
-    collector: 'Rahul Sharma (Group Leader - Sec 2)',
-    date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-  });
+  const [activeTab, setActiveTab] = useState<'issue' | 'expense' | 'stats'>('issue');
+  const [donorName, setDonorName] = useState('Rajesh Shinde');
+  const [phone, setPhone] = useState('9820198201');
+  const [amount, setAmount] = useState('1001');
+  const [mode, setMode] = useState('UPI');
+  const [isGenerated, setIsGenerated] = useState(false);
+
+  // Expense tab state
+  const [expenseTitle, setExpenseTitle] = useState('Modak & Prasad Batch');
+  const [expenseAmount, setExpenseAmount] = useState('12500');
+  const [expenseVendor, setVendor] = useState('Kaka Sweets');
+  const [expenses, setExpenses] = useState([
+    { title: 'Pandal Bamboo Structure', amount: '₹ 45,000', vendor: 'Shree Decorators', status: 'Approved' },
+    { title: 'Sound & Mic System Permit', amount: '₹ 18,000', vendor: 'Rhythm Sound', status: 'Approved' },
+  ]);
 
   if (!isOpen) return null;
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
-    const newSlip = {
-      slipNumber: `SLIP-LRM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      mandalName,
-      donorName: donorName || 'Anonymous Contributor',
-      mobile: mobile || 'N/A',
-      amount,
-      paymentMode,
-      area: area || 'Locality Central Area',
-      customField: customFieldValue,
-      collector: 'Rahul Sharma (Group Leader - Sec 2)',
-      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    };
+    setIsGenerated(true);
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff5722', '#c08600', '#ffdeac', '#ffffff'],
+    });
+  };
 
-    setGeneratedSlip(newSlip);
-
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.5 },
-        colors: ['#FF5722', '#FF9800', '#4CAF50', '#2196F3']
-      });
-    } catch (e) {}
+  const handleAddExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    setExpenses([
+      { title: expenseTitle, amount: `₹ ${expenseAmount}`, vendor: expenseVendor, status: 'Pending Review' },
+      ...expenses,
+    ]);
+    setExpenseTitle('');
+    setExpenseAmount('');
+    setVendor('');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#121218] text-white w-full max-w-4xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-scale-in">
+      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto card-warm border border-[var(--outline-variant)]/40 relative">
         
         {/* Modal Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#1A1A24]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full gradient-orange-bg flex items-center justify-center text-white font-bold text-sm">
-              ⚡
-            </div>
+        <div className="sticky top-0 bg-[#1c1b1b] text-white p-6 rounded-t-3xl flex justify-between items-center z-10">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[var(--festival-orange)] text-2xl">science</span>
             <div>
-              <div className="text-xs text-orange-400 font-bold uppercase tracking-wider">
-                Digital Vargani Live Simulator
-              </div>
-              <h3 className="font-heading font-extrabold text-xl text-white">
-                Mandal Operations Control Panel
-              </h3>
+              <h3 className="font-headline-sm text-white">Digital Vargani Interactive Sandbox</h3>
+              <p className="text-xs text-white/70">Test real-time slip generation and mandal expense audit</p>
             </div>
           </div>
-
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-colors"
+            className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
           >
-            <X className="w-5 h-5" />
+            ✕
           </button>
         </div>
 
-        {/* Modal Tabs */}
-        <div className="flex border-b border-white/10 bg-[#161620] px-6">
+        {/* Modal Navigation Tabs */}
+        <div className="flex border-b border-[var(--outline-variant)]/30 px-6 pt-4 bg-[var(--surface-container-low)] gap-3">
           <button
-            onClick={() => setActiveTab('generator')}
-            className={`px-5 py-3 text-xs font-bold border-b-2 transition-colors ${
-              activeTab === 'generator'
-                ? 'border-orange-500 text-orange-400'
-                : 'border-transparent text-gray-400 hover:text-white'
+            onClick={() => setActiveTab('issue')}
+            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
+              activeTab === 'issue'
+                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
+                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
             }`}
           >
-            Slip Generator & Receipt
+            1. Issue Slip (Field Member)
           </button>
           <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-5 py-3 text-xs font-bold border-b-2 transition-colors ${
-              activeTab === 'dashboard'
-                ? 'border-orange-500 text-orange-400'
-                : 'border-transparent text-gray-400 hover:text-white'
+            onClick={() => setActiveTab('expense')}
+            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
+              activeTab === 'expense'
+                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
+                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
             }`}
           >
-            Member & Area Dashboard
+            2. Mandal Expense Log
           </button>
           <button
-            onClick={() => setActiveTab('expenses')}
-            className={`px-5 py-3 text-xs font-bold border-b-2 transition-colors ${
-              activeTab === 'expenses'
-                ? 'border-orange-500 text-orange-400'
-                : 'border-transparent text-gray-400 hover:text-white'
+            onClick={() => setActiveTab('stats')}
+            className={`px-5 py-2.5 rounded-t-xl font-label-md transition-all ${
+              activeTab === 'stats'
+                ? 'bg-white text-[var(--festival-orange)] border-t-2 border-[var(--festival-orange)] shadow-sm'
+                : 'text-[var(--on-surface-variant)] hover:text-[var(--charcoal)]'
             }`}
           >
-            Mandal Expense Reconciler
+            3. Live Dashboard Tally
           </button>
         </div>
 
-        {/* Modal Body Scrollable */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          
-          {activeTab === 'generator' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              <form onSubmit={handleGenerate} className="lg:col-span-6 space-y-4">
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Create Vargani Contribution Slip
-                </div>
+        {/* Tab 1: Issue Slip */}
+        {activeTab === 'issue' && (
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleGenerate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Donor Name</label>
+                <input
+                  type="text"
+                  value={donorName}
+                  onChange={(e) => setDonorName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md"
+                  required
+                />
+              </div>
 
+              <div>
+                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Mobile Number (WhatsApp)</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] text-gray-300 font-semibold mb-1">Mandal Name</label>
+                  <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Amount (₹)</label>
                   <input
-                    type="text"
-                    value={mandalName}
-                    onChange={(e) => setMandalName(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md font-bold text-[var(--festival-orange)]"
+                    required
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-semibold mb-1">Donor / Shop Name</label>
-                    <input
-                      type="text"
-                      value={donorName}
-                      onChange={(e) => setDonorName(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-semibold mb-1">Mobile Number</label>
-                    <input
-                      type="text"
-                      value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-semibold mb-1">Amount (₹)</label>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
-                      required
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 font-bold text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-semibold mb-1">Payment Mode</label>
-                    <select
-                      value={paymentMode}
-                      onChange={(e) => setPaymentMode(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-                    >
-                      <option value="UPI Instant">UPI Instant</option>
-                      <option value="Cash Collection">Cash Collection</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-[11px] text-gray-300 font-semibold mb-1">Address / Street Area</label>
-                  <input
-                    type="text"
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-gray-300 font-semibold mb-1">Custom Slip Field Tag</label>
-                  <input
-                    type="text"
-                    value={customFieldValue}
-                    onChange={(e) => setCustomFieldValue(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl gradient-orange-bg text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 hover:opacity-95"
-                >
-                  <Zap className="w-4 h-4" /> Issue Numbered Vargani Slip
-                </button>
-              </form>
-
-              <div className="lg:col-span-6 flex flex-col justify-between bg-[#181822] p-5 rounded-2xl border border-orange-500/30">
-                <div className="border-b border-white/10 pb-4 mb-4">
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                    <span className="font-bold text-orange-400">{generatedSlip.mandalName}</span>
-                    <span className="font-mono bg-black/40 px-2 py-0.5 rounded text-[10px] text-white border border-white/10">
-                      {generatedSlip.slipNumber}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-gray-500">Official Ganpati Festival Vargani Pass</div>
-                </div>
-
-                <div className="bg-gradient-to-r from-[#FF5722] to-[#FF8C00] p-4 rounded-xl text-white shadow-md space-y-3 mb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="text-[10px] uppercase text-white/80">Contributor</div>
-                      <div className="font-bold text-base">{generatedSlip.donorName}</div>
-                      <div className="text-[10px] text-white/80">{generatedSlip.area}</div>
-                    </div>
-                    <div className="w-10 h-10 rounded bg-white/20 p-1 flex items-center justify-center">
-                      <QrCode className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-end pt-2 border-t border-white/20">
-                    <div>
-                      <div className="text-[9px] uppercase text-white/70">Payment</div>
-                      <div className="text-xs font-bold text-amber-200">{generatedSlip.paymentMode}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[9px] uppercase text-white/70">Vargani Amount</div>
-                      <div className="font-extrabold text-2xl">₹{Number(generatedSlip.amount).toLocaleString('en-IN')}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-[11px] text-gray-300 mb-4 bg-slate-800/50 p-3 rounded-xl">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Collector Member:</span>
-                    <span className="font-semibold">{generatedSlip.collector}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Timestamp:</span>
-                    <span className="font-mono text-[10px]">{generatedSlip.date}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Custom Tag:</span>
-                    <span className="text-orange-400 font-semibold">{generatedSlip.customField}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2 rounded-xl bg-orange-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-orange-600">
-                    <Download className="w-3.5 h-3.5" /> PDF Slip
-                  </button>
-                  <button className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-700">
-                    <Share2 className="w-3.5 h-3.5" /> WhatsApp
-                  </button>
+                  <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Payment Mode</label>
+                  <select
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] focus:outline-none focus:border-[var(--festival-orange)] text-sm font-body-md bg-white"
+                  >
+                    <option value="UPI">UPI Direct</option>
+                    <option value="Cash">Cash Handover</option>
+                    <option value="Cheque">Bank Cheque</option>
+                  </select>
                 </div>
               </div>
 
-            </div>
-          )}
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-xl font-label-md text-white shadow-md hover-lift transition-all"
+                style={{ backgroundColor: 'var(--festival-orange)' }}
+              >
+                Generate &amp; Send WhatsApp Slip
+              </button>
+            </form>
 
-          {activeTab === 'dashboard' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-[#1A1A24] p-4 rounded-xl border border-white/10">
-                  <div className="text-xs text-gray-400">Total Vargani Collected</div>
-                  <div className="text-2xl font-extrabold text-amber-400 mt-1">₹12,84,500</div>
-                  <div className="text-[10px] text-emerald-400 mt-1">+18% vs yesterday</div>
+            {/* Slip Preview Box */}
+            <div className="bg-[var(--surface-container-low)] p-6 rounded-2xl border border-[var(--outline-variant)]/40 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center pb-3 mb-3 border-b border-[var(--outline-variant)]/30 text-xs font-label-sm text-[var(--on-surface-variant)]">
+                  <span>Lalbaugcha Raja Mandal</span>
+                  <span className="text-green-700 font-bold">LIVE PREVIEW</span>
                 </div>
-                <div className="bg-[#1A1A24] p-4 rounded-xl border border-white/10">
-                  <div className="text-xs text-gray-400">Total Digital Slips</div>
-                  <div className="text-2xl font-extrabold text-white mt-1">1,480 Slips</div>
-                  <div className="text-[10px] text-gray-400 mt-1">Avg ₹867 / slip</div>
-                </div>
-                <div className="bg-[#1A1A24] p-4 rounded-xl border border-white/10">
-                  <div className="text-xs text-gray-400">Active Field Members</div>
-                  <div className="text-2xl font-extrabold text-orange-400 mt-1">32 Collectors</div>
-                  <div className="text-[10px] text-gray-400 mt-1">4 Active Groups</div>
-                </div>
+
+                {isGenerated ? (
+                  <div className="space-y-3 bg-white p-5 rounded-xl border border-green-200 shadow-sm animate-scale-in">
+                    <div className="flex items-center gap-2 text-green-700 font-label-md text-sm">
+                      <span className="material-symbols-outlined text-lg">check_circle</span>
+                      Receipt #VG-2026-9041 Generated
+                    </div>
+
+                    <div className="text-2xl font-display-lg text-[var(--charcoal)]">{donorName}</div>
+                    <div className="text-3xl font-display-lg text-[var(--festival-orange)]">₹ {amount}</div>
+
+                    <div className="text-xs text-[var(--on-surface-variant)] space-y-1 font-body-md pt-2 border-t border-gray-100">
+                      <div>Phone: +91 {phone}</div>
+                      <div>Mode: {mode} Direct</div>
+                      <div>Date: {new Date().toLocaleDateString('en-IN')}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-xs text-[var(--on-surface-variant)]">
+                    Fill the form on the left to simulate instant slip creation.
+                  </div>
+                )}
               </div>
 
-              <div className="bg-[#1A1A24] p-4 rounded-xl border border-white/10">
-                <div className="text-xs font-bold text-white mb-3">Group-wise Collection Summary</div>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center p-2 rounded bg-slate-800">
-                    <span>Group 1 (Main Market Area)</span>
-                    <span className="font-bold text-emerald-400">₹4,85,000 (420 slips)</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-slate-800">
-                    <span>Group 2 (Residential Towers)</span>
-                    <span className="font-bold text-emerald-400">₹3,90,000 (510 slips)</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-slate-800">
-                    <span>Group 3 (Station Road & Shops)</span>
-                    <span className="font-bold text-emerald-400">₹4,09,500 (550 slips)</span>
-                  </div>
-                </div>
+              <div className="pt-4 text-center">
+                <span className="text-[11px] text-[var(--on-surface-variant)]">
+                  Simulating WhatsApp API dispatch &amp; SMS delivery pipeline
+                </span>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'expenses' && (
-            <div className="space-y-4">
-              <div className="bg-[#1A1A24] p-4 rounded-xl border border-white/10 flex justify-between items-center">
-                <div>
-                  <div className="text-xs text-gray-400">Net Mandal Balance</div>
-                  <div className="text-2xl font-extrabold text-emerald-400">₹7,64,500</div>
-                </div>
-                <div className="text-right text-xs">
-                  <div className="text-gray-400">Total Expenses: <span className="text-rose-400 font-bold">₹5,20,000</span></div>
-                  <div className="text-gray-400">Total Vargani: <span className="text-amber-400 font-bold">₹12,84,500</span></div>
-                </div>
+        {/* Tab 2: Expense Log */}
+        {activeTab === 'expense' && (
+          <div className="p-8 space-y-6">
+            <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-[var(--surface-container-low)] p-4 rounded-2xl border border-[var(--outline-variant)]/40">
+              <div>
+                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Expense Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Modak Prasad"
+                  value={expenseTitle}
+                  onChange={(e) => setExpenseTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md"
+                  required
+                />
               </div>
+              <div>
+                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Amount (₹)</label>
+                <input
+                  type="number"
+                  placeholder="12500"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-label-md text-[var(--charcoal)] mb-1">Vendor / Payee</label>
+                <input
+                  type="text"
+                  placeholder="Kaka Sweets"
+                  value={expenseVendor}
+                  onChange={(e) => setVendor(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-[var(--outline-variant)] text-xs font-body-md"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="py-2.5 rounded-xl font-label-md text-white text-xs shadow-sm"
+                style={{ backgroundColor: 'var(--festival-orange)' }}
+              >
+                Log Expense Voucher
+              </button>
+            </form>
 
-              <div className="space-y-2 text-xs">
-                <div className="text-xs font-bold text-white mb-2">Approved Mandal Expenses</div>
-                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex justify-between">
-                  <div>
-                    <div className="font-bold text-white">Grand Pandal & Stage Mandap</div>
-                    <div className="text-[10px] text-gray-400">Vendor: Mahalakshmi Decorators • Approved by Admin</div>
-                  </div>
-                  <span className="font-bold text-rose-400">₹2,80,000</span>
-                </div>
-                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex justify-between">
-                  <div>
-                    <div className="font-bold text-white">Sound System & LED Screen</div>
-                    <div className="text-[10px] text-gray-400">Vendor: Sai Electronics • Approved by Khajindar</div>
-                  </div>
-                  <span className="font-bold text-rose-400">₹1,40,000</span>
-                </div>
-                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 flex justify-between">
-                  <div>
-                    <div className="font-bold text-white">Daily Modak & Maha Prasad</div>
-                    <div className="text-[10px] text-gray-400">Vendor: Catering Team • Approved by Admin</div>
-                  </div>
-                  <span className="font-bold text-rose-400">₹1,00,000</span>
-                </div>
+            <div className="space-y-3">
+              <h4 className="font-headline-sm text-sm text-[var(--charcoal)]">Mandal Expense Audit Ledger</h4>
+              <div className="bg-white rounded-2xl border border-[var(--outline-variant)]/40 overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-[var(--surface-container)]">
+                    <tr>
+                      <th className="p-3 font-label-md">Item Description</th>
+                      <th className="p-3 font-label-md">Vendor</th>
+                      <th className="p-3 font-label-md">Amount</th>
+                      <th className="p-3 font-label-md">Audit Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {expenses.map((exp, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="p-3 font-semibold text-[var(--charcoal)]">{exp.title}</td>
+                        <td className="p-3 text-[var(--on-surface-variant)]">{exp.vendor}</td>
+                        <td className="p-3 font-bold text-[var(--festival-deep)]">{exp.amount}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-label-sm bg-yellow-100 text-yellow-800">
+                            {exp.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Tab 3: Live Dashboard Tally */}
+        {activeTab === 'stats' && (
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--festival-orange)]">
+                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Total Vargani Collected</div>
+                <div className="text-3xl font-display-lg text-[var(--festival-orange)] mt-2">₹ 4,82,500</div>
+                <div className="text-[11px] text-green-700 mt-1 font-label-md">↑ +18% vs Last Festival</div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--marigold-deep)]">
+                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Receipt Slips Issued</div>
+                <div className="text-3xl font-display-lg text-[var(--charcoal)] mt-2">842 Slips</div>
+                <div className="text-[11px] text-[var(--on-surface-variant)] mt-1 font-label-md">Avg ₹573 / slip</div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl card-warm border-t-4 border-[var(--secondary)]">
+                <div className="text-xs font-label-sm text-[var(--on-surface-variant)]">Active Field Collectors</div>
+                <div className="text-3xl font-display-lg text-[var(--charcoal)] mt-2">48 Volunteers</div>
+                <div className="text-[11px] text-[var(--on-surface-variant)] mt-1 font-label-md">Peak speed: 42 slips/hr</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Footer */}
+        <div className="p-6 bg-[var(--surface-container-low)] rounded-b-3xl border-t border-[var(--outline-variant)]/30 flex justify-between items-center text-xs">
+          <span className="text-[var(--on-surface-variant)]">
+            Digital Mandal Sandbox — Multi-tenant Audit Engine
+          </span>
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-xl bg-[var(--charcoal)] text-white font-label-md hover:bg-black transition-colors"
+          >
+            Close Sandbox
+          </button>
         </div>
 
       </div>

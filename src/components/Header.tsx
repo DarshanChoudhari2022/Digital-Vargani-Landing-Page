@@ -1,104 +1,115 @@
-import React, { useState } from 'react';
-import { ArrowRight, Menu, X, Flame } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface HeaderProps {
   onOpenDemo: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('feature');
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = [
-    { id: 'feature', label: 'Feature', href: '#feature' },
-    { id: 'prd', label: 'PRD Modules', href: '#prd' },
-    { id: 'roles', label: 'Role Access', href: '#roles' },
-    { id: 'scale', label: 'Scale & Audit', href: '#scale' },
-    { id: 'pricing', label: 'Pricing', href: '#pricing' },
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const navLinks = [
+    { label: 'Features', href: '#features' },
+    { label: 'Collection', href: '#collection' },
+    { label: 'Leaderboard', href: '#leaderboard' },
+    { label: 'Admin', href: '#admin' },
   ];
 
   return (
-    <header className="fixed top-5 left-0 right-0 z-50 px-4 flex justify-center items-center pointer-events-none">
-      <div className="pointer-events-auto flex items-center justify-between w-full max-w-5xl glass-nav rounded-full px-4 py-2.5 shadow-2xl transition-all duration-300">
-        
-        {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2.5 pl-2 group">
-          <div className="w-9 h-9 rounded-full gradient-orange-bg flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-            <Flame className="w-5 h-5 fill-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-heading font-extrabold text-lg tracking-tight text-white flex items-center gap-1">
-              Digital<span className="text-[#FF6B00]">Mandal</span>
-            </span>
-          </div>
-        </a>
+    <header
+      id="site-header"
+      className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-between transition-all duration-500 ease-out backdrop-blur-lg ${
+        scrolled
+          ? 'top-0 w-full max-w-none rounded-none px-8 py-2 bg-[#313030]/95 shadow-xl'
+          : 'top-5 w-[92%] max-w-3xl rounded-full px-8 py-3 bg-[#5d5f5f]/90 floating-pill'
+      }`}
+    >
+      {/* Logo */}
+      <a href="#" className="flex items-center gap-2 group" aria-label="Digital Mandal Home">
+        <span
+          className="material-symbols-outlined text-2xl"
+          style={{
+            color: 'var(--festival-light)',
+            fontVariationSettings: "'FILL' 1",
+          }}
+        >
+          temple_hindu
+        </span>
+        <span
+          className="font-headline-sm tracking-tight text-white"
+          style={{ fontSize: '20px' }}
+        >
+          Digital <span style={{ color: 'var(--marigold-dim)' }}>Mandal</span>
+        </span>
+      </a>
 
-        {/* Desktop Nav Items */}
-        <nav className="hidden md:flex items-center bg-[#1A1A22] rounded-full p-1 border border-white/10">
-          {navItems.map((item) => (
-            <a
-              key={item.id}
-              href={item.href}
-              onClick={() => setActiveTab(item.id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                activeTab === item.id
-                  ? 'bg-[#2A2A36] text-white shadow-sm border border-white/10'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-        {/* Header Right Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenDemo}
-            className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold text-white gradient-orange-bg shadow-md gradient-orange-glow hover:opacity-95 active:scale-95 transition-all duration-200"
+      {/* Desktop Nav */}
+      <nav className="hidden md:flex items-center gap-7" aria-label="Primary navigation">
+        {navLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="font-label-md text-white/80 hover:text-[var(--marigold-dim)] transition-colors relative group"
           >
-            <span>Try Generator</span>
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-              <ArrowRight className="w-3 h-3 text-white" />
-            </div>
-          </button>
+            {link.label}
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--marigold-dim)] rounded-full transition-all group-hover:w-full" />
+          </a>
+        ))}
+      </nav>
 
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-full bg-[#1A1A22] text-gray-300 hover:text-white border border-white/10"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
+      {/* CTA */}
+      <button
+        onClick={onOpenDemo}
+        className="hidden md:flex items-center gap-2 px-5 py-2 rounded-full font-label-md text-white transition-all hover:scale-105 active:scale-95"
+        style={{ backgroundColor: 'var(--festival-orange)' }}
+      >
+        <span className="material-symbols-outlined text-base">login</span>
+        Login
+      </button>
+
+      {/* Mobile Hamburger */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="md:hidden flex items-center justify-center w-10 h-10 rounded-full text-white"
+        aria-label="Toggle menu"
+        aria-expanded={mobileOpen}
+      >
+        <span className="material-symbols-outlined text-2xl">
+          {mobileOpen ? 'close' : 'menu'}
+        </span>
+      </button>
 
       {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="pointer-events-auto fixed inset-x-4 top-20 bg-[#121218] border border-white/10 rounded-2xl p-5 shadow-2xl md:hidden z-50 text-white animate-in fade-in slide-in-from-top-4 duration-200">
-          <div className="flex flex-col gap-3">
-            {navItems.map((item) => (
+      {mobileOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 mx-4 rounded-2xl bg-[#313030] p-6 shadow-2xl md:hidden animate-scale-in">
+          <nav className="flex flex-col gap-4">
+            {navLinks.map((link) => (
               <a
-                key={item.id}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl hover:bg-white/10 text-sm font-medium text-gray-200 hover:text-white transition-colors"
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="font-label-md text-white/80 hover:text-[var(--marigold-dim)] py-2 border-b border-white/10 last:border-0 transition-colors"
               >
-                {item.label}
+                {link.label}
               </a>
             ))}
-            <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenDemo();
-                }}
-                className="w-full py-3 rounded-xl gradient-orange-bg text-white font-bold text-sm text-center shadow-lg"
-              >
-                Launch Live Mandal Demo
-              </button>
-            </div>
-          </div>
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                onOpenDemo();
+              }}
+              className="mt-2 py-3 rounded-xl font-label-md text-white text-center transition-all"
+              style={{ backgroundColor: 'var(--festival-orange)' }}
+            >
+              Login
+            </button>
+          </nav>
         </div>
       )}
     </header>

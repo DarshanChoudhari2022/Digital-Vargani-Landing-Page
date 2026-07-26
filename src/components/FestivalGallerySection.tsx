@@ -1,75 +1,95 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
 
 export const FestivalGallerySection: React.FC = () => {
   const festivals = [
     {
       title: 'Ganesh Utsav',
-      timing: '10 Days Festival',
+      tagline: '10 Days Festival',
       mandalCount: '8,400+ Mandals',
-      image: '/ganpati_mandal_hero.png',
-      desc: 'Peak collection window with doorstep vargani, shop contributions & corporate sponsorships.'
+      description: 'Streamlined vargani slips, modak distribution accounting, and grand Visarjan procession logistics.',
+      icon: 'temple_hindu',
+      bg: 'var(--festival-light)',
+      border: 'border-[var(--festival-orange)]',
+    },
+    {
+      title: 'Dahi Handi',
+      tagline: 'Gokulashtami',
+      mandalCount: '3,200+ Govinda Squads',
+      description: 'Sponsor pledge management, prize money tracking, and team insurance documentation.',
+      icon: 'sports_gymnastics',
+      bg: 'var(--marigold-light)',
+      border: 'border-[var(--marigold-deep)]',
     },
     {
       title: 'Navratri Mahotsav',
-      timing: '9 Nights Garba & Puja',
-      mandalCount: '4,200+ Mandals',
-      image: '/digital_vargani_card.png',
-      desc: 'Pass-wise donor tracking, VIP passes & daily prasad contribution slips.'
+      tagline: '9 Nights Garba & Dandiya',
+      mandalCount: '4,600+ Mandals',
+      description: 'Pass issuance, daily VIP sponsor billing, daily Aarti vargani slips, and prasad accounting.',
+      icon: 'auto_awesome',
+      bg: 'var(--secondary-container)',
+      border: 'border-[var(--secondary)]',
     },
     {
-      title: 'Dahi Handi Utsav',
-      timing: 'Gokulashtami Celebration',
-      mandalCount: '3,100+ Mandals',
-      image: '/mobile_vargani_app_ui.png',
-      desc: 'Fast-paced street collection, instant UPI QR slips, and group leader field tracking.'
-    }
+      title: 'Local Shiv Jayanti & Utsavs',
+      tagline: 'Year-Round Events',
+      mandalCount: '6,100+ Committees',
+      description: 'Configurable receipt books for Hanuman Jayanti, Chhatrapati Shivaji Maharaj Jayanti, and sports leagues.',
+      icon: 'flag',
+      bg: 'var(--surface-container-high)',
+      border: 'border-[var(--charcoal)]',
+    },
   ];
 
   return (
-    <section className="py-20 bg-slate-50 relative border-t border-slate-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <section className="py-16 md:py-24 bg-white relative">
+      <div className="container-max">
         
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-orange-100 border border-orange-200 text-[#FF5722] text-xs font-bold mb-4">
-            <Sparkles className="w-3.5 h-3.5 fill-[#FF5722]" />
-            <span>Multi-Festival Support</span>
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--marigold-light)] text-[var(--marigold-deep)] font-label-sm">
+            <span className="material-symbols-outlined text-sm">festival</span>
+            <span>Multi-Festival Ready</span>
           </div>
-          <h2 className="font-heading font-extrabold text-3xl sm:text-5xl text-slate-900 tracking-tight">
-            Digitizing Every Festival <br />
-            <span className="gradient-orange-text">Across Indian Localities</span>
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base mt-4">
-            One platform powering Ganpati, Navratri, Dahi Handi, Shiv Jayanti, & local cultural mandals.
+          <h2 className="font-headline-md text-[var(--charcoal)]">Empowering All Indian Celebrations</h2>
+          <p className="font-body-md text-[var(--on-surface-variant)]">
+            Configurable templates tailored to the unique collection rules and rituals of each festival.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {festivals.map((fest, i) => (
-            <div key={i} className="glow-card bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-lg flex flex-col group">
-              <div className="relative h-56 overflow-hidden bg-slate-900">
-                <img 
-                  src={fest.image} 
-                  alt={fest.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                />
-                <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-orange-400 border border-white/10">
-                  {fest.timing}
-                </div>
-              </div>
-
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-heading font-extrabold text-2xl text-slate-900 mb-2">{fest.title}</h3>
-                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-4">{fest.desc}</p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#FF5722]">
-                  <span>Active Scale</span>
-                  <span className="bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200">
-                    {fest.mandalCount}
+        {/* Festival Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {festivals.map((f, idx) => (
+            <div
+              key={idx}
+              className={`p-8 rounded-3xl card-warm hover-lift border-l-8 ${f.border} bg-white flex flex-col justify-between`}
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: f.bg }}>
+                    <span className="material-symbols-outlined text-2xl text-[var(--charcoal)]">{f.icon}</span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-label-md bg-[var(--surface-container)] text-[var(--charcoal)]">
+                    {f.mandalCount}
                   </span>
                 </div>
+
+                <div className="space-y-1">
+                  <span className="font-label-sm text-[var(--festival-deep)] uppercase tracking-wider">{f.tagline}</span>
+                  <h3 className="font-headline-md text-[var(--charcoal)]">{f.title}</h3>
+                </div>
+
+                <p className="font-body-md text-[var(--on-surface-variant)]">{f.description}</p>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-[var(--outline-variant)]/30 flex items-center justify-between text-xs font-label-md text-[var(--charcoal)]">
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm text-green-700">check_circle</span>
+                  Custom Slip Templates
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm text-green-700">check_circle</span>
+                  WhatsApp Ready
+                </span>
               </div>
             </div>
           ))}

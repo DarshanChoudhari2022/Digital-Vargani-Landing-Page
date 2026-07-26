@@ -1,5 +1,4 @@
 import React from 'react';
-import { Flame, Heart, ArrowUp } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const scrollToTop = () => {
@@ -7,77 +6,82 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#0A0A0E] text-white pt-16 pb-12 border-t border-white/10 relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 border-b border-white/10">
+    <footer className="bg-[#1c1b1b] text-white pt-16 pb-12 relative overflow-hidden">
+      {/* Rangoli Divider at top */}
+      <div className="rangoli-divider mb-12 opacity-30" />
+
+      <div className="container-max">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 pb-12 border-b border-white/10">
           
+          {/* Brand Col */}
           <div className="md:col-span-5 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full gradient-orange-bg flex items-center justify-center text-white shadow-md">
-                <Flame className="w-5 h-5 fill-white" />
-              </div>
-              <span className="font-heading font-extrabold text-2xl tracking-tight text-white">
-                Digital<span className="text-[#FF6B00]">Mandal</span>
+            <div className="flex items-center gap-2">
+              <span
+                className="material-symbols-outlined text-3xl"
+                style={{ color: 'var(--festival-orange)', fontVariationSettings: "'FILL' 1" }}
+              >
+                temple_hindu
+              </span>
+              <span className="font-headline-md text-white tracking-tight">
+                Digital <span style={{ color: 'var(--marigold-dim)' }}>Mandal</span>
               </span>
             </div>
-            
-            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-sm">
-              Digitizing Indian festival mandal management, vargani collections, mobile receipts, member dashboards & financial reconciliation.
+
+            <p className="font-body-md text-white/70 max-w-sm text-sm">
+              Empowering local festival committees across India with digital transparency, WhatsApp receipts, and member dashboards.
             </p>
+
+            <div className="pt-2 text-xs font-label-sm text-[var(--marigold-dim)] flex items-center gap-2">
+              <span className="material-symbols-outlined text-base">favorite</span>
+              <span>Proudly Built in Maharashtra for Mandals Nationwide</span>
+            </div>
           </div>
 
-          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 text-xs">
-            <div>
-              <div className="font-bold text-white uppercase tracking-wider mb-3">Product PRD</div>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#feature" className="hover:text-orange-400">Digital Vargani Slip</a></li>
-                <li><a href="#prd" className="hover:text-orange-400">Custom Slip Templates</a></li>
-                <li><a href="#roles" className="hover:text-orange-400">Member Dashboards</a></li>
-                <li><a href="#prd" className="hover:text-orange-400">Expense Tracker</a></li>
+          {/* Links Grid */}
+          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <h4 className="font-label-md text-white">Platform</h4>
+              <ul className="space-y-2 text-xs text-white/60">
+                <li><a href="#features" className="hover:text-[var(--marigold-dim)] transition-colors">Vargani Features</a></li>
+                <li><a href="#leaderboard" className="hover:text-[var(--marigold-dim)] transition-colors">Collector Leaderboard</a></li>
+                <li><a href="#admin" className="hover:text-[var(--marigold-dim)] transition-colors">PRD Specs</a></li>
               </ul>
             </div>
 
-            <div>
-              <div className="font-bold text-white uppercase tracking-wider mb-3">Festivals Supported</div>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-orange-400">Ganpati Utsav</a></li>
-                <li><a href="#" className="hover:text-orange-400">Navratri Mahotsav</a></li>
-                <li><a href="#" className="hover:text-orange-400">Dahi Handi</a></li>
-                <li><a href="#" className="hover:text-orange-400">Shiv Jayanti</a></li>
+            <div className="space-y-3">
+              <h4 className="font-label-md text-white">Festivals</h4>
+              <ul className="space-y-2 text-xs text-white/60">
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Ganesh Utsav</a></li>
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Dahi Handi</a></li>
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Navratri Garba</a></li>
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Shiv Jayanti</a></li>
               </ul>
             </div>
 
-            <div>
-              <div className="font-bold text-white uppercase tracking-wider mb-3">Roles & Security</div>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#roles" className="hover:text-orange-400">Super Admin Portal</a></li>
-                <li><a href="#roles" className="hover:text-orange-400">Khajindar Reconciler</a></li>
-                <li><a href="#roles" className="hover:text-orange-400">Group Leader View</a></li>
-                <li><a href="#scale" className="hover:text-orange-400">Audit Trail Logs</a></li>
+            <div className="space-y-3">
+              <h4 className="font-label-md text-white">Compliance</h4>
+              <ul className="space-y-2 text-xs text-white/60">
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Audit Standards</a></li>
+                <li><a href="#" className="hover:text-[var(--marigold-dim)] transition-colors">Terms of Service</a></li>
               </ul>
             </div>
           </div>
 
         </div>
 
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-          <p>© 2026 Digital Mandal Platform. All Rights Reserved.</p>
-          
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-gray-400">
-              Made with <Heart className="w-3.5 h-3.5 text-orange-500 fill-orange-500" /> for Indian Mandals
-            </span>
-            <button
-              onClick={scrollToTop}
-              className="p-2 rounded-full bg-[#1A1A24] text-gray-300 hover:text-white border border-white/10 hover:border-orange-500/50 transition-colors"
-              aria-label="Back to top"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        {/* Bottom Bar */}
+        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
+          <div>© {new Date().getFullYear()} Digital Mandal Platform. All Rights Reserved.</div>
 
+          <button
+            onClick={scrollToTop}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white hover:bg-[var(--festival-orange)] transition-all font-label-sm"
+          >
+            <span>Back to Top</span>
+            <span className="material-symbols-outlined text-sm">arrow_upward</span>
+          </button>
+        </div>
       </div>
     </footer>
   );

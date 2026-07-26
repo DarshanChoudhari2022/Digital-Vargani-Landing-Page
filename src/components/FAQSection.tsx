@@ -1,67 +1,68 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle } from 'lucide-react';
 
 export const FAQSection: React.FC = () => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   const faqs = [
     {
-      q: 'How does Digital Vargani eliminate duplicate slip numbers?',
-      a: 'The platform generates unique sequential slip numbers partitioned per mandal and active festival ID using idempotent API locks. Even if a field collector loses mobile signal or clicks submit twice, zero duplicate slips are issued.'
+      q: 'How does Digital Vargani replace paper receipt books?',
+      a: 'Volunteers use a mobile browser app to enter donor name, mobile number, and amount. Upon hitting submit, a verifiable digital receipt with custom mandal branding is generated instantly and sent to the donor via WhatsApp/SMS.',
     },
     {
-      q: 'Can members print or share receipts without native app installation?',
-      a: 'Yes! Digital Mandal is built mobile-first on web technologies. Field collectors can log in from any mobile browser, generate slips, and instantly share formatted PDF or image receipts via WhatsApp, SMS, or thermal Bluetooth print.'
+      q: 'Does Vargani money go directly into our Mandal bank account?',
+      a: 'Yes. Mandal admins link their official bank account details and UPI VPA ID. The dynamic QR generated on the receipt maps directly to your mandal account with 0% intermediary holding.',
     },
     {
-      q: 'How are custom fields configured for specific mandals?',
-      a: 'Mandal Admins can add text, date, dropdown, checkbox, and amount fields in settings. Admins choose whether each custom field appears on the printed slip and whether it can be filtered on the collection dashboard.'
+      q: 'Can field members use the system under weak 3G or offline field conditions?',
+      a: 'Absolutely. The field collector app is a light PWA designed to queue vargani slips locally when connection drops, automatically syncing with the server once connectivity is restored.',
     },
     {
-      q: 'What payment modes are supported for reconciliation?',
-      a: 'Collectors can log Cash, UPI (Google Pay, PhonePe, Paytm, BHIM), Cheque, Direct Bank Transfer, or Other modes. The Khajindar (Treasurer) dashboard aggregates cash vs digital totals for daily physical cash handover verification.'
+      q: 'How are expenses logged and audited?',
+      a: 'Mandal treasurers can log expenses (pandal setup, sound system, prasad, idol creation) by uploading photo vouchers. Super admins and committee members can inspect the real-time balance sheet at any point.',
     },
     {
-      q: 'Is contribution data isolated between different mandals?',
-      a: 'Yes. Every database query enforces strict multi-tenant isolation. Contributor records, slips, financial summaries, and member credentials of one mandal are strictly inaccessible to other mandals.'
-    }
+      q: 'Can a single mandal run multiple festival years or events?',
+      a: 'Yes. Digital Mandal supports multi-festival setups. You can maintain separate receipt series and financial balances for Ganesh Utsav 2026, Navratri 2026, Shiv Jayanti 2027, and local tournaments.',
+    },
   ];
 
   return (
-    <section className="py-20 bg-white relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+    <section className="py-16 md:py-24 bg-[var(--surface-container-low)]">
+      <div className="container-max">
         
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-orange-100 border border-orange-200 text-[#FF5722] text-xs font-bold mb-4">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Got Questions?</span>
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--marigold-light)] text-[var(--marigold-deep)] font-label-sm">
+            <span className="material-symbols-outlined text-sm">help_outline</span>
+            <span>Clarifications</span>
           </div>
-          <h2 className="font-heading font-extrabold text-3xl sm:text-5xl text-slate-900 tracking-tight">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base mt-3">
-            Everything you need to know about onboarding your mandal.
+          <h2 className="font-headline-md text-[var(--charcoal)]">Frequently Asked Questions</h2>
+          <p className="font-body-md text-[var(--on-surface-variant)]">
+            Everything you need to know about digitizing your mandal operations.
           </p>
         </div>
 
-        <div className="space-y-4">
-          {faqs.map((faq, i) => {
-            const isOpen = openIdx === i;
+        {/* FAQ Accordion */}
+        <div className="max-w-3xl mx-auto space-y-4">
+          {faqs.map((faq, idx) => {
+            const isOpen = openIdx === idx;
             return (
               <div
-                key={i}
-                className="border border-slate-200 rounded-2xl overflow-hidden transition-colors"
+                key={idx}
+                className="bg-white rounded-2xl border border-[var(--outline-variant)]/40 overflow-hidden card-warm"
               >
                 <button
-                  onClick={() => setOpenIdx(isOpen ? null : i)}
-                  className="w-full p-5 text-left font-heading font-bold text-slate-900 flex items-center justify-between text-base sm:text-lg hover:bg-slate-50 transition-colors"
+                  onClick={() => setOpenIdx(isOpen ? null : idx)}
+                  className="w-full p-6 text-left flex justify-between items-center gap-4 font-headline-sm text-[var(--charcoal)]"
+                  style={{ fontSize: '18px' }}
                 >
                   <span>{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-orange-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  <span className="material-symbols-outlined text-2xl text-[var(--festival-orange)] transition-transform duration-300">
+                    {isOpen ? 'remove_circle' : 'add_circle'}
+                  </span>
                 </button>
-
                 {isOpen && (
-                  <div className="px-5 pb-5 text-slate-600 text-xs sm:text-sm leading-relaxed border-t border-slate-100 pt-3 bg-slate-50/50">
+                  <div className="px-6 pb-6 pt-2 font-body-md text-[var(--on-surface-variant)] border-t border-[var(--outline-variant)]/20 animate-fade-up">
                     {faq.a}
                   </div>
                 )}
