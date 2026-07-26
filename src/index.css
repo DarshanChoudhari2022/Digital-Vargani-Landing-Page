@@ -19,7 +19,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -265,7 +266,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   background: #fff;
   border: 1px solid #dbe4f0;
   border-radius: 8px;
@@ -277,9 +279,16 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: #2f6df6;
   box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.12);
+}
+
+textarea {
+  min-height: 86px;
+  padding: 12px 13px;
+  resize: vertical;
 }
 
 .stats-grid {
@@ -350,15 +359,35 @@ select:focus {
 .mandal-grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
+}
+
+.mandal-page-grid {
+  align-items: start;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(420px, 0.8fr) minmax(520px, 1.2fr);
+}
+
+.add-mandal-card {
+  position: sticky;
+  top: 20px;
 }
 
 .mandal-card {
   border-top: 5px solid #2f6df6;
   display: grid;
   gap: 18px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) 118px;
   padding: 24px;
+}
+
+.mandal-card > button {
+  align-self: center;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 800;
+  width: 100%;
 }
 
 .mandal-card h3 {
@@ -509,6 +538,26 @@ select:focus {
   gap: 18px;
 }
 
+.template-settings {
+  background: #eef5ff;
+  border: 1px solid #b7cffc;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.template-settings > strong {
+  color: #1d4ed8;
+  font-size: 18px;
+}
+
+.mini-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .field-pills {
   display: flex;
   flex-wrap: wrap;
@@ -613,8 +662,13 @@ select:focus {
   .split-grid,
   .template-grid,
   .operations-grid,
+  .mandal-page-grid,
   .mandal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .add-mandal-card {
+    position: static;
   }
 
   .sidebar {

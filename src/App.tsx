@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Upload,
   UsersRound,
 } from 'lucide-react';
@@ -106,8 +107,20 @@ interface CollectionReport {
   totalExpenses: number;
 }
 
+interface DemoMandal {
+  additionalMembers: string;
+  address: string;
+  adhyakshName: string;
+  city: string;
+  contactPhone: string;
+  khajindarName: string;
+  locality: string;
+  name: string;
+}
+
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
+const DEMO_MANDALS_KEY = 'digital-vargani-demo-mandals';
 const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
@@ -134,6 +147,7 @@ export default function App() {
   const [templatePreview, setTemplatePreview] = useState(TEMPLATE_IMAGE);
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
+  const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
   const [query, setQuery] = useState('');
 
   const mandalId = session?.user.mandalId;
@@ -157,6 +171,11 @@ export default function App() {
     const parsed = JSON.parse(stored) as AuthSession;
     setSession(parsed);
     void loadWorkspace(parsed);
+  }, []);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(DEMO_MANDALS_KEY);
+    if (stored) setDemoMandals(JSON.parse(stored) as DemoMandal[]);
   }, []);
 
   async function login(event: FormEvent<HTMLFormElement>) {
@@ -258,6 +277,62 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function createMandal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const newMandal: DemoMandal = {
+      additionalMembers: String(form.get('additionalMembers') || ''),
+      address: String(form.get('address') || ''),
+      adhyakshName: String(form.get('adhyakshName') || ''),
+      city: String(form.get('city') || ''),
+      contactPhone: String(form.get('contactPhone') || ''),
+      khajindarName: String(form.get('khajindarName') || ''),
+      locality: String(form.get('locality') || ''),
+      name: String(form.get('name') || ''),
+    };
+
+    if (session?.user.role === 'SUPER_ADMIN') {
+      setBusy(true);
+      try {
+        await apiRequest(
+          '/mandals',
+          {
+            body: JSON.stringify({
+              address: newMandal.address,
+              admin: {
+                email: String(form.get('adminEmail') || ''),
+                name: newMandal.adhyakshName,
+                password: String(form.get('adminPassword') || DEMO_PASSWORD),
+                phone: newMandal.contactPhone,
+              },
+              city: newMandal.city,
+              contactName: newMandal.adhyakshName,
+              contactPhone: newMandal.contactPhone,
+              locality: newMandal.locality,
+              name: newMandal.name,
+              plan: 'starter',
+              state: 'Maharashtra',
+            }),
+            method: 'POST',
+          },
+          session,
+        );
+        setNotice(`${newMandal.name} created in production.`);
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Could not create mandal.');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    const nextMandals = [newMandal, ...demoMandals];
+    setDemoMandals(nextMandals);
+    window.localStorage.setItem(DEMO_MANDALS_KEY, JSON.stringify(nextMandals));
+    event.currentTarget.reset();
+    setNotice(`${newMandal.name} added to the onboarding demo list.`);
   }
 
   async function createCustomField(label: string, required = true) {
@@ -423,8 +498,10 @@ export default function App() {
             {activeScreen === 'mandals' && (
               <MandalsView
                 activeForm={activeForm}
+                demoMandals={demoMandals}
                 groups={groups}
                 members={members}
+                onCreateMandal={createMandal}
                 report={report}
                 templates={templates}
               />
@@ -563,25 +640,50 @@ function Dashboard({
 
 function MandalsView({
   activeForm,
+  demoMandals,
   groups,
   members,
+  onCreateMandal,
   report,
   templates,
 }: {
   activeForm: ActiveForm | null;
+  demoMandals: DemoMandal[];
   groups: Group[];
   members: Member[];
+  onCreateMandal: (event: FormEvent<HTMLFormElement>) => void;
   report: CollectionReport | null;
   templates: Template[];
 }) {
   return (
     <>
       <section className="stats-grid compact">
-        <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value="1" />
+        <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value={String(1 + demoMandals.length)} />
         <Stat icon={<UsersRound />} label="Total Members" note="Collectors" value={String(members.length)} />
         <Stat icon={<ReceiptText />} label="Slips" note="Active festival" value={String(report?.slipCount ?? 0)} />
       </section>
-      <section className="mandal-grid">
+      <section className="mandal-page-grid">
+        <form className="card form-grid add-mandal-card" onSubmit={onCreateMandal}>
+          <div className="panel-title full">
+            <Plus size={22} />
+            <div>
+              <strong>Add Mandal</strong>
+              <span>Onboard mandal name, location, adhyaksh, khajindar and members.</span>
+            </div>
+          </div>
+          <label>Mandal Name<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
+          <label>Locality<input name="locality" required placeholder="Hadapsar, Pune" /></label>
+          <label>City<input name="city" required defaultValue="Pune" /></label>
+          <label>Contact Phone<input name="contactPhone" required placeholder="+919876543210" /></label>
+          <label>Adhyaksh Name<input name="adhyakshName" required placeholder="Adhyaksh full name" /></label>
+          <label>Khajindar Name<input name="khajindarName" required placeholder="Khajindar full name" /></label>
+          <label className="full">Full Address<input name="address" required placeholder="Building, road, area, city" /></label>
+          <label className="full">Additional Members<textarea name="additionalMembers" placeholder="Secretary, vice president, decorators, volunteers..." /></label>
+          <label>Admin Email<input name="adminEmail" placeholder="admin@mandal.local" /></label>
+          <label>Default Password<input name="adminPassword" defaultValue={DEMO_PASSWORD} /></label>
+          <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
+        </form>
+        <div className="mandal-grid">
         <article className="mandal-card">
           <div className="avatar">अ</div>
           <div>
@@ -596,6 +698,23 @@ function MandalsView({
           </div>
           <button type="button">Manage</button>
         </article>
+          {demoMandals.map((mandal, index) => (
+            <article className="mandal-card" key={`${mandal.name}-${index}`}>
+              <div className="avatar">{mandal.name.charAt(0)}</div>
+              <div>
+                <h3>{mandal.name}</h3>
+                <p>{`${mandal.address || mandal.locality}, ${mandal.city}`}</p>
+                <div className="chips">
+                  <span>{mandal.additionalMembers ? mandal.additionalMembers.split(',').length + 2 : 2} members</span>
+                  <span>{mandal.adhyakshName} Adhyaksh</span>
+                  <span>{mandal.khajindarName} Khajindar</span>
+                  <span>Template Pending</span>
+                </div>
+              </div>
+              <button type="button">Manage</button>
+            </article>
+          ))}
+        </div>
       </section>
     </>
   );
@@ -709,8 +828,8 @@ function TemplateView({
               }}
             />
           </label>
-          <button type="button"><Settings size={18} />ID Size</button>
-          <button type="button"><CheckCircle2 size={18} />Save Layout</button>
+          <button type="button"><SlidersHorizontal size={18} />Slip Size</button>
+          <button type="button"><CheckCircle2 size={18} />Save Template</button>
         </div>
         <div className="template-canvas">
           <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
@@ -720,6 +839,25 @@ function TemplateView({
         </div>
       </div>
       <aside className="card settings-panel">
+        <div className="template-settings">
+          <strong>Slip Settings</strong>
+          <label>
+            Template Size
+            <select defaultValue="landscape">
+              <option value="landscape">Landscape Vargani Slip</option>
+              <option value="portrait">Portrait Receipt</option>
+              <option value="custom">Custom Size</option>
+            </select>
+          </label>
+          <div className="mini-grid">
+            <label>Width<input defaultValue="1328" /></label>
+            <label>Height<input defaultValue="800" /></label>
+          </div>
+          <div className="mini-grid">
+            <label>DPI<select defaultValue="300"><option value="300">300 DPI Standard</option><option value="150">150 DPI Preview</option></select></label>
+            <label>Bleed (mm)<input defaultValue="1" /></label>
+          </div>
+        </div>
         <div className="panel-title">
           <Settings size={22} />
           <div>
@@ -728,7 +866,7 @@ function TemplateView({
           </div>
         </div>
         <div className="field-pills">
-          {['Name', 'Address', 'Amount', 'Date', 'Shop Name', 'Mobile No.', 'Payment Mode', 'Area'].map((field) => (
+          {['Slip No.', 'Date', 'Name', 'Address', 'Amount', 'Shop Name', 'Mobile No.', 'Payment Mode', 'Area', 'Collector Name', 'Donor Type', 'Building / Lane'].map((field) => (
             <button key={field} type="button">+ {field}</button>
           ))}
           {(activeForm?.customFields ?? []).map((field) => (
