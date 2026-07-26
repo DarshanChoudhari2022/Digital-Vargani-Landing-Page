@@ -92,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
             Try Demo
             <span style={{
               width: 18, height: 18, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f97316, #ec4899)',
+              background: '#ea580c',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 10, color: 'white'
             }}>➔</span>

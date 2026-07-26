@@ -4,7 +4,7 @@ export const ProblemSection: React.FC = () => {
   return (
     <section className="section-padding" style={{ background: '#ffffff', borderTop: '1px solid #f1f5f9' }}>
       <div className="container-main">
-        {/* Top Header Row matching second section of attached image */}
+        {/* Top Header Row matching second section of reference image */}
         <div
           style={{
             display: 'grid',
@@ -23,8 +23,8 @@ export const ProblemSection: React.FC = () => {
                 gap: 6,
                 padding: '4px 12px',
                 borderRadius: 999,
-                background: '#fdf2f8',
-                color: '#db2777',
+                background: '#ffedd5',
+                color: '#ea580c',
                 fontSize: 12,
                 fontWeight: 700,
                 marginBottom: 16,
@@ -45,7 +45,7 @@ export const ProblemSection: React.FC = () => {
               A Platform Built <br />
               <span
                 style={{
-                  background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
+                  background: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #d97706 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -81,7 +81,7 @@ export const ProblemSection: React.FC = () => {
                   width: 18,
                   height: 18,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #f97316, #ec4899)',
+                  background: '#ea580c',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -156,8 +156,8 @@ export const ProblemSection: React.FC = () => {
                 width: 44,
                 height: 44,
                 borderRadius: '50%',
-                background: '#fce7f3',
-                color: '#db2777',
+                background: '#fef3c7',
+                color: '#d97706',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

@@ -26,13 +26,9 @@ export const EksutraLogo: React.FC<EksutraLogoProps> = ({
       >
         <defs>
           <linearGradient id="eksutra-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f97316" />
-            <stop offset="50%" stopColor="#ec4899" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-          <linearGradient id="eksutra-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#fb923c" />
-            <stop offset="100%" stopColor="#f43f5e" />
+            <stop offset="0%" stopColor="#ea580c" />
+            <stop offset="50%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="#fb923c" />
           </linearGradient>
         </defs>
         {/* Background pill icon box */}
@@ -63,7 +59,7 @@ export const EksutraLogo: React.FC<EksutraLogoProps> = ({
             lineHeight: 1,
           }}
         >
-          Ek<span style={{ background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>sutra</span>
+          Ek<span style={{ color: '#f97316' }}>sutra</span>
         </span>
       )}
     </div>
