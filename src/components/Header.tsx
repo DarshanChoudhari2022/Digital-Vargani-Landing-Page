@@ -7,6 +7,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('Features');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -15,9 +16,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
   }, []);
 
   const navLinks = [
+    { label: 'Features', href: '#product' },
     { label: 'How It Works', href: '#how-it-works' },
-    { label: 'For Mandals', href: '#product' },
-    { label: 'Why Digital', href: '#trust' },
+    { label: 'Leaderboard', href: '#leaderboard' },
     { label: 'FAQ', href: '#faq' },
   ];
 
@@ -25,50 +26,100 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
     <header
       style={{
         position: 'fixed', top: 0, width: '100%', zIndex: 50,
+        padding: '16px 0',
         transition: 'all 0.3s ease',
-        background: scrolled ? 'rgba(255,255,255,0.95)' : 'transparent',
-        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
-        boxShadow: scrolled ? '0 1px 4px rgba(26,26,46,0.04)' : 'none',
-        padding: scrolled ? '12px 0' : '20px 0',
-        backdropFilter: scrolled ? 'blur(8px)' : 'none',
+        background: scrolled ? 'rgba(255,255,255,0.9)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(12px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(0,0,0,0.06)' : 'none',
       }}
     >
       <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Logo */}
-        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'var(--saffron)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
+            color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(249,115,22,0.3)'
           }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 22, fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
           </div>
-          <span className="t-h3" style={{ fontSize: 18, letterSpacing: '-0.02em' }}>
-            Digital<span style={{ color: 'var(--saffron)' }}>Mandal</span>
+          <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', fontFamily: 'var(--font-body)' }}>
+            Digital<span style={{ color: '#f97316' }}>Mandal</span>
           </span>
         </a>
 
-        {/* Desktop Nav */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="desktop-nav">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="t-label"
-              style={{ color: 'var(--body)', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--body)')}
-            >
-              {link.label}
-            </a>
-          ))}
+        {/* Floating Dark Pill Navbar (From attached visual reference) */}
+        <nav
+          className="desktop-nav"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            background: '#1e293b',
+            padding: '4px 6px',
+            borderRadius: 999,
+            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)',
+          }}
+        >
+          {navLinks.map((link) => {
+            const isActive = activeTab === link.label;
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setActiveTab(link.label)}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                  background: isActive ? 'rgba(255,255,255,0.18)' : 'transparent',
+                  color: isActive ? '#ffffff' : '#94a3b8',
+                }}
+              >
+                {link.label}
+              </a>
+            );
+          })}
         </nav>
 
-        {/* CTA cluster */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }} className="desktop-nav">
-          <a href="#" className="t-label" style={{ color: 'var(--body)', textDecoration: 'none' }}>Log in</a>
-          <button onClick={onOpenDemo} className="btn-primary" style={{ padding: '10px 22px', fontSize: 14 }}>
-            Book a Demo
+        {/* Action Button & App Launcher Icon */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="desktop-nav">
+          <button
+            onClick={onOpenDemo}
+            style={{
+              padding: '10px 22px', borderRadius: 999,
+              fontSize: 14, fontWeight: 700,
+              background: '#0f172a', color: '#ffffff',
+              border: 'none', cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: '0 4px 12px rgba(15,23,42,0.15)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            Try Demo
+            <span style={{
+              width: 18, height: 18, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #f97316, #ec4899)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, color: 'white'
+            }}>➔</span>
+          </button>
+
+          <button
+            onClick={onOpenDemo}
+            style={{
+              width: 40, height: 40, borderRadius: '50%',
+              background: '#0f172a', color: '#ffffff',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(15,23,42,0.15)'
+            }}
+            title="App Launcher"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>grid_view</span>
           </button>
         </div>
 
@@ -76,9 +127,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="mobile-toggle"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink)' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0f172a' }}
           aria-label="Toggle menu"
-          aria-expanded={mobileOpen}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 28 }}>
             {mobileOpen ? 'close' : 'menu'}
@@ -92,8 +142,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
           className="anim-scale-in"
           style={{
             position: 'absolute', top: '100%', left: 0, width: '100%',
-            background: 'var(--white)', borderBottom: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-elevated)',
+            background: '#ffffff', borderBottom: '1px solid #e2e8f0',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
           }}
         >
           <nav className="container-main" style={{ display: 'flex', flexDirection: 'column', padding: '16px 24px' }}>
@@ -102,24 +152,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDemo }) => {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="t-label"
                 style={{
-                  color: 'var(--ink)', textDecoration: 'none',
-                  padding: '14px 0',
-                  borderBottom: '1px solid var(--border-light)',
+                  color: '#0f172a', textDecoration: 'none',
+                  padding: '14px 0', fontSize: 15, fontWeight: 600,
+                  borderBottom: '1px solid #f1f5f9',
                 }}
               >
                 {link.label}
               </a>
             ))}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-              <button className="btn-secondary" style={{ width: '100%' }}>Log in</button>
               <button
                 onClick={() => { setMobileOpen(false); onOpenDemo(); }}
                 className="btn-primary"
-                style={{ width: '100%' }}
+                style={{ width: '100%', borderRadius: 999, background: '#0f172a' }}
               >
-                Book a Demo
+                Try Demo
               </button>
             </div>
           </nav>
