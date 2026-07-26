@@ -1,78 +1,61 @@
 import React from 'react';
 
 export const FestivalGallerySection: React.FC = () => {
-  const festivals = [
-    {
-      title: 'Ganesh Utsav',
-      tagline: '10 Days Festival',
-      mandalCount: '8,400+ Mandals',
-      description: 'Streamlined vargani collection for the biggest festival in Maharashtra. Handles extreme peak load during the 15 days prior to Visarjan.',
-      icon: 'temple_hindu',
-      color: 'orange'
-    },
-    {
-      title: 'Navratri',
-      tagline: '9 Nights Festival',
-      mandalCount: '3,200+ Mandals',
-      description: 'Manage passes, sponsor collections, and daily expenses for Dandiya and Garba events with dedicated role-based access.',
-      icon: 'celebration',
-      color: 'rose'
-    },
-    {
-      title: 'Dahi Handi',
-      tagline: 'Gokulashtami',
-      mandalCount: '1,500+ Pathaks',
-      description: 'Track sponsor prize money, pathak (team) registrations, and event day logistics from a single mobile dashboard.',
-      icon: 'sports_kabaddi',
-      color: 'blue'
-    },
-    {
-      title: 'Local Events',
-      tagline: 'Year-round',
-      mandalCount: 'Custom',
-      description: 'Use the generic collection template for blood donation camps, local sports tournaments, or community welfare funds.',
-      icon: 'event',
-      color: 'emerald'
-    }
-  ];
-
   return (
-    <section className="py-24 bg-white relative">
-      <div className="container-max">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="font-headline-md text-[var(--charcoal-900)] mb-4">
-            Built for every community celebration
+    <section className="section-padding" style={{ background: 'var(--white)', borderTop: '1px solid var(--border-light)' }}>
+      <div className="container-main">
+        <div style={{ textAlign: 'center', maxWidth: 600, margin: '0 auto 48px' }}>
+          <h2 className="t-h2" style={{ marginBottom: 16 }}>
+            Built for Ganesh Utsav. Ready for every celebration.
           </h2>
-          <p className="font-body-lg text-[var(--charcoal-600)]">
-            While optimized for Ganesh Utsav, Digital Mandal’s flexible architecture adapts to any local festival or community fundraising event.
+          <p className="t-body-lg">
+            While optimized for Ganesh Utsav, Digital Mandal adapts to any festival or community fundraising event.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {festivals.map((fest, idx) => (
-            <div 
-              key={idx} 
-              className={`bg-white border border-[var(--surface-200)] rounded-2xl p-8 saas-shadow saas-shadow-hover flex flex-col sm:flex-row gap-6 items-start`}
-            >
-              <div className={`w-16 h-16 rounded-2xl bg-${fest.color}-50 text-${fest.color}-600 flex items-center justify-center flex-shrink-0`}>
-                <span className="material-symbols-outlined text-[32px]">{fest.icon}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }} className="festival-grid">
+          {[
+            { title: 'Ganesh Utsav', sub: '10-day festival', icon: 'temple_hindu', bg: '#fef3c7', color: '#92400e', primary: true },
+            { title: 'Navratri', sub: '9 nights festival', icon: 'celebration', bg: '#fce7f3', color: '#9d174d', primary: false },
+            { title: 'Dahi Handi', sub: 'Gokulashtami', icon: 'sports_kabaddi', bg: '#dbeafe', color: '#1e40af', primary: false },
+            { title: 'Local Events', sub: 'Year-round', icon: 'event', bg: '#d1fae5', color: '#065f46', primary: false },
+          ].map((fest, i) => (
+            <div key={i} style={{
+              padding: 28, borderRadius: 16, textAlign: 'center',
+              border: fest.primary ? '2px solid var(--saffron)' : '1px solid var(--border)',
+              background: fest.primary ? 'var(--saffron-bg)' : 'var(--white)',
+              position: 'relative',
+            }}>
+              {fest.primary && (
+                <div style={{
+                  position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                  background: 'var(--saffron)', color: 'white', fontSize: 10, fontWeight: 700,
+                  padding: '3px 12px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em',
+                }}>Primary</div>
+              )}
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, margin: '0 auto 16px',
+                background: fest.bg, color: fest.color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 26 }}>{fest.icon}</span>
               </div>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                   <h3 className="font-headline-sm text-[var(--charcoal-900)]">{fest.title}</h3>
-                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-${fest.color}-100 text-${fest.color}-700`}>
-                      {fest.mandalCount}
-                   </span>
-                </div>
-                <div className="text-sm font-medium text-[var(--charcoal-500)] mb-3">{fest.tagline}</div>
-                <p className="font-body-md text-[var(--charcoal-600)] leading-relaxed">
-                  {fest.description}
-                </p>
-              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>{fest.title}</div>
+              <div className="t-caption">{fest.sub}</div>
             </div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        .festival-grid { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 768px) {
+          .festival-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .festival-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </section>
   );
 };

@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
-import { FeatureOverview } from './components/FeatureOverview';
+import { TrustStrip } from './components/TrustStrip';
+import { ProblemSection } from './components/ProblemSection';
+import { ProductShowcases } from './components/FeatureOverview';
+import { HowItWorks } from './components/HowItWorks';
+import { RoleWorkflow } from './components/PRDModulesSection';
 import { LeaderboardSection } from './components/LeaderboardSection';
-import { PRDModulesSection } from './components/PRDModulesSection';
-import { RoleAccessSection } from './components/RoleAccessSection';
-import { ScaleStatsSection } from './components/ScaleStatsSection';
+import { TrustSection } from './components/TrustSection';
 import { FestivalGallerySection } from './components/FestivalGallerySection';
 import { FAQSection } from './components/FAQSection';
+import { FinalCTA } from './components/FinalCTA';
 import { Footer } from './components/Footer';
 import { LiveDemoModal } from './components/LiveDemoModal';
 
@@ -15,49 +18,46 @@ export function App() {
   const [demoOpen, setDemoOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col antialiased bg-[var(--surface-white)]">
-      {/* Top Navbar */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header onOpenDemo={() => setDemoOpen(true)} />
 
-      {/* Main Landing Page Content */}
-      <main className="flex-grow">
-        {/* 1. Hero Section */}
+      <main style={{ flexGrow: 1 }}>
+        {/* 1. Hero */}
         <HeroSection onOpenDemo={() => setDemoOpen(true)} />
 
+        {/* 2. Trust Strip */}
+        <TrustStrip />
 
+        {/* 3. Problem Statement */}
+        <ProblemSection />
 
-        {/* 2. Feature Overview (Vargani Experience) */}
-        <FeatureOverview />
+        {/* 4-6. Product Showcases (Receipts, Dashboard, Expenses) */}
+        <ProductShowcases />
 
+        {/* 7. How It Works */}
+        <HowItWorks />
 
+        {/* 8. Role-Based Workflow */}
+        <RoleWorkflow />
 
-        {/* 3. Volunteer Collector Leaderboard */}
+        {/* 9. Collector Leaderboard */}
         <LeaderboardSection />
 
+        {/* 10. Trust & Transparency */}
+        <TrustSection />
 
-
-        {/* 4. PRD Modules Showcase (Super Admin, Mandal Admin, Member, Donor) */}
-        <PRDModulesSection />
-
-        {/* 5. Role-Based Access Control */}
-        <RoleAccessSection />
-
-        {/* 6. Technical Scale & Concurrency Specifications */}
-        <ScaleStatsSection />
-
-        {/* 7. Multi-Festival Capabilities */}
+        {/* 11. Festival Use Cases */}
         <FestivalGallerySection />
 
-
-
-        {/* 8. Frequently Asked Questions */}
+        {/* 12. FAQ */}
         <FAQSection />
+
+        {/* 13. Final CTA */}
+        <FinalCTA onOpenDemo={() => setDemoOpen(true)} />
       </main>
 
-      {/* Footer */}
       <Footer />
 
-      {/* Interactive Demo Sandbox Modal */}
       <LiveDemoModal isOpen={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );

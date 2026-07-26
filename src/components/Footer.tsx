@@ -1,81 +1,92 @@
 import React from 'react';
 
 export const Footer: React.FC = () => {
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
-    <footer className="bg-[var(--charcoal-900)] text-slate-300 pt-16 pb-8 border-t border-slate-800">
-      <div className="container-max">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          
-          {/* Brand Col */}
-          <div className="md:col-span-1">
-            <a href="#" className="flex items-center gap-2 mb-6" aria-label="Digital Mandal Home">
-              <div className="w-8 h-8 rounded-lg bg-[var(--festival-orange)] text-white flex items-center justify-center">
-                 <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
+    <footer style={{ background: 'var(--ink)', color: 'rgba(255,255,255,0.5)', paddingTop: 64, paddingBottom: 32, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="container-main">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 48, marginBottom: 48 }} className="footer-grid">
+          {/* Brand */}
+          <div>
+            <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 16 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--saffron)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>temple_hindu</span>
               </div>
-              <span className="font-headline-sm tracking-tight text-white">
-                Digital<span className="text-[var(--festival-orange)]">Mandal</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'white' }}>
+                Digital<span style={{ color: 'var(--saffron)' }}>Mandal</span>
               </span>
             </a>
-            <p className="font-body-sm text-slate-400 max-w-xs">
-              The modern OS for local festivals. Replace paper receipts, manage expenses, and build trust in your community.
+            <p style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 240 }}>
+              The financial operating system for Maharashtra's festival committees.
             </p>
           </div>
-          
-          {/* Links Cols */}
+
+          {/* Product */}
           <div>
-            <h4 className="font-label-sm text-white mb-4">Product</h4>
-            <ul className="space-y-3 font-body-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">Vargani Collection</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Expense Management</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Real-time Dashboard</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Role-based Access</a></li>
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'white', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product</h4>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['Vargani Collection', 'Expense Management', 'Admin Dashboard', 'Donor Receipts'].map((link, i) => (
+                <li key={i}><a href="#" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>{link}</a></li>
+              ))}
             </ul>
           </div>
-          
+
+          {/* Resources */}
           <div>
-            <h4 className="font-label-sm text-white mb-4">Resources</h4>
-            <ul className="space-y-3 font-body-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">Setup Guide</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Mandal Best Practices</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'white', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resources</h4>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['Setup Guide', 'Help Center', 'Best Practices'].map((link, i) => (
+                <li key={i}><a href="#" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>{link}</a></li>
+              ))}
             </ul>
           </div>
-          
+
+          {/* Company */}
           <div>
-            <h4 className="font-label-sm text-white mb-4">Company</h4>
-            <ul className="space-y-3 font-body-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'white', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Company</h4>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['About', 'Contact', 'Privacy Policy', 'Terms of Service'].map((link, i) => (
+                <li key={i}><a href="#" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>{link}</a></li>
+              ))}
             </ul>
           </div>
-          
         </div>
-        
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-slate-500 flex items-center gap-2">
-            Made with <span className="text-[var(--festival-orange)]">♥</span> in Maharashtra
+
+        {/* Bottom bar */}
+        <div style={{ paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            Made with <span style={{ color: 'var(--saffron)' }}>♥</span> in Maharashtra
           </div>
-          
-          <div className="text-sm text-slate-500">
-            &copy; {new Date().getFullYear()} Digital Mandal. All rights reserved.
+          <div style={{ fontSize: 13 }}>
+            © {new Date().getFullYear()} Digital Mandal. All rights reserved.
           </div>
-          
-          <button 
+          <button
             onClick={scrollToTop}
-            className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white transition-colors"
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)', border: 'none', cursor: 'pointer',
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
             aria-label="Scroll to top"
           >
-            <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_upward</span>
           </button>
         </div>
       </div>
+
+      <style>{`
+        .footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; }
+        @media (max-width: 768px) {
+          .footer-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .footer-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </footer>
   );
 };
