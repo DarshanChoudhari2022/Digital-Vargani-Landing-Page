@@ -719,19 +719,32 @@ kbd {
   border-radius: 24px;
   overflow: auto;
   padding: 28px;
+}
+
+.template-map-canvas {
+  background: #fff;
+  border-radius: 14px;
+  margin: 0 auto;
+  max-width: 100%;
+  overflow: hidden;
   position: relative;
+  touch-action: none;
 }
 
 .template-canvas img,
-.phone-preview img {
+.phone-preview img,
+.template-map-canvas img {
   display: block;
   max-width: 100%;
 }
 
-.template-canvas img {
+.template-map-canvas img {
   background: #fff;
-  border-radius: 14px;
-  margin: 0 auto;
+  height: 100%;
+  inset: 0;
+  object-fit: contain;
+  position: absolute;
+  width: 100%;
 }
 
 .field-anchor {
@@ -739,19 +752,36 @@ kbd {
   border: 1px dashed var(--orange);
   border-radius: 10px;
   color: var(--ink);
+  cursor: grab;
+  display: block;
   font-size: 13px;
   font-weight: 950;
-  left: 55%;
+  line-height: 1.15;
+  min-height: 0;
+  min-width: 48px;
+  padding: 4px 7px;
   padding: 6px 10px;
   position: absolute;
+  touch-action: none;
+  transform: translate(0, -50%);
+  z-index: 2;
 }
 
-.field-anchor.slipNumber { top: 36%; }
-.field-anchor.contributorName { top: 43%; }
-.field-anchor.contributorAddress { top: 50%; }
-.field-anchor.building_name { top: 56%; }
-.field-anchor.amount { left: 48%; top: 68%; }
-.field-anchor.createdAt { left: 78%; top: 37%; }
+.field-anchor:active {
+  cursor: grabbing;
+}
+
+.field-anchor.active {
+  background: rgba(255, 240, 230, 0.9);
+  border-color: #ff4f0a;
+  box-shadow: 0 0 0 3px rgba(255, 79, 10, 0.18);
+}
+
+.field-pills button.active {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
 
 .settings-panel {
   display: grid;

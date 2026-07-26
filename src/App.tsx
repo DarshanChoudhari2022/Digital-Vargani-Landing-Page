@@ -19,11 +19,22 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import type { FormEvent, PointerEvent, ReactNode } from 'react';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
+type TextAlign = 'left' | 'center' | 'right';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
 type Screen = 'dashboard' | 'mandals' | 'members' | 'template' | 'generate' | 'slips';
+
+interface TemplatePlacement {
+  color: string;
+  fontSize: number;
+  fontWeight: number;
+  textAlign: TextAlign;
+  width: number;
+  x: number;
+  y: number;
+}
 
 interface AuthSession {
   accessToken: string;
@@ -1093,6 +1104,124 @@ function TemplateView({
   templatePreview: string;
 }) {
   const [fieldLabel, setFieldLabel] = useState('');
+  const canvasWidth = latestTemplateVersion?.canvasWidth ?? 1328;
+  const canvasHeight = latestTemplateVersion?.canvasHeight ?? 800;
+  const fieldOptions = useMemo(
+    () => [
+      { key: 'slipNumber', label: 'Slip No.' },
+      { key: 'createdAt', label: 'Date' },
+      { key: 'contributorName', label: 'Name' },
+      { key: 'contributorAddress', label: 'Address' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'shopName', label: 'Shop Name' },
+      { key: 'contributorPhone', label: 'Mobile No.' },
+      { key: 'paymentMode', label: 'Payment Mode' },
+      { key: 'areaName', label: 'Area' },
+      { key: 'collectorName', label: 'Collector Name' },
+      { key: 'donorType', label: 'Donor Type' },
+      { key: 'building_name', label: 'Building / Lane' },
+      ...(activeForm?.customFields ?? []).map((field) => ({ key: field.key, label: field.label })),
+    ],
+    [activeForm?.customFields],
+  );
+  const [activeField, setActiveField] = useState('slipNumber');
+  const [draggingField, setDraggingField] = useState<string | null>(null);
+  const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>({
+    amount: {
+      color: '#111111',
+      fontSize: 31,
+      fontWeight: 900,
+      textAlign: 'left',
+      width: 250,
+      x: 720,
+      y: 706,
+    },
+    building_name: {
+      color: '#111111',
+      fontSize: 24,
+      fontWeight: 700,
+      textAlign: 'left',
+      width: 420,
+      x: 715,
+      y: 648,
+    },
+    contributorAddress: {
+      color: '#111111',
+      fontSize: 27,
+      fontWeight: 800,
+      textAlign: 'left',
+      width: 560,
+      x: 715,
+      y: 612,
+    },
+    contributorName: {
+      color: '#111111',
+      fontSize: 30,
+      fontWeight: 900,
+      textAlign: 'left',
+      width: 610,
+      x: 670,
+      y: 544,
+    },
+    createdAt: {
+      color: '#111111',
+      fontSize: 25,
+      fontWeight: 800,
+      textAlign: 'center',
+      width: 160,
+      x: 1115,
+      y: 478,
+    },
+    slipNumber: {
+      color: '#b62028',
+      fontSize: 31,
+      fontWeight: 900,
+      textAlign: 'left',
+      width: 100,
+      x: 648,
+      y: 470,
+    },
+  });
+  const selectedPlacement = placements[activeField] ?? defaultPlacement();
+
+  function canvasPoint(event: PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.round(((event.clientX - rect.left) / rect.width) * canvasWidth),
+      y: Math.round(((event.clientY - rect.top) / rect.height) * canvasHeight),
+    };
+  }
+
+  function updatePlacement(fieldKey: string, partial: Partial<TemplatePlacement>) {
+    setPlacements((current) => ({
+      ...current,
+      [fieldKey]: {
+        ...defaultPlacement(),
+        ...current[fieldKey],
+        ...partial,
+      },
+    }));
+  }
+
+  function placeActiveField(event: PointerEvent<HTMLDivElement>) {
+    if (draggingField) return;
+    const point = canvasPoint(event);
+    updatePlacement(activeField, point);
+  }
+
+  function moveDraggingField(event: PointerEvent<HTMLDivElement>) {
+    if (!draggingField) return;
+    updatePlacement(draggingField, canvasPoint(event));
+  }
+
+  function removePlacement() {
+    setPlacements((current) => {
+      const next = { ...current };
+      delete next[activeField];
+      return next;
+    });
+  }
+
   return (
     <section className="template-grid">
       <div className="card template-stage">
@@ -1124,17 +1253,42 @@ function TemplateView({
           <button type="button"><CheckCircle2 size={18} />Save Template</button>
         </div>
         <div className="template-canvas">
-          <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
-          {[
-            ['slipNumber', 'Slip No.'],
-            ['contributorName', 'Name'],
-            ['contributorAddress', 'Address'],
-            ['building_name', 'Building / Lane'],
-            ['amount', 'Amount'],
-            ['createdAt', 'Date'],
-          ].map(([field, label]) => (
-            <span className={`field-anchor ${field}`} key={field}>{label}</span>
-          ))}
+          <div
+            className="template-map-canvas"
+            onPointerDown={placeActiveField}
+            onPointerMove={moveDraggingField}
+            onPointerUp={() => setDraggingField(null)}
+            onPointerCancel={() => setDraggingField(null)}
+            style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
+          >
+            <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
+            {Object.entries(placements).map(([key, placement]) => {
+              const field = fieldOptions.find((item) => item.key === key);
+              return (
+                <button
+                  className={`field-anchor ${activeField === key ? 'active' : ''}`}
+                  key={key}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    setActiveField(key);
+                    setDraggingField(key);
+                  }}
+                  style={{
+                    color: placement.color,
+                    fontSize: `${placement.fontSize}px`,
+                    fontWeight: placement.fontWeight,
+                    left: `${(placement.x / canvasWidth) * 100}%`,
+                    textAlign: placement.textAlign,
+                    top: `${(placement.y / canvasHeight) * 100}%`,
+                    width: `${(placement.width / canvasWidth) * 100}%`,
+                  }}
+                  type="button"
+                >
+                  {sampleFieldValue(key, field?.label ?? key)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
       <aside className="card settings-panel">
@@ -1165,12 +1319,34 @@ function TemplateView({
           </div>
         </div>
         <div className="field-pills">
-          {['Slip No.', 'Date', 'Name', 'Address', 'Amount', 'Shop Name', 'Mobile No.', 'Payment Mode', 'Area', 'Collector Name', 'Donor Type', 'Building / Lane'].map((field) => (
-            <button key={field} type="button">+ {field}</button>
+          {fieldOptions.map((field) => (
+            <button
+              className={activeField === field.key ? 'active' : ''}
+              key={field.key}
+              onClick={() => {
+                setActiveField(field.key);
+                updatePlacement(field.key, placements[field.key] ?? defaultPlacement());
+              }}
+              type="button"
+            >
+              + {field.label}
+            </button>
           ))}
-          {(activeForm?.customFields ?? []).map((field) => (
-            <button key={field.id} type="button">+ {field.label}</button>
-          ))}
+        </div>
+        <div className="template-settings">
+          <strong>Selected Field</strong>
+          <div className="mini-grid">
+            <label>X<input type="number" value={selectedPlacement.x} onChange={(event) => updatePlacement(activeField, { x: Number(event.target.value) })} /></label>
+            <label>Y<input type="number" value={selectedPlacement.y} onChange={(event) => updatePlacement(activeField, { y: Number(event.target.value) })} /></label>
+            <label>Width<input type="number" value={selectedPlacement.width} onChange={(event) => updatePlacement(activeField, { width: Number(event.target.value) })} /></label>
+            <label>Font<input type="number" value={selectedPlacement.fontSize} onChange={(event) => updatePlacement(activeField, { fontSize: Number(event.target.value) })} /></label>
+          </div>
+          <div className="mini-grid">
+            <label>Weight<select value={selectedPlacement.fontWeight} onChange={(event) => updatePlacement(activeField, { fontWeight: Number(event.target.value) })}><option value={400}>Regular</option><option value={700}>Bold</option><option value={800}>Extra Bold</option><option value={900}>Black</option></select></label>
+            <label>Align<select value={selectedPlacement.textAlign} onChange={(event) => updatePlacement(activeField, { textAlign: event.target.value as TextAlign })}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
+          </div>
+          <label>Color<input type="color" value={selectedPlacement.color} onChange={(event) => updatePlacement(activeField, { color: event.target.value })} /></label>
+          <button disabled={!placements[activeField]} onClick={removePlacement} type="button">Remove Field</button>
         </div>
         <div className="add-field">
           <strong>Add Custom Field</strong>
@@ -1300,6 +1476,37 @@ function StatusLine({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function defaultPlacement(): TemplatePlacement {
+  return {
+    color: '#111111',
+    fontSize: 28,
+    fontWeight: 800,
+    textAlign: 'left',
+    width: 280,
+    x: 120,
+    y: 120,
+  };
+}
+
+function sampleFieldValue(key: string, label: string) {
+  const samples: Record<string, string> = {
+    amount: '5100',
+    areaName: 'Ramtekdi',
+    building_name: 'Prathama Building',
+    collectorName: 'Amit Collector',
+    contributorAddress: 'Ramtekdi, Pune',
+    contributorName: 'Mahesh Traders',
+    contributorPhone: '9876543210',
+    createdAt: '26/07/2026',
+    donorType: 'Shop',
+    paymentMode: 'UPI',
+    shopName: 'Mahesh Traders',
+    slipNumber: '003',
+  };
+
+  return samples[key] ?? label;
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {
