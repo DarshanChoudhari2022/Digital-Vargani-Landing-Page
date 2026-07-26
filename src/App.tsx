@@ -431,6 +431,10 @@ export default function App() {
     );
   }
 
+  if (!session) {
+    return <LoginPanel onSubmit={login} busy={busy} notice={notice} />;
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -446,7 +450,6 @@ export default function App() {
           {navItems.map((item) => (
             <button
               className={activeScreen === item.id ? 'active' : ''}
-              disabled={!session}
               key={item.id}
               onClick={() => setActiveScreen(item.id)}
               type="button"
@@ -458,29 +461,17 @@ export default function App() {
         </nav>
 
         <div className="sidebar-footer">
-          {session ? (
-            <>
-              <div className="user-chip">
-                <span>{session.user.name.charAt(0)}</span>
-                <div>
-                  <strong>{session.user.name}</strong>
-                  <small>{session.user.role.replaceAll('_', ' ')}</small>
-                </div>
-              </div>
-              <button className="logout" onClick={logout} type="button">
-                <LogOut size={18} />
-                Logout
-              </button>
-            </>
-          ) : (
-            <div className="user-chip muted">
-              <span>A</span>
-              <div>
-                <strong>Admin Login</strong>
-                <small>Use demo credentials</small>
-              </div>
+          <div className="user-chip">
+            <span>{session.user.name.charAt(0)}</span>
+            <div>
+              <strong>{session.user.name}</strong>
+              <small>{session.user.role.replaceAll('_', ' ')}</small>
             </div>
-          )}
+          </div>
+          <button className="logout" onClick={logout} type="button">
+            <LogOut size={18} />
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -491,7 +482,7 @@ export default function App() {
             <p>{screenSubtitle(activeScreen)}</p>
           </div>
           <div className="header-actions">
-            <button disabled={!session || busy} onClick={() => loadWorkspace()} type="button">
+            <button disabled={busy} onClick={() => loadWorkspace()} type="button">
               <RefreshCw size={18} />
               Refresh
             </button>
@@ -504,64 +495,60 @@ export default function App() {
 
         <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
 
-        {!session ? (
-          <LoginPanel onSubmit={login} busy={busy} />
-        ) : (
-          <>
-            {activeScreen === 'dashboard' && (
-              <Dashboard
-                groups={groups}
-                members={members}
-                report={report}
-                slips={slips}
-                templates={templates}
-                totalCollection={totalCollection}
-              />
-            )}
-            {activeScreen === 'mandals' && (
-              <MandalsView
-                activeForm={activeForm}
-                demoMandals={demoMandals}
-                groups={groups}
-                members={members}
-                onCreateMandal={createMandal}
-                report={report}
-                templates={templates}
-              />
-            )}
-            {activeScreen === 'members' && (
-              <MembersView groups={groups} members={members} onCreateMember={createMember} />
-            )}
-            {activeScreen === 'template' && (
-              <TemplateView
-                activeForm={activeForm}
-                activeTemplate={activeTemplate}
-                latestTemplateVersion={latestTemplateVersion}
-                onAddField={createCustomField}
-                onPreviewChange={setTemplatePreview}
-                templatePreview={templatePreview}
-              />
-            )}
-            {activeScreen === 'generate' && (
-              <GenerateView
-                activeForm={activeForm}
-                busy={busy}
-                onGenerate={generateSlip}
-                templatePreview={templatePreview}
-              />
-            )}
-            {activeScreen === 'slips' && (
-              <SlipsView
-                query={query}
-                receiptUrl={receiptUrl}
-                selectedSlip={selectedSlip}
-                setQuery={setQuery}
-                setSelectedSlip={setSelectedSlip}
-                slips={filteredSlips}
-              />
-            )}
-          </>
-        )}
+        <>
+          {activeScreen === 'dashboard' && (
+            <Dashboard
+              groups={groups}
+              members={members}
+              report={report}
+              slips={slips}
+              templates={templates}
+              totalCollection={totalCollection}
+            />
+          )}
+          {activeScreen === 'mandals' && (
+            <MandalsView
+              activeForm={activeForm}
+              demoMandals={demoMandals}
+              groups={groups}
+              members={members}
+              onCreateMandal={createMandal}
+              report={report}
+              templates={templates}
+            />
+          )}
+          {activeScreen === 'members' && (
+            <MembersView groups={groups} members={members} onCreateMember={createMember} />
+          )}
+          {activeScreen === 'template' && (
+            <TemplateView
+              activeForm={activeForm}
+              activeTemplate={activeTemplate}
+              latestTemplateVersion={latestTemplateVersion}
+              onAddField={createCustomField}
+              onPreviewChange={setTemplatePreview}
+              templatePreview={templatePreview}
+            />
+          )}
+          {activeScreen === 'generate' && (
+            <GenerateView
+              activeForm={activeForm}
+              busy={busy}
+              onGenerate={generateSlip}
+              templatePreview={templatePreview}
+            />
+          )}
+          {activeScreen === 'slips' && (
+            <SlipsView
+              query={query}
+              receiptUrl={receiptUrl}
+              selectedSlip={selectedSlip}
+              setQuery={setQuery}
+              setSelectedSlip={setSelectedSlip}
+              slips={filteredSlips}
+            />
+          )}
+        </>
       </section>
     </main>
   );
@@ -742,31 +729,94 @@ function MemberCollectorApp({
   );
 }
 
-function LoginPanel({ busy, onSubmit }: { busy: boolean; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+function LoginPanel({
+  busy,
+  notice,
+  onSubmit,
+}: {
+  busy: boolean;
+  notice: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const [loginType, setLoginType] = useState<'adhyaksh' | 'member'>('adhyaksh');
+  const isAdhyaksh = loginType === 'adhyaksh';
+
   return (
-    <section className="login-wrap">
-      <form className="login-panel" onSubmit={onSubmit}>
-        <div className="panel-title">
-          <LogIn size={22} />
+    <main className="auth-page">
+      <section className="auth-brand-panel">
+        <div className="auth-brand">
+          <span>DV</span>
           <div>
-            <strong>Main Admin Login</strong>
-            <span>Create mandal members, manage template, generate slips.</span>
+            <strong>Digital Vargani</strong>
+            <small>Festival Collection OS</small>
           </div>
         </div>
-        <label>
-          Email / Username
-          <input name="identifier" required defaultValue={DEMO_IDENTIFIER} />
-        </label>
-        <label>
-          Password
-          <input name="password" required type="password" defaultValue={DEMO_PASSWORD} />
-        </label>
-        <button className="primary" disabled={busy} type="submit">
-          <ShieldCheck size={18} />
-          Login To Console
-        </button>
-      </form>
-    </section>
+        <div className="auth-illustration">
+          <div className="receipt-card">
+            <ReceiptText size={40} />
+            <span>Digital Vargani Slip</span>
+            <strong>Rs. 2,100</strong>
+          </div>
+          <div className="auth-dots">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+        <p>Secure, simple, and fast collection for mandal teams.</p>
+      </section>
+
+      <section className="auth-form-panel">
+        <div className="auth-card">
+          <div className="login-toggle">
+            <button className={isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('adhyaksh')} type="button">
+              <ShieldCheck size={18} />
+              Adhyaksh Login
+            </button>
+            <button className={!isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('member')} type="button">
+              <UsersRound size={18} />
+              Member Login
+            </button>
+          </div>
+
+          <form className="login-panel clean" key={loginType} onSubmit={onSubmit}>
+            <div className="panel-title">
+              {isAdhyaksh ? <ShieldCheck size={24} /> : <LogIn size={24} />}
+              <div>
+                <strong>{isAdhyaksh ? 'Adhyaksh / Main Admin Login' : 'Member Collection Login'}</strong>
+                <span>
+                  {isAdhyaksh
+                    ? 'Create mandals, manage template and review collections.'
+                    : 'Login and start adding new vargani entries.'}
+                </span>
+              </div>
+            </div>
+            <label>
+              Email / Username
+              <input
+                name="identifier"
+                required
+                defaultValue={isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
+              />
+            </label>
+            <label>
+              Password
+              <input name="password" required type="password" defaultValue={DEMO_PASSWORD} />
+            </label>
+            <button className="primary" disabled={busy} type="submit">
+              <ShieldCheck size={18} />
+              {isAdhyaksh ? 'Login To Admin Console' : 'Login To Vargani Screen'}
+            </button>
+          </form>
+
+          <div className={`notice ${busy ? 'busy' : ''}`}>{busy ? 'Working...' : notice}</div>
+          <div className="login-help">
+            <strong>Do not have login details?</strong>
+            <span>Contact your mandal admin to create your member account.</span>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
