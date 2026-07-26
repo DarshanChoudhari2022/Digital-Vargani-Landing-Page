@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   BadgeIndianRupee,
   Building2,
   CheckCircle2,
@@ -646,11 +647,38 @@ function SuperAdminApp({
   const [ownerScreen, setOwnerScreen] = useState<OwnerScreen>('dashboard');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [detailTab, setDetailTab] = useState<OwnerMandalTab>('overview');
+  const [addMandalOpen, setAddMandalOpen] = useState(false);
+  const [managedIndex, setManagedIndex] = useState<number | null>(null);
+  const [ownerQuery, setOwnerQuery] = useState('');
   const [mandalLogins, setMandalLogins] = useState<Record<string, Array<{ role: string; username: string; password: string }>>>({});
   const selectedMandal = mandals[Math.min(selectedIndex, mandals.length - 1)] ?? seedMandal;
   const selectedKey = selectedMandal.name;
   const extraLogins = mandalLogins[selectedKey] ?? [];
   const totalMembers = mandals.reduce((sum, mandal) => sum + Number(mandal.memberCount || 0), 0);
+  const totalSlipsGenerated = 0;
+  const filteredMandals = mandals
+    .map((mandal, index) => ({ index, mandal }))
+    .filter(({ mandal }) => {
+      const query = ownerQuery.trim().toLowerCase();
+      if (!query) return true;
+      return [mandal.name, mandal.address, mandal.locality, mandal.city, mandal.contactEmail]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+    });
+
+  function openAddMandal() {
+    setOwnerScreen('mandals');
+    setManagedIndex(null);
+    setAddMandalOpen(true);
+  }
+
+  function openMandal(index: number) {
+    setSelectedIndex(index);
+    setManagedIndex(index);
+    setOwnerScreen('mandals');
+    setDetailTab('overview');
+    setAddMandalOpen(false);
+  }
 
   function createLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -674,14 +702,14 @@ function SuperAdminApp({
           <span>DV</span>
           <div>
             <strong>Digital Vargani</strong>
-            <small>Owner Console</small>
+            <small>Super Admin Console</small>
           </div>
         </div>
         <nav>
-          <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => setOwnerScreen('dashboard')} type="button">
+          <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => { setOwnerScreen('dashboard'); setManagedIndex(null); }} type="button">
             <LayoutDashboard size={19} />Dashboard
           </button>
-          <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => setOwnerScreen('mandals')} type="button">
+          <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => { setOwnerScreen('mandals'); setManagedIndex(null); }} type="button">
             <Building2 size={19} />Mandals
           </button>
         </nav>
@@ -701,78 +729,84 @@ function SuperAdminApp({
         <AdminTopbar session={session} />
         <header className="page-header">
           <div>
-            <h1>{ownerScreen === 'dashboard' ? 'Owner Dashboard' : 'Mandals'}</h1>
+            <h1>{ownerScreen === 'dashboard' ? 'Dashboard' : 'Mandals'}</h1>
             <p>{ownerScreen === 'dashboard' ? 'Track all onboarded mandals and software operations.' : 'Add mandals and manage each client account.'}</p>
           </div>
           <div className="header-actions">
-            <button onClick={() => setOwnerScreen('mandals')} type="button"><Plus size={18} />Add Mandal</button>
+            <button onClick={openAddMandal} type="button"><Plus size={18} />Add Mandal</button>
           </div>
         </header>
         <div className="notice">{notice}</div>
 
         {ownerScreen === 'dashboard' && (
           <>
-            <section className="command-hero">
+            <section className="stats-grid compact owner-stat-grid">
+              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded client mandals" value={String(mandals.length)} />
+              <Stat icon={<UsersRound />} label="Total Members" note="Across all mandals" value={String(totalMembers)} />
+              <Stat icon={<FileText />} label="Slips Generated" note="Live receipt records" value={String(totalSlipsGenerated)} />
+            </section>
+            <section className="owner-list-head">
               <div>
-                <span>Software Owner Command Center</span>
-                <h2>Manage every mandal from one super admin console</h2>
-                <p>Add mandals, issue main logins, upload their vargani template, and prepare them for festival collection.</p>
+                <h2>Mandals</h2>
+                <p>Each block represents one mandal. Open Manage to set logins and templates.</p>
               </div>
-              <div className="hero-actions">
-                <button className="primary" onClick={() => setOwnerScreen('mandals')} type="button"><Plus size={18} />Add Mandal</button>
+              <button className="primary" onClick={openAddMandal} type="button"><Plus size={18} />Add Mandal</button>
+            </section>
+            <section className="owner-toolbar">
+              <div className="search-input">
+                <Search size={20} />
+                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder="Search mandals by name, area, email..." value={ownerQuery} />
               </div>
+              <span>{filteredMandals.length} of {mandals.length} mandals</span>
             </section>
-            <section className="stats-grid">
-              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded clients" value={String(mandals.length)} />
-              <Stat icon={<UsersRound />} label="Total Members" note="Declared by mandals" value={String(totalMembers)} />
-              <Stat icon={<FileText />} label="Templates" note="Ready for mapping" value={String(mandals.length)} />
-              <Stat icon={<ShieldCheck />} label="Owner Access" note="Super admin active" value="Live" />
-            </section>
-            <section className="owner-mandal-strip">
-              {mandals.map((mandal, index) => (
-                <button
-                  className="owner-mandal-tile"
-                  key={`${mandal.name}-${index}`}
-                  onClick={() => {
-                    setSelectedIndex(index);
-                    setOwnerScreen('mandals');
-                    setDetailTab('overview');
-                  }}
-                  type="button"
-                >
-                  <MandalAvatar mandal={mandal} />
-                  <span>
-                    <strong>{mandal.name}</strong>
-                    <small>{mandal.locality || mandal.city || mandal.address || 'Location not set'}</small>
-                  </span>
-                  <em>Manage</em>
-                </button>
-              ))}
-            </section>
+            <MandalCardGrid items={filteredMandals} onManage={openMandal} />
           </>
         )}
 
-        {ownerScreen === 'mandals' && (
-          <section className="owner-grid">
-            <form className="card form-grid add-mandal-card" onSubmit={onCreateMandal}>
-              <div className="panel-title full">
-                <Plus size={22} />
-                <div>
-                  <strong>Add Mandal</strong>
-                  <span>Only mandal name is required. Everything else can be completed later.</span>
+        {ownerScreen === 'mandals' && managedIndex === null && (
+          <>
+            <section className="stats-grid compact owner-stat-grid">
+              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded" value={String(mandals.length)} />
+              <Stat icon={<UsersRound />} label="Total Members" note="Declared collectors" value={String(totalMembers)} />
+              <Stat icon={<ReceiptText />} label="Slips Generated" note="Across mandals" value={String(totalSlipsGenerated)} />
+            </section>
+            {addMandalOpen && (
+              <form className="card form-grid owner-add-panel" onSubmit={(event) => { onCreateMandal(event); setAddMandalOpen(false); }}>
+                <div className="panel-title full">
+                  <Plus size={22} />
+                  <div>
+                    <strong>Add Mandal</strong>
+                    <span>Mandal name is required. Address, logo, contacts and member count are optional.</span>
+                  </div>
+                  <button className="ghost-button" onClick={() => setAddMandalOpen(false)} type="button">Close</button>
                 </div>
+                <label className="full">Mandal Name *<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
+                <label>Address<input name="address" placeholder="Full mandal address" /></label>
+                <label>Locality<input name="locality" placeholder="Dapodi, Pune" /></label>
+                <label>City<input name="city" defaultValue="Pune" /></label>
+                <label>Phone No.<input name="contactPhone" placeholder="+91..." /></label>
+                <label>Contact Email<input name="contactEmail" placeholder="contact@mandal.local" /></label>
+                <label>No. of Members<input name="memberCount" inputMode="numeric" placeholder="50" /></label>
+                <label className="full">Mandal Logo<input accept="image/*" name="logo" type="file" /></label>
+                <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
+              </form>
+            )}
+            <section className="owner-toolbar">
+              <div className="search-input">
+                <Search size={20} />
+                <input onChange={(event) => setOwnerQuery(event.target.value)} placeholder="Search mandals by name, area, email..." value={ownerQuery} />
               </div>
-              <label className="full">Mandal Name *<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
-              <label>Address<input name="address" placeholder="Full mandal address" /></label>
-              <label>Locality<input name="locality" placeholder="Dapodi, Pune" /></label>
-              <label>City<input name="city" defaultValue="Pune" /></label>
-              <label>Phone No.<input name="contactPhone" placeholder="+91..." /></label>
-              <label>Contact Email<input name="contactEmail" placeholder="contact@mandal.local" /></label>
-              <label>No. of Members<input name="memberCount" inputMode="numeric" placeholder="50" /></label>
-              <label className="full">Mandal Logo<input accept="image/*" name="logo" type="file" /></label>
-              <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
-            </form>
+              <span>{filteredMandals.length} of {mandals.length} mandals</span>
+            </section>
+            <MandalCardGrid items={filteredMandals} onManage={openMandal} />
+          </>
+        )}
 
+        {ownerScreen === 'mandals' && managedIndex !== null && (
+          <section className="owner-managed-view">
+            <button className="back-link" onClick={() => setManagedIndex(null)} type="button">
+              <ArrowLeft size={20} />Back to Mandals
+            </button>
             <div className="card owner-detail-card">
               <div className="owner-detail-header">
                 <MandalAvatar mandal={selectedMandal} />
@@ -840,6 +874,44 @@ function SuperAdminApp({
         )}
       </section>
     </main>
+  );
+}
+
+function MandalCardGrid({
+  items,
+  onManage,
+}: {
+  items: Array<{ index: number; mandal: DemoMandal }>;
+  onManage: (index: number) => void;
+}) {
+  return (
+    <section className="mandal-card-grid">
+      {items.map(({ index, mandal }) => (
+        <article className="owner-client-card" key={`${mandal.name}-${index}`}>
+          <div className="mandal-card-topline" />
+          <div className="owner-client-main">
+            <MandalAvatar mandal={mandal} />
+            <div>
+              <strong>{mandal.name}</strong>
+              <span>{mandal.address || mandal.locality || mandal.city || 'Location not set'}</span>
+            </div>
+          </div>
+          <div className="mandal-card-meta">
+            <span>{Number(mandal.memberCount || 0)} members</span>
+            <span>{mandal.contactPhone || 'Phone pending'}</span>
+            <em>Template Ready</em>
+          </div>
+          <button onClick={() => onManage(index)} type="button">Manage</button>
+        </article>
+      ))}
+      {!items.length && (
+        <div className="empty-card">
+          <Building2 size={34} />
+          <strong>No mandals found</strong>
+          <span>Try another search or add a new mandal.</span>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1063,16 +1135,12 @@ function LoginPanel({
 
       <section className="auth-form-panel">
         <div className="auth-card">
-          <div className="login-toggle">
-            <button className={isOwner ? 'active' : ''} onClick={() => setLoginType('owner')} type="button">
-              <ShieldCheck size={18} />
-              Owner Login
-            </button>
+          <div className="login-toggle two">
             <button className={isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('adhyaksh')} type="button">
               <ShieldCheck size={18} />
               Adhyaksh Login
             </button>
-            <button className={!isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('member')} type="button">
+            <button className={loginType === 'member' ? 'active' : ''} onClick={() => setLoginType('member')} type="button">
               <UsersRound size={18} />
               Member Login
             </button>
@@ -1082,7 +1150,7 @@ function LoginPanel({
             <div className="panel-title">
               {isAdhyaksh ? <ShieldCheck size={24} /> : <LogIn size={24} />}
               <div>
-                <strong>{isOwner ? 'Super Admin / Software Owner Login' : isAdhyaksh ? 'Adhyaksh / Main Admin Login' : 'Member Collection Login'}</strong>
+                <strong>{isOwner ? 'Super Admin Login' : isAdhyaksh ? 'Adhyaksh / Main Admin Login' : 'Member Collection Login'}</strong>
                 <span>
                   {isOwner
                     ? 'Add mandals, manage client logins, and configure vargani templates.'
@@ -1106,7 +1174,7 @@ function LoginPanel({
             </label>
             <button className="primary" disabled={busy} type="submit">
               <ShieldCheck size={18} />
-              {isOwner ? 'Login To Owner Console' : isAdhyaksh ? 'Login To Admin Console' : 'Login To Vargani Screen'}
+              {isOwner ? 'Login To Super Admin Console' : isAdhyaksh ? 'Login To Admin Console' : 'Login To Vargani Screen'}
             </button>
           </form>
 

@@ -856,17 +856,186 @@ kbd {
   background: #111;
 }
 
-.owner-grid {
-  align-items: start;
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 420px minmax(0, 1fr);
+.owner-stat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.owner-mandal-strip {
+.owner-list-head {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 18px;
+}
+
+.owner-list-head h2 {
+  font-size: 32px;
+  margin: 0;
+}
+
+.owner-list-head p {
+  color: var(--muted);
+  font-weight: 750;
+  margin: 6px 0 0;
+}
+
+.owner-toolbar {
+  align-items: center;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(280px, 620px) auto;
+  margin: 18px 0 8px;
+}
+
+.owner-toolbar > span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.search-input {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 18px;
+}
+
+.search-input input {
+  border: 0;
+  min-height: 44px;
+  padding: 0;
+}
+
+.search-input input:focus {
+  box-shadow: none;
+}
+
+.mandal-card-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(250px, 1fr));
+}
+
+.owner-client-card {
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(60, 42, 32, 0.04);
+  display: grid;
+  gap: 16px;
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  position: relative;
+}
+
+.mandal-card-topline {
+  background: linear-gradient(90deg, var(--orange), var(--yellow));
+  height: 5px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.owner-client-main {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding-top: 4px;
+}
+
+.owner-client-main strong {
+  display: block;
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.owner-client-main span {
+  color: var(--muted);
+  display: block;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
+.mandal-card-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mandal-card-meta span,
+.mandal-card-meta em {
+  background: #f6f4eb;
+  border-radius: 999px;
+  color: #55483e;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 900;
+  padding: 7px 11px;
+}
+
+.mandal-card-meta em {
+  background: #e9ffe8;
+  color: #009b47;
+}
+
+.owner-client-card > button {
+  justify-content: center;
+  min-height: 42px;
+}
+
+.owner-add-panel {
+  margin-bottom: 18px;
+}
+
+.owner-managed-view {
+  display: grid;
+  gap: 16px;
+}
+
+.back-link {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  justify-content: flex-start;
+  min-height: 36px;
+  padding: 0;
+  width: max-content;
+}
+
+.back-link:hover {
+  color: var(--orange);
+}
+
+.ghost-button {
+  background: #fff;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.empty-card {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px dashed #d8d0bd;
+  border-radius: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  min-height: 220px;
+  padding: 28px;
+  text-align: center;
+}
+
+.empty-card strong {
+  color: var(--ink);
+  font-size: 22px;
 }
 
 .owner-mandal-tile {
@@ -1174,6 +1343,10 @@ kbd {
   padding: 6px;
 }
 
+.login-toggle.two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .login-toggle button {
   background: transparent;
   border: 0;
@@ -1422,8 +1595,10 @@ kbd {
   .member-shell,
   .auth-page,
   .command-hero,
-  .owner-grid,
-  .owner-mandal-strip,
+  .mandal-card-grid,
+  .owner-list-head,
+  .owner-stat-grid,
+  .owner-toolbar,
   .mandal-page-grid,
   .split-grid,
   .template-grid,
