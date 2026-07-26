@@ -25,6 +25,8 @@ type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
 type TextAlign = 'left' | 'center' | 'right';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
 type Screen = 'dashboard' | 'mandals' | 'members' | 'template' | 'generate' | 'slips';
+type OwnerScreen = 'dashboard' | 'mandals';
+type OwnerMandalTab = 'overview' | 'template';
 
 interface TemplatePlacement {
   color: string;
@@ -122,10 +124,15 @@ interface DemoMandal {
   additionalMembers: string;
   address: string;
   adhyakshName: string;
+  adminEmail?: string;
+  adminPassword?: string;
   city: string;
+  contactEmail?: string;
   contactPhone: string;
   khajindarName: string;
+  logoUrl?: string;
   locality: string;
+  memberCount?: string;
   name: string;
 }
 
@@ -133,6 +140,7 @@ const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const DEMO_MANDALS_KEY = 'digital-vargani-demo-mandals';
 const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
+const SUPER_ADMIN_IDENTIFIER = 'owner@digitalvargani.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
@@ -193,12 +201,26 @@ export default function App() {
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const identifier = String(form.get('identifier') || '');
+    const password = String(form.get('password') || '');
     setBusy(true);
     try {
+      if (identifier === SUPER_ADMIN_IDENTIFIER && password === DEMO_PASSWORD) {
+        const ownerSession: AuthSession = {
+          accessToken: 'demo-super-admin-token',
+          refreshToken: 'demo-super-admin-refresh',
+          user: { id: 'super-admin-demo', mandalId: null, name: 'Digital Vargani Owner', role: 'SUPER_ADMIN' },
+        };
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(ownerSession));
+        setSession(ownerSession);
+        setNotice('Logged in as Digital Vargani owner.');
+        return;
+      }
+
       const nextSession = await apiRequest<AuthSession>('/auth/login', {
         body: JSON.stringify({
-          identifier: String(form.get('identifier')),
-          password: String(form.get('password')),
+          identifier,
+          password,
         }),
         method: 'POST',
       });
@@ -229,6 +251,10 @@ export default function App() {
 
   async function loadWorkspace(currentSession = session) {
     if (!currentSession) return;
+    if (currentSession.user.role === 'SUPER_ADMIN' && !currentSession.user.mandalId) {
+      setNotice('Owner workspace loaded. Manage all onboarded mandals from here.');
+      return;
+    }
     setBusy(true);
     try {
       const form = await apiRequest<ActiveForm>('/vargani/active-form', {}, currentSession);
@@ -297,49 +323,29 @@ export default function App() {
   async function createMandal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const logo = form.get('logo');
     const newMandal: DemoMandal = {
       additionalMembers: String(form.get('additionalMembers') || ''),
       address: String(form.get('address') || ''),
       adhyakshName: String(form.get('adhyakshName') || ''),
+      adminEmail: String(form.get('adminEmail') || `admin@${slugify(String(form.get('name') || 'mandal'))}.local`),
+      adminPassword: String(form.get('adminPassword') || DEMO_PASSWORD),
       city: String(form.get('city') || ''),
+      contactEmail: String(form.get('contactEmail') || ''),
       contactPhone: String(form.get('contactPhone') || ''),
       khajindarName: String(form.get('khajindarName') || ''),
+      logoUrl: logo instanceof File && logo.size > 0 ? URL.createObjectURL(logo) : '',
       locality: String(form.get('locality') || ''),
+      memberCount: String(form.get('memberCount') || ''),
       name: String(form.get('name') || ''),
     };
 
     if (session?.user.role === 'SUPER_ADMIN') {
-      setBusy(true);
-      try {
-        await apiRequest(
-          '/mandals',
-          {
-            body: JSON.stringify({
-              address: newMandal.address,
-              admin: {
-                email: String(form.get('adminEmail') || ''),
-                name: newMandal.adhyakshName,
-                password: String(form.get('adminPassword') || DEMO_PASSWORD),
-                phone: newMandal.contactPhone,
-              },
-              city: newMandal.city,
-              contactName: newMandal.adhyakshName,
-              contactPhone: newMandal.contactPhone,
-              locality: newMandal.locality,
-              name: newMandal.name,
-              plan: 'starter',
-              state: 'Maharashtra',
-            }),
-            method: 'POST',
-          },
-          session,
-        );
-        setNotice(`${newMandal.name} created in production.`);
-      } catch (error) {
-        setNotice(error instanceof Error ? error.message : 'Could not create mandal.');
-      } finally {
-        setBusy(false);
-      }
+      const nextMandals = [newMandal, ...demoMandals];
+      setDemoMandals(nextMandals);
+      window.localStorage.setItem(DEMO_MANDALS_KEY, JSON.stringify(nextMandals));
+      event.currentTarget.reset();
+      setNotice(`${newMandal.name} added to owner dashboard.`);
       return;
     }
 
@@ -444,6 +450,20 @@ export default function App() {
 
   if (!session) {
     return <LoginPanel onSubmit={login} busy={busy} notice={notice} />;
+  }
+
+  if (session.user.role === 'SUPER_ADMIN') {
+    return (
+      <SuperAdminApp
+        demoMandals={demoMandals}
+        notice={notice}
+        onCreateMandal={createMandal}
+        onLogout={logout}
+        session={session}
+        templatePreview={templatePreview}
+        onPreviewChange={setTemplatePreview}
+      />
+    );
   }
 
   return (
@@ -589,6 +609,243 @@ function AdminTopbar({ session }: { session: AuthSession }) {
       </div>
     </div>
   );
+}
+
+function SuperAdminApp({
+  demoMandals,
+  notice,
+  onCreateMandal,
+  onLogout,
+  onPreviewChange,
+  session,
+  templatePreview,
+}: {
+  demoMandals: DemoMandal[];
+  notice: string;
+  onCreateMandal: (event: FormEvent<HTMLFormElement>) => void;
+  onLogout: () => void;
+  onPreviewChange: (url: string) => void;
+  session: AuthSession;
+  templatePreview: string;
+}) {
+  const seedMandal: DemoMandal = {
+    additionalMembers: 'Secretary, Treasurer, Decorator Lead',
+    address: 'Prathama Building, S.R.P.F. Gate No. 1, Ramtekdi, Pune',
+    adhyakshName: 'Akhilnayak Adhyaksh',
+    adminEmail: 'admin@akhilnayak.local',
+    adminPassword: DEMO_PASSWORD,
+    city: 'Pune',
+    contactEmail: 'contact@akhilnayak.local',
+    contactPhone: '+91 9890978952',
+    khajindarName: 'Akhilnayak Khajindar',
+    locality: 'Ramtekdi',
+    memberCount: '7',
+    name: 'Akhilnayak Mitra Mandal',
+  };
+  const mandals = demoMandals.length ? demoMandals : [seedMandal];
+  const [ownerScreen, setOwnerScreen] = useState<OwnerScreen>('dashboard');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [detailTab, setDetailTab] = useState<OwnerMandalTab>('overview');
+  const [mandalLogins, setMandalLogins] = useState<Record<string, Array<{ role: string; username: string; password: string }>>>({});
+  const selectedMandal = mandals[Math.min(selectedIndex, mandals.length - 1)] ?? seedMandal;
+  const selectedKey = selectedMandal.name;
+  const extraLogins = mandalLogins[selectedKey] ?? [];
+  const totalMembers = mandals.reduce((sum, mandal) => sum + Number(mandal.memberCount || 0), 0);
+
+  function createLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const nextLogin = {
+      password: String(form.get('password') || DEMO_PASSWORD),
+      role: String(form.get('role') || 'Khajindar'),
+      username: String(form.get('username') || ''),
+    };
+    setMandalLogins((current) => ({
+      ...current,
+      [selectedKey]: [nextLogin, ...(current[selectedKey] ?? [])],
+    }));
+    event.currentTarget.reset();
+  }
+
+  return (
+    <main className="shell owner-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span>DV</span>
+          <div>
+            <strong>Digital Vargani</strong>
+            <small>Owner Console</small>
+          </div>
+        </div>
+        <nav>
+          <button className={ownerScreen === 'dashboard' ? 'active' : ''} onClick={() => setOwnerScreen('dashboard')} type="button">
+            <LayoutDashboard size={19} />Dashboard
+          </button>
+          <button className={ownerScreen === 'mandals' ? 'active' : ''} onClick={() => setOwnerScreen('mandals')} type="button">
+            <Building2 size={19} />Mandals
+          </button>
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <span>O</span>
+            <div>
+              <strong>{session.user.name}</strong>
+              <small>SUPER ADMIN</small>
+            </div>
+          </div>
+          <button className="logout" onClick={onLogout} type="button"><LogOut size={18} />Logout</button>
+        </div>
+      </aside>
+
+      <section className="content">
+        <AdminTopbar session={session} />
+        <header className="page-header">
+          <div>
+            <h1>{ownerScreen === 'dashboard' ? 'Owner Dashboard' : 'Mandals'}</h1>
+            <p>{ownerScreen === 'dashboard' ? 'Track all onboarded mandals and software operations.' : 'Add mandals and manage each client account.'}</p>
+          </div>
+          <div className="header-actions">
+            <button onClick={() => setOwnerScreen('mandals')} type="button"><Plus size={18} />Add Mandal</button>
+          </div>
+        </header>
+        <div className="notice">{notice}</div>
+
+        {ownerScreen === 'dashboard' && (
+          <>
+            <section className="command-hero">
+              <div>
+                <span>Software Owner Command Center</span>
+                <h2>Manage every mandal from one super admin console</h2>
+                <p>Add mandals, issue main logins, upload their vargani template, and prepare them for festival collection.</p>
+              </div>
+              <div className="hero-actions">
+                <button className="primary" onClick={() => setOwnerScreen('mandals')} type="button"><Plus size={18} />Add Mandal</button>
+              </div>
+            </section>
+            <section className="stats-grid">
+              <Stat icon={<Building2 />} label="Total Mandals" note="Onboarded clients" value={String(mandals.length)} />
+              <Stat icon={<UsersRound />} label="Total Members" note="Declared by mandals" value={String(totalMembers)} />
+              <Stat icon={<FileText />} label="Templates" note="Ready for mapping" value={String(mandals.length)} />
+              <Stat icon={<ShieldCheck />} label="Owner Access" note="Super admin active" value="Live" />
+            </section>
+            <section className="owner-mandal-strip">
+              {mandals.map((mandal, index) => (
+                <button
+                  className="owner-mandal-tile"
+                  key={`${mandal.name}-${index}`}
+                  onClick={() => {
+                    setSelectedIndex(index);
+                    setOwnerScreen('mandals');
+                    setDetailTab('overview');
+                  }}
+                  type="button"
+                >
+                  <MandalAvatar mandal={mandal} />
+                  <span>
+                    <strong>{mandal.name}</strong>
+                    <small>{mandal.locality || mandal.city || mandal.address || 'Location not set'}</small>
+                  </span>
+                  <em>Manage</em>
+                </button>
+              ))}
+            </section>
+          </>
+        )}
+
+        {ownerScreen === 'mandals' && (
+          <section className="owner-grid">
+            <form className="card form-grid add-mandal-card" onSubmit={onCreateMandal}>
+              <div className="panel-title full">
+                <Plus size={22} />
+                <div>
+                  <strong>Add Mandal</strong>
+                  <span>Only mandal name is required. Everything else can be completed later.</span>
+                </div>
+              </div>
+              <label className="full">Mandal Name *<input name="name" required placeholder="Rahul Mitra Mandal" /></label>
+              <label>Address<input name="address" placeholder="Full mandal address" /></label>
+              <label>Locality<input name="locality" placeholder="Dapodi, Pune" /></label>
+              <label>City<input name="city" defaultValue="Pune" /></label>
+              <label>Phone No.<input name="contactPhone" placeholder="+91..." /></label>
+              <label>Contact Email<input name="contactEmail" placeholder="contact@mandal.local" /></label>
+              <label>No. of Members<input name="memberCount" inputMode="numeric" placeholder="50" /></label>
+              <label className="full">Mandal Logo<input accept="image/*" name="logo" type="file" /></label>
+              <button className="primary full" type="submit"><Plus size={18} />Add Mandal</button>
+            </form>
+
+            <div className="card owner-detail-card">
+              <div className="owner-detail-header">
+                <MandalAvatar mandal={selectedMandal} />
+                <div>
+                  <strong>{selectedMandal.name}</strong>
+                  <span>{selectedMandal.address || selectedMandal.locality || 'Address not added'}</span>
+                </div>
+              </div>
+              <div className="detail-tabs">
+                <button className={detailTab === 'overview' ? 'active' : ''} onClick={() => setDetailTab('overview')} type="button">Overview</button>
+                <button className={detailTab === 'template' ? 'active' : ''} onClick={() => setDetailTab('template')} type="button">Template</button>
+              </div>
+
+              {detailTab === 'overview' && (
+                <section className="owner-overview">
+                  <div className="login-card">
+                    <div className="panel-title">
+                      <ShieldCheck size={22} />
+                      <div>
+                        <strong>Adhyaksh Login</strong>
+                        <span>Main mandal login to manage their team.</span>
+                      </div>
+                    </div>
+                    <StatusLine label="Login URL" value="digital-vargani-landing-page.vercel.app" />
+                    <StatusLine label="Username" value={selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`} />
+                    <StatusLine label="Password" value={selectedMandal.adminPassword || DEMO_PASSWORD} />
+                  </div>
+                  <form className="card form-grid" onSubmit={createLogin}>
+                    <div className="panel-title full">
+                      <Plus size={22} />
+                      <div>
+                        <strong>Generate More Logins</strong>
+                        <span>Khajindar, karyakari, group leader, or member.</span>
+                      </div>
+                    </div>
+                    <label>Role<select name="role"><option>Khajindar</option><option>Karyakari</option><option>Group Leader</option><option>Member</option></select></label>
+                    <label>Username<input name="username" required placeholder="khajindar@mandal.local" /></label>
+                    <label>Password<input name="password" defaultValue={DEMO_PASSWORD} /></label>
+                    <button className="primary" type="submit"><Plus size={18} />Generate Login</button>
+                  </form>
+                  <div className="table-list">
+                    {[{ role: 'Adhyaksh', username: selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`, password: selectedMandal.adminPassword || DEMO_PASSWORD }, ...extraLogins].map((login) => (
+                      <div className="table-row owner-login-row" key={`${login.role}-${login.username}`}>
+                        <span className="avatar small">{login.role.charAt(0)}</span>
+                        <strong>{login.role}</strong>
+                        <span>{login.username}</span>
+                        <em>{login.password}</em>
+                        <button type="button"><Copy size={16} />Copy</button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {detailTab === 'template' && (
+                <TemplateView
+                  activeForm={null}
+                  onAddField={() => undefined}
+                  onPreviewChange={onPreviewChange}
+                  templatePreview={templatePreview}
+                />
+              )}
+            </div>
+          </section>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function MandalAvatar({ mandal }: { mandal: DemoMandal }) {
+  if (mandal.logoUrl) return <img alt="" className="mandal-avatar-img" src={mandal.logoUrl} />;
+  return <span className="avatar">{mandal.name.charAt(0).toUpperCase()}</span>;
 }
 
 function MemberCollectorApp({
@@ -775,8 +1032,9 @@ function LoginPanel({
   notice: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [loginType, setLoginType] = useState<'adhyaksh' | 'member'>('adhyaksh');
+  const [loginType, setLoginType] = useState<'owner' | 'adhyaksh' | 'member'>('owner');
   const isAdhyaksh = loginType === 'adhyaksh';
+  const isOwner = loginType === 'owner';
 
   return (
     <main className="auth-page">
@@ -806,6 +1064,10 @@ function LoginPanel({
       <section className="auth-form-panel">
         <div className="auth-card">
           <div className="login-toggle">
+            <button className={isOwner ? 'active' : ''} onClick={() => setLoginType('owner')} type="button">
+              <ShieldCheck size={18} />
+              Owner Login
+            </button>
             <button className={isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('adhyaksh')} type="button">
               <ShieldCheck size={18} />
               Adhyaksh Login
@@ -820,9 +1082,11 @@ function LoginPanel({
             <div className="panel-title">
               {isAdhyaksh ? <ShieldCheck size={24} /> : <LogIn size={24} />}
               <div>
-                <strong>{isAdhyaksh ? 'Adhyaksh / Main Admin Login' : 'Member Collection Login'}</strong>
+                <strong>{isOwner ? 'Super Admin / Software Owner Login' : isAdhyaksh ? 'Adhyaksh / Main Admin Login' : 'Member Collection Login'}</strong>
                 <span>
-                  {isAdhyaksh
+                  {isOwner
+                    ? 'Add mandals, manage client logins, and configure vargani templates.'
+                    : isAdhyaksh
                     ? 'Create mandals, manage template and review collections.'
                     : 'Login and start adding new vargani entries.'}
                 </span>
@@ -833,7 +1097,7 @@ function LoginPanel({
               <input
                 name="identifier"
                 required
-                defaultValue={isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
+                defaultValue={isOwner ? SUPER_ADMIN_IDENTIFIER : isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
               />
             </label>
             <label>
@@ -842,7 +1106,7 @@ function LoginPanel({
             </label>
             <button className="primary" disabled={busy} type="submit">
               <ShieldCheck size={18} />
-              {isAdhyaksh ? 'Login To Admin Console' : 'Login To Vargani Screen'}
+              {isOwner ? 'Login To Owner Console' : isAdhyaksh ? 'Login To Admin Console' : 'Login To Vargani Screen'}
             </button>
           </form>
 
@@ -1656,4 +1920,11 @@ function money(value: number) {
     maximumFractionDigits: 0,
     style: 'currency',
   }).format(Number.isFinite(value) ? value : 0);
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'mandal';
 }

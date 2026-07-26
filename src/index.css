@@ -852,6 +852,132 @@ kbd {
   color: var(--orange);
 }
 
+.owner-shell .brand > span {
+  background: #111;
+}
+
+.owner-grid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 420px minmax(0, 1fr);
+}
+
+.owner-mandal-strip {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.owner-mandal-tile {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  justify-content: initial;
+  min-height: 94px;
+  padding: 14px;
+  text-align: left;
+}
+
+.owner-mandal-tile strong,
+.owner-detail-header strong {
+  display: block;
+  font-size: 20px;
+}
+
+.owner-mandal-tile small,
+.owner-detail-header span {
+  color: var(--muted);
+}
+
+.owner-mandal-tile em {
+  background: #ffeadf;
+  border-radius: 999px;
+  color: var(--orange);
+  font-style: normal;
+  font-weight: 950;
+  padding: 7px 11px;
+}
+
+.mandal-avatar-img {
+  border-radius: 14px;
+  height: 48px;
+  object-fit: cover;
+  width: 48px;
+}
+
+.owner-detail-card {
+  display: grid;
+  gap: 16px;
+}
+
+.owner-detail-header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.detail-tabs {
+  border-bottom: 1px solid #ece7d6;
+  display: flex;
+  gap: 22px;
+}
+
+.detail-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  font-weight: 950;
+  min-height: 46px;
+  padding: 0;
+  position: relative;
+}
+
+.detail-tabs button.active {
+  color: var(--orange);
+}
+
+.detail-tabs button.active::after {
+  background: var(--orange);
+  border-radius: 999px;
+  bottom: -1px;
+  content: "";
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.owner-overview {
+  display: grid;
+  gap: 16px;
+}
+
+.login-card {
+  background: #eef6ff;
+  border: 1px solid #b7d5ff;
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.owner-login-row {
+  grid-template-columns: 44px 0.8fr 1.2fr 1fr auto;
+}
+
+.owner-detail-card .template-grid {
+  grid-template-columns: minmax(520px, 1fr) 380px;
+}
+
+.owner-detail-card .template-stage,
+.owner-detail-card .settings-panel {
+  border-radius: 18px;
+}
+
 .settings-panel {
   display: grid;
   gap: 18px;
@@ -1044,7 +1170,7 @@ kbd {
   border-radius: 18px;
   display: grid;
   gap: 6px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   padding: 6px;
 }
 
@@ -1296,6 +1422,8 @@ kbd {
   .member-shell,
   .auth-page,
   .command-hero,
+  .owner-grid,
+  .owner-mandal-strip,
   .mandal-page-grid,
   .split-grid,
   .template-grid,
