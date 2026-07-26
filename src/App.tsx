@@ -863,6 +863,17 @@ function Dashboard({
 }) {
   return (
     <>
+      <section className="command-hero">
+        <div>
+          <span>Admin Command Center</span>
+          <h2>Akhilnayak Mitra Mandal Festival Collection OS</h2>
+          <p>Track vargani, member activity, template readiness, and live receipt generation from one focused console.</p>
+        </div>
+        <div className="hero-actions">
+          <button className="primary" type="button"><ReceiptText size={18} />Raise Vargani</button>
+          <button type="button"><SlidersHorizontal size={18} />View Reports</button>
+        </div>
+      </section>
       <section className="stats-grid">
         <Stat icon={<Building2 />} label="Total Mandals" note="Active demo mandal" value="1" />
         <Stat icon={<UsersRound />} label="Total Members" note={`${groups.length} collection groups`} value={String(members.length)} />
@@ -1044,6 +1055,13 @@ function MembersView({
           </div>
         </div>
         <div className="table-list">
+          {members.length === 0 && (
+            <div className="empty-state">
+              <UsersRound size={28} />
+              <strong>No member logins yet</strong>
+              <span>Create collector accounts for khajindar, group leaders, and members.</span>
+            </div>
+          )}
           {members.map((member) => (
             <div className="table-row" key={member.id}>
               <span className="avatar small">{member.displayName.charAt(0)}</span>
@@ -1107,8 +1125,15 @@ function TemplateView({
         </div>
         <div className="template-canvas">
           <img alt="Akhilnayak Mitra Mandal Vargani slip template" src={templatePreview} />
-          {['slipNumber', 'contributorName', 'contributorAddress', 'building_name', 'amount', 'createdAt'].map((field) => (
-            <span className={`field-anchor ${field}`} key={field}>{field}</span>
+          {[
+            ['slipNumber', 'Slip No.'],
+            ['contributorName', 'Name'],
+            ['contributorAddress', 'Address'],
+            ['building_name', 'Building / Lane'],
+            ['amount', 'Amount'],
+            ['createdAt', 'Date'],
+          ].map(([field, label]) => (
+            <span className={`field-anchor ${field}`} key={field}>{label}</span>
           ))}
         </div>
       </div>
@@ -1234,6 +1259,13 @@ function SlipsView({
       </div>
       <div className="slip-table">
         <div className="slip-head"><span>Slip No.</span><span>Name</span><span>Shop</span><span>Area</span><span>Amount</span><span>Payment</span><span>Action</span></div>
+        {slips.length === 0 && (
+          <div className="empty-state">
+            <ReceiptText size={28} />
+            <strong>No slips generated yet</strong>
+            <span>Generate the first vargani slip from the member or admin generator.</span>
+          </div>
+        )}
         {slips.map((slip) => (
           <button className={selectedSlip?.id === slip.id ? 'slip-row selected' : 'slip-row'} key={slip.id} onClick={() => setSelectedSlip(slip)} type="button">
             <strong>{slip.slipNumber}</strong>
