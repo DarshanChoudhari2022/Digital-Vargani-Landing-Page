@@ -476,6 +476,7 @@ export default function App() {
       </aside>
 
       <section className="content">
+        <AdminTopbar session={session} />
         <header className="page-header">
           <div>
             <h1>{screenTitle(activeScreen)}</h1>
@@ -551,6 +552,31 @@ export default function App() {
         </>
       </section>
     </main>
+  );
+}
+
+function AdminTopbar({ session }: { session: AuthSession }) {
+  return (
+    <div className="app-topbar">
+      <strong>Digital Vargani</strong>
+      <div className="top-search">
+        <Search size={18} />
+        <span>Search</span>
+        <kbd>Ctrl K</kbd>
+      </div>
+      <div className="join-code">
+        JOIN CODE <strong>VARGANI2026</strong>
+        <Copy size={16} />
+      </div>
+      <button type="button">English</button>
+      <div className="top-user">
+        <span>{session.user.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</span>
+        <div>
+          <strong>{session.user.name}</strong>
+          <small>{session.user.role.replaceAll('_', ' ')}</small>
+        </div>
+      </div>
+    </div>
   );
 }
 
