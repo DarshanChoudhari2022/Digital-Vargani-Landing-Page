@@ -37,7 +37,7 @@ type TextAlign = 'left' | 'center' | 'right';
 type TextWrapMode = 'single' | 'wrap' | 'shrink';
 type TextDecoration = 'none' | 'underline' | 'line-through';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
-type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'slips' | 'users' | 'logs';
+type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'users' | 'logs';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 
@@ -178,7 +178,7 @@ export default function App() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [slips, setSlips] = useState<Slip[]>([]);
-  const [, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<Slip | null>(null);
   const [templatePreview, setTemplatePreview] = useState(TEMPLATE_IMAGE);
@@ -195,6 +195,10 @@ export default function App() {
     const haystack = `${slip.slipNumber} ${slip.contributorName} ${slip.shopName ?? ''} ${slip.areaName ?? ''}`;
     return haystack.toLowerCase().includes(query.toLowerCase());
   });
+  const activeTemplate = templates.find((template) =>
+    template.versions.some((version) => version.isActive),
+  );
+  const latestTemplateVersion = activeTemplate?.versions.find((version) => version.isActive);
   useEffect(() => {
     const stored = window.localStorage.getItem(SESSION_KEY);
     if (!stored) return;
@@ -470,6 +474,10 @@ export default function App() {
       setSidebarOpen={setSidebarOpen}
       sidebarOpen={sidebarOpen}
       slips={filteredSlips}
+      activeTemplate={activeTemplate}
+      latestTemplateVersion={latestTemplateVersion}
+      onPreviewChange={setTemplatePreview}
+      templatePreview={templatePreview}
     />
   );
 }
@@ -478,6 +486,7 @@ const adhyakshNavItems: Array<{ id: AdhyakshScreen; icon: ReactNode; label: stri
   { id: 'members', icon: <UsersRound size={20} />, label: 'Members & Vargani' },
   { id: 'tasks', icon: <ShieldCheck size={20} />, label: 'Tasks' },
   { id: 'expenses', icon: <WalletCards size={20} />, label: 'Expenses' },
+  { id: 'template', icon: <FileText size={20} />, label: 'Vargani Template' },
   { id: 'slips', icon: <BadgeIndianRupee size={20} />, label: 'Vargani Slips' },
   { id: 'users', icon: <UserCog size={20} />, label: 'User Management' },
   { id: 'logs', icon: <ClipboardList size={20} />, label: 'System Logs' },
@@ -503,14 +512,17 @@ const demoExpenses = [
 ];
 
 function AdhyakshApp({
+  activeTemplate,
   activeForm,
   busy,
   groups,
+  latestTemplateVersion,
   members,
   notice,
   onCreateMember,
   onGenerate,
   onLogout,
+  onPreviewChange,
   onRefresh,
   query,
   receiptUrl,
@@ -522,15 +534,19 @@ function AdhyakshApp({
   setSidebarOpen,
   sidebarOpen,
   slips,
+  templatePreview,
 }: {
+  activeTemplate?: Template;
   activeForm: ActiveForm | null;
   busy: boolean;
   groups: Group[];
+  latestTemplateVersion?: Template['versions'][number];
   members: Member[];
   notice: string;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
   onGenerate: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
+  onPreviewChange: (url: string) => void;
   onRefresh: () => void;
   query: string;
   receiptUrl: string;
@@ -542,6 +558,7 @@ function AdhyakshApp({
   setSidebarOpen: (value: boolean | ((open: boolean) => boolean)) => void;
   sidebarOpen: boolean;
   slips: Slip[];
+  templatePreview: string;
 }) {
   const [screen, setScreen] = useState<AdhyakshScreen>('members');
   const [entryOpen, setEntryOpen] = useState(false);
@@ -574,6 +591,7 @@ function AdhyakshApp({
       members: 'Members',
       slips: 'Vargani Slips',
       tasks: 'Tasks',
+      template: 'Vargani Template',
       users: 'User Management',
     }[screen];
   }
@@ -701,6 +719,26 @@ function AdhyakshApp({
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {screen === 'template' && (
+          <section className="adhyaksh-page">
+            <div className="wide-card action-card">
+              <div>
+                <h2>Vargani Template</h2>
+                <span>Upload slip artwork, drag fields, resize boxes, and tune font styles.</span>
+              </div>
+              <button className="blue-action" onClick={onRefresh} type="button"><RefreshCw size={18} />Sync Template</button>
+            </div>
+            <TemplateView
+              activeForm={activeForm}
+              activeTemplate={activeTemplate}
+              latestTemplateVersion={latestTemplateVersion}
+              onAddField={() => undefined}
+              onPreviewChange={onPreviewChange}
+              templatePreview={templatePreview}
+            />
           </section>
         )}
 
