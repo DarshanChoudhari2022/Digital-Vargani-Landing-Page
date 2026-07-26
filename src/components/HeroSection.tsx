@@ -20,16 +20,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenDemo }) => {
 
           {/* Copy Column */}
           <div style={{ maxWidth: 640, textAlign: 'left' }} className="hero-copy anim-fade-up">
-            {/* Badge */}
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '6px 14px', borderRadius: 'var(--r-pill)',
-              background: 'var(--saffron-light)', color: 'var(--saffron-dark)',
-              fontSize: 13, fontWeight: 600, marginBottom: 24,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--saffron)' }} />
-              Purpose-built for Maharashtra's festival committees
-            </div>
 
             <h1 className="t-display" style={{ marginBottom: 24 }}>
               Every rupee collected.{' '}
