@@ -4,60 +4,67 @@ export const LeaderboardSection: React.FC = () => {
   const [filter, setFilter] = useState<'overall' | 'daily'>('overall');
 
   const topCollectors = [
-    { rank: 1, name: 'Amit Kulkarni', area: 'Shivaji Nagar', amount: '₹ 1,45,000', slips: 142, trend: '+12%' },
-    { rank: 2, name: 'Rahul Deshmukh', area: 'Kothrud', amount: '₹ 98,500', slips: 89, trend: '+5%' },
-    { rank: 3, name: 'Suresh Patil', area: 'Deccan', amount: '₹ 76,200', slips: 65, trend: '+18%' },
-    { rank: 4, name: 'Vikram Joshi', area: 'Aundh', amount: '₹ 45,000', slips: 41, trend: '-2%' },
+    { rank: 1, name: 'Amit Kulkarni (अमित कुलकर्णी)', area: 'Shivaji Nagar', amount: '₹ 1,45,000', slips: 142, badge: '🪔 Gold Diya' },
+    { rank: 2, name: 'Rahul Deshmukh (राहुल देशमुख)', area: 'Kothrud', amount: '₹ 98,500', slips: 89, badge: '🌼 Silver Garland' },
+    { rank: 3, name: 'Suresh Patil (सुरेश पाटील)', area: 'Deccan', amount: '₹ 76,200', slips: 65, badge: '🪙 Bronze Coin' },
+    { rank: 4, name: 'Vikram Joshi (विक्रम जोशी)', area: 'Aundh', amount: '₹ 45,000', slips: 41, badge: '⭐ Active Member' },
   ];
 
-  const rankColors = ['#fef3c7', '#f1f5f9', '#ffedd5', 'transparent'];
-  const rankText = ['#92400e', '#475569', '#c2410c', '#94a3b8'];
+  const rankColors = ['#fef3c7', '#f1f5f9', '#ffedd5', '#ffffff'];
+  const rankText = ['#92400e', '#475569', '#c2410c', '#64748b'];
 
   return (
-    <section className="section-padding" style={{ background: 'var(--white)', borderTop: '1px solid var(--border-light)' }}>
+    <section id="leaderboard" className="section-padding" style={{ background: '#ffffff', borderTop: '1px solid #f1f5f9' }}>
       <div className="container-main">
-        <div className="leaderboard-grid" style={{ display: 'grid', gap: 64, alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 48, alignItems: 'center' }}>
 
           {/* Copy */}
           <div>
+            <div className="festive-badge" style={{ marginBottom: 16 }}>
+              <span>🏆</span>
+              <span>Live Transparency & Gamification</span>
+            </div>
             <h2 className="t-h2" style={{ marginBottom: 20 }}>
               See who's collecting, where, and how much — in real time.
             </h2>
-            <p className="t-body-lg" style={{ marginBottom: 24, maxWidth: 460 }}>
-              Motivate your team during peak collection days. The leaderboard ranks collectors by total amount and slip count. Automated WhatsApp reports go to the mandal president every evening.
+            <p className="t-body-lg" style={{ marginBottom: 24, maxWidth: 500 }}>
+              Motivate your team during peak festival collection days. The leaderboard ranks collectors by total amount and slip count. Automated WhatsApp reports go to the mandal president every evening at 9 PM.
             </p>
-            <div className="t-caption" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--success)' }}>schedule_send</span>
-              Daily report sent via WhatsApp at 9 PM automatically
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff7ed', padding: '12px 16px', borderRadius: 14, border: '1px solid #fed7aa' }}>
+              <span style={{ fontSize: 20 }}>📲</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#c2410c' }}>
+                Automated daily WhatsApp summary sent to President & Secretary
+              </span>
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table Container */}
           <div>
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="festive-card" style={{ padding: 0 }}>
               {/* Header */}
               <div style={{
-                padding: '18px 24px', borderBottom: '1px solid var(--border-light)',
-                background: 'var(--cream)',
+                padding: '18px 24px', borderBottom: '1px solid #fed7aa',
+                background: 'linear-gradient(90deg, #fff7ed 0%, #fef3c7 100%)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                flexWrap: 'wrap', gap: 12
               }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>Top Collectors</div>
-                  <div className="t-caption" style={{ marginTop: 2 }}>Live from the field</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Mandal Top Collectors</div>
+                  <div style={{ fontSize: 12, color: '#ea580c', fontWeight: 600 }}>Live updates from the field</div>
                 </div>
-                <div style={{ display: 'flex', background: 'var(--white)', borderRadius: 8, border: '1px solid var(--border)', padding: 2 }}>
+                <div style={{ display: 'flex', background: '#ffffff', borderRadius: 999, border: '1px solid #fed7aa', padding: 3 }}>
                   {(['overall', 'daily'] as const).map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
                       style={{
-                        padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                        fontSize: 13, fontWeight: 500, transition: 'all 0.2s',
-                        background: filter === f ? 'var(--ink)' : 'transparent',
-                        color: filter === f ? 'white' : 'var(--body)',
+                        padding: '6px 16px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700, transition: 'all 0.2s',
+                        background: filter === f ? '#ea580c' : 'transparent',
+                        color: filter === f ? '#ffffff' : '#475569',
                       }}
                     >
-                      {f === 'overall' ? 'Overall' : 'Today'}
+                      {f === 'overall' ? 'Overall 2026' : 'Today'}
                     </button>
                   ))}
                 </div>
@@ -67,32 +74,31 @@ export const LeaderboardSection: React.FC = () => {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                      <th style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rank</th>
-                      <th style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Collector</th>
-                      <th style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Slips</th>
-                      <th style={{ padding: '12px 24px', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Amount</th>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9', textAlign: 'left', background: '#f8fafc' }}>
+                      <th style={{ padding: '12px 20px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rank</th>
+                      <th style={{ padding: '12px 20px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Collector</th>
+                      <th style={{ padding: '12px 20px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Slips</th>
+                      <th style={{ padding: '12px 20px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Vargani Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {topCollectors.map((c, i) => (
-                      <tr key={c.rank} style={{ borderBottom: i < topCollectors.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                        <td style={{ padding: '14px 24px' }}>
+                      <tr key={c.rank} style={{ borderBottom: i < topCollectors.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                        <td style={{ padding: '14px 20px' }}>
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: 28, height: 28, borderRadius: '50%',
+                            padding: '4px 10px', borderRadius: 999,
                             background: rankColors[i], color: rankText[i],
-                            fontSize: 12, fontWeight: 700,
+                            fontSize: 12, fontWeight: 800, border: '1px solid #fed7aa'
                           }}>#{c.rank}</span>
                         </td>
-                        <td style={{ padding: '14px 24px' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)' }}>{c.area}</div>
+                        <td style={{ padding: '14px 20px' }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{c.name}</div>
+                          <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 600 }}>{c.badge} • {c.area}</div>
                         </td>
-                        <td style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 500, color: 'var(--body)' }}>{c.slips}</td>
-                        <td style={{ padding: '14px 24px', textAlign: 'right' }}>
-                          <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{c.amount}</div>
-                          <div style={{ fontSize: 12, color: c.trend.startsWith('+') ? 'var(--success)' : 'var(--danger)' }}>{c.trend}</div>
+                        <td style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, color: '#475569' }}>{c.slips} slips</td>
+                        <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 15 }}>{c.amount}</div>
                         </td>
                       </tr>
                     ))}
@@ -103,13 +109,6 @@ export const LeaderboardSection: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .leaderboard-grid { grid-template-columns: 5fr 7fr; }
-        @media (max-width: 900px) {
-          .leaderboard-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </section>
   );
 };
