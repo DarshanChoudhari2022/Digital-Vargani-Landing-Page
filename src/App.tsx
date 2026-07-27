@@ -31,7 +31,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, PointerEvent, ReactNode } from 'react';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
@@ -91,6 +91,7 @@ interface Festival {
   id: string;
   name: string;
   status: string;
+  templates?: Template[];
   targetAmount?: number | string | null;
   type: string;
 }
@@ -137,6 +138,7 @@ interface Template {
     canvasHeight: number;
     canvasWidth: number;
     isActive: boolean;
+    renderConfig?: { fields?: Record<string, Partial<TemplatePlacement>> };
     version: number;
   }>;
 }
@@ -178,6 +180,7 @@ interface DemoMandal {
   city: string;
   contactEmail?: string;
   contactPhone: string;
+  festivals?: Festival[];
   khajindarName: string;
   logoUrl?: string;
   locality: string;
@@ -202,7 +205,7 @@ interface OwnerWorkspaceBootstrap {
   generatedAt: string;
   kind: 'OWNER';
   mandals: {
-    items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }>;
+    items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null; festivals?: Festival[] }>;
     meta: { limit: number; page: number; total: number; totalPages: number };
   };
   metrics: {
@@ -363,7 +366,7 @@ export default function App() {
     return TEMPLATE_IMAGE;
   });
 
-  function handlePreviewChange(url: string) {
+  const handlePreviewChange = useCallback((url: string) => {
     setTemplatePreview(url);
     try {
       const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template');
@@ -374,7 +377,7 @@ export default function App() {
         templatePreview: url,
       }));
     } catch {}
-  }
+  }, []);
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
   const [workspaceRefreshing, setWorkspaceRefreshing] = useState(false);
@@ -411,13 +414,40 @@ export default function App() {
     document.documentElement.lang = language === 'mr' ? 'mr' : language === 'hi' ? 'hi' : 'en';
   }, [language]);
 
-  function saveTemplateLocally(scope: string, placements: Record<string, TemplatePlacement>) {
+  async function saveTemplateConfig(
+    scope: string,
+    placements: Record<string, TemplatePlacement>,
+    target?: { festivalId?: string; mandalId?: string },
+  ) {
+    if (!session) throw new Error('Login is required to save template.');
+    const targetMandalId = target?.mandalId ?? mandalId;
+    const targetFestivalId = target?.festivalId ?? festivalId;
+    if (!targetMandalId || !targetFestivalId) {
+      throw new Error('Active mandal festival not found. Refresh workspace and try again.');
+    }
+
+    await apiRequest(
+      `/mandals/${targetMandalId}/festivals/${targetFestivalId}/templates/active-version`,
+      {
+        body: JSON.stringify({
+          backgroundFileUrl: templatePreview || TEMPLATE_IMAGE,
+          canvasHeight: 800,
+          canvasWidth: 1328,
+          name: 'Vargani Receipt Template',
+          renderConfig: { fields: placements },
+        }),
+        method: 'PUT',
+      },
+      session,
+    );
+
     window.localStorage.setItem(`digital-vargani-template-${scope}`, JSON.stringify({
       placements,
       savedAt: new Date().toISOString(),
       templatePreview,
     }));
-    setNotice('Template saved successfully.');
+    setNotice('Template saved to backend successfully.');
+    await loadWorkspace(session);
   }
 
   function workspaceCacheKey(currentSession: AuthSession) {
@@ -471,6 +501,8 @@ export default function App() {
     setTemplates(cached.templates);
     setReport(cached.report);
     setSelectedSlip(cached.slips[0] ?? null);
+    const cachedActiveVersion = findActiveTemplateVersion(cached.templates);
+    if (cachedActiveVersion?.backgroundFileUrl) setTemplatePreview(cachedActiveVersion.backgroundFileUrl);
     setWorkspaceLoaded(true);
     return true;
   }
@@ -508,6 +540,8 @@ export default function App() {
     setTemplates(payload.templates);
     setReport(payload.report);
     setSelectedSlip(nextSlips[0] ?? null);
+    const activeVersion = findActiveTemplateVersion(payload.templates);
+    if (activeVersion?.backgroundFileUrl) setTemplatePreview(activeVersion.backgroundFileUrl);
     setDemoMandals([]);
     writeWorkspaceCache(currentSession, {
       activeForm: payload.activeForm,
@@ -533,6 +567,22 @@ export default function App() {
       whatsappWindowRef.current.document.write('<!doctype html><title>Preparing WhatsApp</title><p style="font-family:system-ui;padding:24px">Preparing WhatsApp receipt...</p>');
       whatsappWindowRef.current.document.close();
     }
+  }
+
+  async function auditReceiptShare(slip: Slip, phone?: string | null) {
+    if (!session || !isSlipPaid(slip)) return;
+    await apiRequest(
+      `/vargani/slips/${slip.id}/share`,
+      {
+        body: JSON.stringify({
+          channel: 'WHATSAPP',
+          phone: normalizeIndianPhone(phone ?? slip.contributorPhone),
+          receiptUrl: publicReceiptUrl(slip.id),
+        }),
+        method: 'POST',
+      },
+      session,
+    ).catch(() => undefined);
   }
 
   async function restoreSession(storedSession: AuthSession) {
@@ -747,6 +797,7 @@ export default function App() {
         setNotice(`Pending vargani entry ${slip.slipNumber} saved.`);
       } else {
         await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow);
+        void auditReceiptShare(slip, contributorPhone);
         setNotice(`Slip ${slip.slipNumber} generated. WhatsApp message prepared.`);
       }
     } catch (error) {
@@ -760,14 +811,15 @@ export default function App() {
   async function downloadSlipAsJpeg(slip: Slip) {
     setBusy(true);
     try {
-      let placements: Record<string, TemplatePlacement> = {};
-      let bgUrl = templatePreview || TEMPLATE_IMAGE;
+      let placements: Record<string, TemplatePlacement> =
+        normalizeTemplatePlacements(latestTemplateVersion?.renderConfig?.fields);
+      let bgUrl = latestTemplateVersion?.backgroundFileUrl || templatePreview || TEMPLATE_IMAGE;
 
       try {
         const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
                       window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
                       window.localStorage.getItem('digital-vargani-template-superadmin');
-        if (saved) {
+        if (Object.keys(placements).length === 0 && saved) {
           const parsed = JSON.parse(saved) as { placements?: Record<string, TemplatePlacement>; templatePreview?: string };
           if (parsed.placements && Object.keys(parsed.placements).length > 0) {
             placements = parsed.placements;
@@ -789,8 +841,8 @@ export default function App() {
         };
       }
 
-      const canvasWidth = 1328;
-      const canvasHeight = 800;
+      const canvasWidth = latestTemplateVersion?.canvasWidth ?? 1328;
+      const canvasHeight = latestTemplateVersion?.canvasHeight ?? 800;
       const canvas = document.createElement('canvas');
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
@@ -927,6 +979,7 @@ export default function App() {
     }
     const whatsappWindow = window.open('about:blank', '_blank');
     await shareReceiptToWhatsApp(slip, slip.contributorPhone, whatsappWindow);
+    void auditReceiptShare(slip, slip.contributorPhone);
     setNotice(`Slip ${slip.slipNumber} WhatsApp message copied and opened.`);
   }
 
@@ -963,7 +1016,7 @@ export default function App() {
         onCreateMandal={createMandal}
         onLanguageChange={setLanguage}
         onLogout={logout}
-        onTemplateSaved={saveTemplateLocally}
+        onTemplateSaved={saveTemplateConfig}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         session={session}
@@ -986,6 +1039,7 @@ export default function App() {
       onLogout={logout}
       onRefresh={() => loadWorkspace()}
       onShareSlip={shareSlip}
+      onTemplateSaved={(placements) => saveTemplateConfig('adhyaksh', placements)}
       query={query}
       report={report}
       session={session}
@@ -1031,6 +1085,7 @@ function AdhyakshApp({
   onPrepareWhatsApp,
   onRefresh,
   onShareSlip,
+  onTemplateSaved,
   query,
   report,
   session,
@@ -1058,6 +1113,7 @@ function AdhyakshApp({
   onPrepareWhatsApp: (paymentStatus: 'ACTIVE' | 'PENDING') => void;
   onRefresh: () => void;
   onShareSlip: (slip: Slip) => Promise<void>;
+  onTemplateSaved: (placements: Record<string, TemplatePlacement>) => Promise<void> | void;
   query: string;
   report: CollectionReport | null;
   session: AuthSession;
@@ -1123,7 +1179,8 @@ function AdhyakshApp({
     window.setTimeout(() => setLocalNotice(''), 2800);
   }
 
-  function saveTemplate(placements: Record<string, TemplatePlacement>) {
+  async function saveTemplate(placements: Record<string, TemplatePlacement>) {
+    await onTemplateSaved(placements);
     const payload = JSON.stringify({
       placements,
       savedAt: new Date().toISOString(),
@@ -1392,7 +1449,8 @@ function AdhyakshApp({
                   <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
                   <span className="row-actions">
                     <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
-                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>`r`n                    <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
+                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>
+                    <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
                     <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
@@ -1581,7 +1639,11 @@ function SuperAdminApp({
   onLanguageChange: (language: Language) => void;
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
-  onTemplateSaved: (scope: string, placements: Record<string, TemplatePlacement>) => void;
+  onTemplateSaved: (
+    scope: string,
+    placements: Record<string, TemplatePlacement>,
+    target?: { festivalId?: string; mandalId?: string },
+  ) => Promise<void> | void;
   session: AuthSession;
   setSidebarOpen: (open: boolean | ((current: boolean) => boolean)) => void;
   sidebarOpen: boolean;
@@ -1840,9 +1902,13 @@ function SuperAdminApp({
                 <TemplateView
                   activeForm={null}
                   language={language}
+                  latestTemplateVersion={selectedMandal.festivals?.[0]?.templates?.[0]?.versions?.[0]}
                   onAddField={() => undefined}
                   onPreviewChange={onPreviewChange}
-                  onSaveTemplate={(placements) => onTemplateSaved(slugify(selectedMandal.name), placements)}
+                  onSaveTemplate={(placements) => onTemplateSaved(slugify(selectedMandal.name), placements, {
+                    festivalId: selectedMandal.festivals?.[0]?.id,
+                    mandalId: selectedMandal.id,
+                  })}
                   templatePreview={templatePreview}
                 />
               )}
@@ -2538,7 +2604,7 @@ function TemplateView({
   latestTemplateVersion?: Template['versions'][number];
   onAddField: (label: string, required?: boolean) => void;
   onPreviewChange: (url: string) => void;
-  onSaveTemplate?: (placements: Record<string, TemplatePlacement>) => void;
+  onSaveTemplate?: (placements: Record<string, TemplatePlacement>) => Promise<void> | void;
   templatePreview: string;
 }) {
   type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -2575,6 +2641,8 @@ function TemplateView({
   const [fontModalFieldKey, setFontModalFieldKey] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState('');
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>(() => {
+    const backendPlacements = normalizeTemplatePlacements(latestTemplateVersion?.renderConfig?.fields);
+    if (Object.keys(backendPlacements).length > 0) return backendPlacements;
     try {
       const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
                     window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
@@ -2657,6 +2725,19 @@ function TemplateView({
     };
   });
   const selectedPlacement = placements[activeField] ?? defaultPlacement();
+
+  const latestTemplateBackground = latestTemplateVersion?.backgroundFileUrl;
+  const latestTemplateFields = latestTemplateVersion?.renderConfig?.fields;
+
+  useEffect(() => {
+    const backendPlacements = normalizeTemplatePlacements(latestTemplateFields);
+    if (Object.keys(backendPlacements).length > 0) {
+      setPlacements(backendPlacements);
+    }
+    if (latestTemplateBackground) {
+      onPreviewChange(latestTemplateBackground);
+    }
+  }, [latestTemplateBackground, latestTemplateFields, latestTemplateVersion?.id, onPreviewChange]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -2869,9 +2950,14 @@ function TemplateView({
     actions[action]?.();
   }
 
-  function handleSaveTemplate() {
-    onSaveTemplate?.(placements);
-    setSaveMessage('Saved');
+  async function handleSaveTemplate() {
+    setSaveMessage('Saving...');
+    try {
+      await onSaveTemplate?.(placements);
+      setSaveMessage('Saved');
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Save failed');
+    }
     window.setTimeout(() => setSaveMessage(''), 2400);
   }
 
@@ -3313,6 +3399,29 @@ function defaultPlacement(): TemplatePlacement {
   };
 }
 
+function normalizeTemplatePlacements(
+  fields?: Record<string, Partial<TemplatePlacement>>,
+): Record<string, TemplatePlacement> {
+  if (!fields || typeof fields !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(fields)
+      .filter((entry): entry is [string, Partial<TemplatePlacement>] => Boolean(entry[1]) && typeof entry[1] === 'object')
+      .map(([key, placement]) => [
+        key,
+        {
+          ...defaultPlacement(),
+          ...placement,
+        },
+      ]),
+  );
+}
+
+function findActiveTemplateVersion(templates: Template[] = []) {
+  return templates
+    .flatMap((template) => template.versions)
+    .find((version) => version.isActive);
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -3472,6 +3581,7 @@ function mapBackendMandal(
     city: mandal.city ?? '',
     contactEmail: mandal.contactEmail ?? '',
     contactPhone: mandal.contactPhone ?? '',
+    festivals: mandal.festivals ?? [],
     id: mandal.id,
     khajindarName: mandal.khajindarName ?? '',
     logoUrl: mandal.logoUrl ?? '',
