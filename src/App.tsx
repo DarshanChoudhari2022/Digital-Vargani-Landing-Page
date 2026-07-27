@@ -288,7 +288,32 @@ export default function App() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<Slip | null>(null);
-  const [templatePreview, setTemplatePreview] = useState(TEMPLATE_IMAGE);
+  const [templatePreview, setTemplatePreview] = useState<string>(() => {
+    try {
+      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
+                    window.localStorage.getItem('digital-vargani-template-superadmin');
+      if (saved) {
+        const parsed = JSON.parse(saved) as { templatePreview?: string };
+        if (parsed.templatePreview && typeof parsed.templatePreview === 'string') {
+          return parsed.templatePreview;
+        }
+      }
+    } catch {}
+    return TEMPLATE_IMAGE;
+  });
+
+  function handlePreviewChange(url: string) {
+    setTemplatePreview(url);
+    try {
+      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template');
+      const parsed = saved ? (JSON.parse(saved) as Record<string, unknown>) : {};
+      window.localStorage.setItem('digital-vargani-adhyaksh-template', JSON.stringify({
+        ...parsed,
+        savedAt: new Date().toISOString(),
+        templatePreview: url,
+      }));
+    } catch {}
+  }
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
   const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
@@ -635,7 +660,7 @@ export default function App() {
         setSidebarOpen={setSidebarOpen}
         session={session}
         templatePreview={templatePreview}
-        onPreviewChange={setTemplatePreview}
+        onPreviewChange={handlePreviewChange}
       />
     );
   }
@@ -662,7 +687,7 @@ export default function App() {
       slips={filteredSlips}
       activeTemplate={activeTemplate}
       latestTemplateVersion={latestTemplateVersion}
-      onPreviewChange={setTemplatePreview}
+      onPreviewChange={handlePreviewChange}
       templatePreview={templatePreview}
     />
   );
@@ -775,11 +800,13 @@ function AdhyakshApp({
   }
 
   function saveTemplate(placements: Record<string, TemplatePlacement>) {
-    window.localStorage.setItem('digital-vargani-adhyaksh-template', JSON.stringify({
+    const payload = JSON.stringify({
       placements,
       savedAt: new Date().toISOString(),
       templatePreview,
-    }));
+    });
+    window.localStorage.setItem('digital-vargani-adhyaksh-template', payload);
+    window.localStorage.setItem('digital-vargani-template-adhyaksh', payload);
     showToast('Template saved successfully.');
   }
 
@@ -1934,74 +1961,87 @@ function TemplateView({
   const [showGrid, setShowGrid] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ fieldKey: string; x: number; y: number } | null>(null);
   const [saveMessage, setSaveMessage] = useState('');
-  const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>({
-    amount: {
-      ...defaultPlacement(),
-      color: '#111111',
-      fontSize: 31,
-      fontWeight: 900,
-      height: 52,
-      textAlign: 'left',
-      width: 250,
-      x: 720,
-      y: 680,
-    },
-    building_name: {
-      ...defaultPlacement(),
-      color: '#111111',
-      fontSize: 24,
-      fontWeight: 700,
-      height: 48,
-      textAlign: 'left',
-      width: 420,
-      x: 715,
-      y: 623,
-    },
-    contributorAddress: {
-      ...defaultPlacement(),
-      color: '#111111',
-      fontSize: 27,
-      fontWeight: 800,
-      height: 70,
-      textAlign: 'left',
-      textWrap: 'wrap',
-      width: 560,
-      x: 715,
-      y: 574,
-    },
-    contributorName: {
-      ...defaultPlacement(),
-      color: '#111111',
-      fontSize: 30,
-      fontWeight: 900,
-      height: 58,
-      textAlign: 'left',
-      width: 610,
-      x: 670,
-      y: 515,
-    },
-    createdAt: {
-      ...defaultPlacement(),
-      color: '#111111',
-      fontSize: 25,
-      fontWeight: 800,
-      height: 46,
-      textAlign: 'center',
-      width: 160,
-      x: 1115,
-      y: 455,
-    },
-    slipNumber: {
-      ...defaultPlacement(),
-      color: '#b62028',
-      fontSize: 31,
-      fontWeight: 900,
-      height: 48,
-      textAlign: 'left',
-      width: 100,
-      x: 648,
-      y: 445,
-    },
+  const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>(() => {
+    try {
+      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
+                    window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
+                    window.localStorage.getItem('digital-vargani-template-superadmin');
+      if (saved) {
+        const parsed = JSON.parse(saved) as { placements?: Record<string, TemplatePlacement> };
+        if (parsed.placements && typeof parsed.placements === 'object' && Object.keys(parsed.placements).length > 0) {
+          return parsed.placements;
+        }
+      }
+    } catch {}
+    return {
+      amount: {
+        ...defaultPlacement(),
+        color: '#111111',
+        fontSize: 31,
+        fontWeight: 900,
+        height: 52,
+        textAlign: 'left',
+        width: 250,
+        x: 720,
+        y: 680,
+      },
+      building_name: {
+        ...defaultPlacement(),
+        color: '#111111',
+        fontSize: 24,
+        fontWeight: 700,
+        height: 48,
+        textAlign: 'left',
+        width: 420,
+        x: 715,
+        y: 623,
+      },
+      contributorAddress: {
+        ...defaultPlacement(),
+        color: '#111111',
+        fontSize: 27,
+        fontWeight: 800,
+        height: 70,
+        textAlign: 'left',
+        textWrap: 'wrap',
+        width: 560,
+        x: 715,
+        y: 574,
+      },
+      contributorName: {
+        ...defaultPlacement(),
+        color: '#111111',
+        fontSize: 30,
+        fontWeight: 900,
+        height: 58,
+        textAlign: 'left',
+        width: 610,
+        x: 670,
+        y: 515,
+      },
+      createdAt: {
+        ...defaultPlacement(),
+        color: '#111111',
+        fontSize: 25,
+        fontWeight: 800,
+        height: 46,
+        textAlign: 'center',
+        width: 160,
+        x: 1115,
+        y: 455,
+      },
+      slipNumber: {
+        ...defaultPlacement(),
+        color: '#b62028',
+        fontSize: 31,
+        fontWeight: 900,
+        height: 48,
+        textAlign: 'left',
+        width: 100,
+        x: 648,
+        y: 445,
+      },
+    };
   });
   const selectedPlacement = placements[activeField] ?? defaultPlacement();
 
@@ -2245,7 +2285,14 @@ function TemplateView({
               type="file"
               onChange={(event) => {
                 const file = event.target.files?.[0];
-                if (file) onPreviewChange(URL.createObjectURL(file));
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const dataUrl = e.target?.result as string;
+                    if (dataUrl) onPreviewChange(dataUrl);
+                  };
+                  reader.readAsDataURL(file);
+                }
               }}
             />
           </label>
