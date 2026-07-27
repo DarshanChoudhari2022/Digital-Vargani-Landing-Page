@@ -111,9 +111,11 @@ interface Slip {
   id: string;
   amount: string | number;
   areaName?: string | null;
+  contributorAddress?: string | null;
   contributorName: string;
   contributorPhone?: string | null;
   createdAt: string;
+  customData?: Record<string, string>;
   paymentMode: PaymentMode;
   shopName?: string | null;
   slipNumber: string;
@@ -588,39 +590,173 @@ export default function App() {
     }
   }
 
-  async function openSlipReceipt(slipId: string) {
-    if (!session?.accessToken) {
-      setNotice('Session expired. Please log in again.');
-      return;
-    }
+  async function downloadSlipAsJpeg(slip: Slip) {
     setBusy(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/vargani/slips/${slipId}/receipt.html`, {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+      let placements: Record<string, TemplatePlacement> = {};
+      let bgUrl = templatePreview || TEMPLATE_IMAGE;
+
+      try {
+        const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
+                      window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
+                      window.localStorage.getItem('digital-vargani-template-superadmin');
+        if (saved) {
+          const parsed = JSON.parse(saved) as { placements?: Record<string, TemplatePlacement>; templatePreview?: string };
+          if (parsed.placements && Object.keys(parsed.placements).length > 0) {
+            placements = parsed.placements;
+          }
+          if (parsed.templatePreview) {
+            bgUrl = parsed.templatePreview;
+          }
+        }
+      } catch {}
+
+      if (Object.keys(placements).length === 0) {
+        placements = {
+          amount: { ...defaultPlacement(), color: '#111111', fontSize: 31, fontWeight: 900, height: 52, textAlign: 'left', width: 250, x: 720, y: 680 },
+          building_name: { ...defaultPlacement(), color: '#111111', fontSize: 24, fontWeight: 700, height: 48, textAlign: 'left', width: 420, x: 715, y: 623 },
+          contributorAddress: { ...defaultPlacement(), color: '#111111', fontSize: 27, fontWeight: 800, height: 70, textAlign: 'left', textWrap: 'wrap', width: 560, x: 715, y: 574 },
+          contributorName: { ...defaultPlacement(), color: '#111111', fontSize: 30, fontWeight: 900, height: 58, textAlign: 'left', width: 610, x: 670, y: 515 },
+          createdAt: { ...defaultPlacement(), color: '#111111', fontSize: 25, fontWeight: 800, height: 46, textAlign: 'center', width: 160, x: 1115, y: 455 },
+          slipNumber: { ...defaultPlacement(), color: '#b62028', fontSize: 31, fontWeight: 900, height: 48, textAlign: 'left', width: 100, x: 648, y: 445 },
+        };
+      }
+
+      const canvasWidth = 1328;
+      const canvasHeight = 800;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas rendering context unavailable');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Could not load slip background image'));
+        img.src = bgUrl;
       });
 
-      if (!response.ok) {
-        throw new Error(readErrorMessage(await response.text(), response.status));
-      }
+      ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
 
-      const html = await response.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-      const win = window.open(blobUrl, '_blank');
-      if (!win) {
+      const values: Record<string, string> = {
+        amount: money(Number(slip.amount)),
+        building_name: slip.customData?.building_name || sampleFieldValue('building_name', 'Building / Lane'),
+        contributorAddress: slip.contributorAddress || sampleFieldValue('contributorAddress', 'Address'),
+        contributorName: slip.contributorName || sampleFieldValue('contributorName', 'Name'),
+        contributorPhone: slip.contributorPhone || sampleFieldValue('contributorPhone', 'Mobile No.'),
+        createdAt: slip.createdAt ? slip.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        paymentMode: slip.paymentMode || 'CASH',
+        shopName: slip.shopName || '',
+        slipNumber: slip.slipNumber || '001',
+        areaName: slip.areaName || '',
+        collectorName: session?.user.name || 'Collector',
+      };
+
+      Object.entries(placements).forEach(([key, p]) => {
+        const text = values[key] ?? slip.customData?.[key] ?? sampleFieldValue(key, key);
+        if (!text) return;
+
+        ctx.save();
+        const fontStyle = p.fontStyle === 'italic' ? 'italic ' : '';
+        const fontWeight = p.fontWeight || 700;
+        const fontSize = p.fontSize || 24;
+        const fontFamily = p.fontFamily || '"Noto Sans Devanagari", Arial, sans-serif';
+        ctx.font = `${fontStyle}${fontWeight} ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = p.color || '#111111';
+        ctx.textAlign = p.textAlign || 'left';
+        ctx.textBaseline = 'top';
+
+        if (p.backgroundColor && p.backgroundColor !== 'transparent') {
+          ctx.fillStyle = p.backgroundColor;
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.fillStyle = p.color || '#111111';
+        }
+
+        let textX = p.x;
+        if (p.textAlign === 'center') textX = p.x + p.width / 2;
+        else if (p.textAlign === 'right') textX = p.x + p.width;
+
+        const textY = p.y + (p.padding || 4);
+
+        if (p.shadow) {
+          ctx.shadowColor = 'rgba(0,0,0,0.4)';
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+        }
+
+        ctx.fillText(text, textX, textY, p.width);
+        ctx.restore();
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setNotice('Could not generate JPEG slip image.');
+          setBusy(false);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = blobUrl;
-        a.target = '_blank';
+        a.href = url;
+        a.download = `Slip_${slip.slipNumber || slip.id}.jpg`;
+        document.body.appendChild(a);
         a.click();
-      }
-      setNotice('Slip receipt opened.');
+        a.remove();
+        URL.revokeObjectURL(url);
+        setNotice(`Slip ${slip.slipNumber} downloaded as JPEG image.`);
+        setBusy(false);
+      }, 'image/jpeg', 0.95);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not open receipt.');
-    } finally {
+      setNotice(error instanceof Error ? error.message : 'Could not download slip image');
       setBusy(false);
     }
+  }
+
+  async function shareSlip(slip: Slip) {
+    const amountStr = money(Number(slip.amount));
+    const mandalName = activeForm?.festival.name ? `${activeForm.festival.name} Mandal` : 'Digital Vargani Mandal';
+    
+    const shareText = `🚩 *DIGITAL VARGANI RECEIPT* 🚩\n\n` +
+      `*Mandal:* ${mandalName}\n` +
+      `*Slip No:* ${slip.slipNumber}\n` +
+      `*Donor:* ${slip.contributorName}${slip.shopName ? ` (${slip.shopName})` : ''}\n` +
+      `*Amount:* ${amountStr}\n` +
+      `*Mode:* ${slip.paymentMode}\n` +
+      `*Date:* ${slip.createdAt.slice(0, 10)}\n\n` +
+      `Thank you for your valuable contribution! 🪔\n` +
+      `Powered by Digital Vargani`;
+
+    const rawPhone = slip.contributorPhone ? slip.contributorPhone.replace(/\D/g, '') : '';
+    const phone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Vargani Slip ${slip.slipNumber}`,
+          text: shareText,
+        });
+        setNotice('Receipt shared successfully!');
+        return;
+      } catch {
+        // Fallback to WhatsApp
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+    } catch {}
+
+    const waUrl = phone
+      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(shareText)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+    
+    window.open(waUrl, '_blank');
+    setNotice(`Receipt text copied & opening WhatsApp for Slip #${slip.slipNumber}!`);
   }
 
   if (session?.user.role === 'MEMBER') {
@@ -630,10 +766,11 @@ export default function App() {
         busy={busy}
         modalOpen={collectorModalOpen}
         notice={notice}
+        onDownloadSlip={downloadSlipAsJpeg}
         onGenerate={generateSlip}
         onLogout={logout}
         onModalChange={setCollectorModalOpen}
-        onOpenReceipt={openSlipReceipt}
+        onShareSlip={shareSlip}
         selectedSlip={selectedSlip}
         session={session}
         setSelectedSlip={setSelectedSlip}
@@ -673,10 +810,11 @@ export default function App() {
       members={members}
       notice={notice}
       onCreateMember={createMember}
+      onDownloadSlip={downloadSlipAsJpeg}
       onGenerate={generateSlip}
       onLogout={logout}
-      onOpenReceipt={openSlipReceipt}
       onRefresh={() => loadWorkspace()}
+      onShareSlip={shareSlip}
       query={query}
       report={report}
       session={session}
@@ -712,11 +850,12 @@ function AdhyakshApp({
   members,
   notice,
   onCreateMember,
+  onDownloadSlip,
   onGenerate,
   onLogout,
   onPreviewChange,
   onRefresh,
-  onOpenReceipt,
+  onShareSlip,
   query,
   report,
   session,
@@ -735,11 +874,12 @@ function AdhyakshApp({
   members: Member[];
   notice: string;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
+  onDownloadSlip: (slip: Slip) => Promise<void>;
   onGenerate: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
-  onOpenReceipt: (slipId: string) => Promise<void>;
   onPreviewChange: (url: string) => void;
   onRefresh: () => void;
+  onShareSlip: (slip: Slip) => Promise<void>;
   query: string;
   report: CollectionReport | null;
   session: AuthSession;
@@ -844,12 +984,6 @@ function AdhyakshApp({
       task.task === taskName ? { ...task, status: 'DONE' } : task
     )));
     showToast('Task marked complete.');
-  }
-
-  async function shareSlip(slip: Slip) {
-    const text = `Vargani slip ${slip.slipNumber} - ${slip.contributorName} - ${money(Number(slip.amount))}`;
-    await navigator.clipboard?.writeText(text);
-    showToast('Slip share text copied.');
   }
 
   function closeSidebar() {
@@ -1071,8 +1205,8 @@ function AdhyakshApp({
                   <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
                   <span className="row-actions">
                     <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
-                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onOpenReceipt(slip.id); }} type="button"><Download size={16} />Slip</button>
-                    <button onClick={() => { void shareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
+                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>
+                    <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
                     <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
@@ -1578,10 +1712,11 @@ function MemberCollectorApp({
   busy,
   modalOpen,
   notice,
+  onDownloadSlip,
   onGenerate,
   onLogout,
   onModalChange,
-  onOpenReceipt,
+  onShareSlip,
   selectedSlip,
   session,
   setSelectedSlip,
@@ -1591,10 +1726,11 @@ function MemberCollectorApp({
   busy: boolean;
   modalOpen: boolean;
   notice: string;
+  onDownloadSlip: (slip: Slip) => Promise<void>;
   onGenerate: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
   onModalChange: (open: boolean) => void;
-  onOpenReceipt: (slipId: string) => Promise<void>;
+  onShareSlip: (slip: Slip) => Promise<void>;
   selectedSlip: Slip | null;
   session: AuthSession;
   setSelectedSlip: (slip: Slip) => void;
@@ -1695,17 +1831,30 @@ function MemberCollectorApp({
                 <span>{slip.contributorPhone || '-'}</span>
                 <em>Paid · {slip.paymentMode}</em>
                 <span>{new Date(slip.createdAt).toLocaleDateString('en-IN')}</span>
-                <button
-                  className="mini-link"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSelectedSlip(slip);
-                    void onOpenReceipt(slip.id);
-                  }}
-                  type="button"
-                >
-                  Slip
-                </button>
+                <span className="row-actions" style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    className="mini-link"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedSlip(slip);
+                      void onDownloadSlip(slip);
+                    }}
+                    type="button"
+                  >
+                    <Download size={15} /> Slip
+                  </button>
+                  <button
+                    className="mini-link"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedSlip(slip);
+                      void onShareSlip(slip);
+                    }}
+                    type="button"
+                  >
+                    <Share2 size={15} /> Share
+                  </button>
+                </span>
               </button>
             ))}
           </div>
