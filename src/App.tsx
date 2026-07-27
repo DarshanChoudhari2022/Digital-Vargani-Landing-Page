@@ -643,13 +643,21 @@ export default function App() {
 
       ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
 
+      const d = new Date(slip.createdAt);
+      const formattedDate = !isNaN(d.getTime())
+        ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+        : slip.createdAt ? slip.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+
+      const rawAmount = Number(slip.amount);
+      const formattedAmount = !isNaN(rawAmount) ? rawAmount.toLocaleString('en-IN') : String(slip.amount || '0');
+
       const values: Record<string, string> = {
-        amount: money(Number(slip.amount)),
+        amount: formattedAmount,
         building_name: slip.customData?.building_name || sampleFieldValue('building_name', 'Building / Lane'),
         contributorAddress: slip.contributorAddress || sampleFieldValue('contributorAddress', 'Address'),
         contributorName: slip.contributorName || sampleFieldValue('contributorName', 'Name'),
         contributorPhone: slip.contributorPhone || sampleFieldValue('contributorPhone', 'Mobile No.'),
-        createdAt: slip.createdAt ? slip.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        createdAt: formattedDate,
         paymentMode: slip.paymentMode || 'CASH',
         shopName: slip.shopName || '',
         slipNumber: slip.slipNumber || '001',
@@ -658,18 +666,27 @@ export default function App() {
       };
 
       Object.entries(placements).forEach(([key, p]) => {
-        const text = values[key] ?? slip.customData?.[key] ?? sampleFieldValue(key, key);
+        let text = values[key] ?? slip.customData?.[key] ?? sampleFieldValue(key, key);
         if (!text) return;
+
+        if (key === 'slipNumber' && p.width < 150 && text.includes('-')) {
+          const parts = text.split('-');
+          const lastPart = parts[parts.length - 1];
+          text = lastPart.length > 3 ? lastPart.slice(-3) : lastPart;
+        }
 
         ctx.save();
         const fontStyle = p.fontStyle === 'italic' ? 'italic ' : '';
         const fontWeight = p.fontWeight || 700;
-        const fontSize = p.fontSize || 24;
+        let fontSize = p.fontSize || 24;
         const fontFamily = p.fontFamily || '"Noto Sans Devanagari", Arial, sans-serif';
+
+        if (p.textWrap === 'shrink' && text.length > 18) {
+          fontSize = Math.max(10, fontSize - Math.ceil((text.length - 18) / 3));
+        }
+
         ctx.font = `${fontStyle}${fontWeight} ${fontSize}px ${fontFamily}`;
         ctx.fillStyle = p.color || '#111111';
-        ctx.textAlign = p.textAlign || 'left';
-        ctx.textBaseline = 'top';
 
         if (p.backgroundColor && p.backgroundColor !== 'transparent') {
           ctx.fillStyle = p.backgroundColor;
@@ -677,11 +694,30 @@ export default function App() {
           ctx.fillStyle = p.color || '#111111';
         }
 
-        let textX = p.x;
-        if (p.textAlign === 'center') textX = p.x + p.width / 2;
-        else if (p.textAlign === 'right') textX = p.x + p.width;
+        if (p.borderColor && p.borderColor !== 'transparent') {
+          ctx.strokeStyle = p.borderColor;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+        }
 
-        const textY = p.y + (p.padding || 4);
+        ctx.textAlign = p.textAlign || 'left';
+        let textX = p.x + (p.padding || 0);
+        if (p.textAlign === 'center') {
+          textX = p.x + p.width / 2;
+        } else if (p.textAlign === 'right') {
+          textX = p.x + p.width - (p.padding || 0);
+        }
+
+        const isSingleLine = (p.textWrap ?? 'single') !== 'wrap';
+        let textY: number;
+
+        if (isSingleLine) {
+          ctx.textBaseline = 'middle';
+          textY = p.y + p.height / 2;
+        } else {
+          ctx.textBaseline = 'top';
+          textY = p.y + (p.padding || 4);
+        }
 
         if (p.shadow) {
           ctx.shadowColor = 'rgba(0,0,0,0.4)';
