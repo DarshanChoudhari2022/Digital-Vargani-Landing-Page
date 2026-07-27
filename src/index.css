@@ -3113,3 +3113,289 @@ kbd {
   border-color: var(--festive-gold) !important;
   transform: translateY(-1px);
 }
+
+/* HIERARCHICAL CONTEXT MENU MATCHING USER SCREENSHOT 2 */
+.field-context-menu.hierarchical {
+  position: absolute;
+  z-index: 100;
+  background: #f0f0f0;
+  border: 1px solid #8f8f8f;
+  box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 13px;
+  color: #111;
+  min-width: 220px;
+  padding: 4px 0;
+  border-radius: 3px;
+  user-select: none;
+}
+
+.field-context-menu.hierarchical .menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: #111;
+  font-size: 13px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.field-context-menu.hierarchical .menu-item:hover {
+  background: #0078d7;
+  color: #ffffff;
+}
+
+.field-context-menu.hierarchical .menu-item.has-submenu:hover > .submenu {
+  display: block;
+}
+
+.field-context-menu.hierarchical .submenu {
+  display: none;
+  position: absolute;
+  left: 98%;
+  top: -4px;
+  background: #f0f0f0;
+  border: 1px solid #8f8f8f;
+  box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
+  min-width: 190px;
+  padding: 4px 0;
+  border-radius: 3px;
+  z-index: 101;
+}
+
+.field-context-menu.hierarchical .submenu button {
+  display: block;
+  width: 100%;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #111;
+  box-sizing: border-box;
+}
+
+.field-context-menu.hierarchical .submenu button:hover {
+  background: #0078d7;
+  color: #ffffff;
+}
+
+.field-context-menu.hierarchical .menu-divider {
+  height: 1px;
+  background: #d0d0d0;
+  margin: 4px 0;
+}
+
+.field-context-menu.hierarchical .menu-item.marathi-item {
+  font-weight: 700;
+  color: #b62028;
+}
+
+.field-context-menu.hierarchical .menu-item.marathi-item:hover {
+  color: #ffffff;
+  background: #b62028;
+}
+
+/* FONT DIALOG BOX MODAL MATCHING USER SCREENSHOT 3 */
+.font-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.font-dialog-box {
+  width: 500px;
+  background: #f0f0f0;
+  border: 2px solid #005a9e;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 13px;
+  color: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.font-dialog-header {
+  background: #005a9e;
+  color: #ffffff;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.font-dialog-header button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.font-dialog-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.font-dialog-columns {
+  display: grid;
+  grid-template-columns: 2.2fr 1.6fr 1fr;
+  gap: 10px;
+}
+
+.font-col label {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 3px;
+  color: #333;
+}
+
+.font-col input {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid #7a7a7a;
+  background: #fff;
+  margin-bottom: 4px;
+  box-sizing: border-box;
+}
+
+.font-col-list {
+  height: 130px;
+  border: 1px solid #7a7a7a;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.font-col-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  color: #111;
+}
+
+.font-col-list button:hover {
+  background: #e5f1fb;
+}
+
+.font-col-list button.selected {
+  background: #0078d7;
+  color: #fff;
+}
+
+.font-dialog-group {
+  border: 1px solid #c0c0c0;
+  padding: 8px 12px;
+  border-radius: 2px;
+  background: #f9f9f9;
+  margin: 0;
+}
+
+.font-dialog-group legend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 4px;
+  color: #444;
+}
+
+.effects-grid {
+  display: flex;
+  gap: 16px;
+}
+
+.effects-grid label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #111;
+}
+
+.sample-box {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7a7a7a;
+  background: #ffffff;
+  overflow: hidden;
+  padding: 6px;
+  margin-top: 4px;
+}
+
+.font-dialog-footer {
+  padding: 12px 16px;
+  background: #e5e5e5;
+  border-top: 1px solid #d0d0d0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.font-dialog-footer .script-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.font-dialog-footer .script-select select {
+  padding: 3px 6px;
+  font-size: 12px;
+  border: 1px solid #7a7a7a;
+  border-radius: 2px;
+}
+
+.font-dialog-footer .btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.font-dialog-footer .btn-group button {
+  padding: 5px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #7a7a7a;
+  background: #e1e1e1;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.font-dialog-footer .btn-group button:hover {
+  background: #e5f1fb;
+  border-color: #0078d7;
+}
+
+.font-dialog-footer .btn-group button.primary-btn {
+  background: #0078d7;
+  color: #fff;
+  border-color: #005a9e;
+}
+
+.font-dialog-footer .btn-group button.primary-btn:hover {
+  background: #005a9e;
+}
+

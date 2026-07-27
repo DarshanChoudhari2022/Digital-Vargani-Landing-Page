@@ -3,6 +3,7 @@ import {
   BadgeIndianRupee,
   Building2,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
   Copy,
   Download,
@@ -43,6 +44,7 @@ type OwnerMandalTab = 'overview' | 'template';
 type Language = 'en' | 'mr' | 'hi';
 
 interface TemplatePlacement {
+  autoMarathi?: boolean;
   backgroundColor: string;
   borderColor: string;
   borderRadius: number;
@@ -57,7 +59,9 @@ interface TemplatePlacement {
   opacity: number;
   padding: number;
   rotate: number;
+  script?: string;
   shadow: boolean;
+  strikeout?: boolean;
   textAlign: TextAlign;
   textDecoration: TextDecoration;
   textTransform: 'none' | 'uppercase' | 'capitalize';
@@ -2095,6 +2099,247 @@ function LoginPanel({
   );
 }
 
+function toMarathiDigits(val: string | number): string {
+  const map: Record<string, string> = {
+    '0': '०', '1': '१', '2': '२', '3': '३', '4': '४',
+    '5': '५', '6': '६', '7': '७', '8': '८', '9': '९',
+  };
+  return String(val).replace(/[0-9]/g, (digit) => map[digit] ?? digit);
+}
+
+const MARATHI_WORD_MAP: Record<string, string> = {
+  'Cash': 'नगद',
+  'CASH': 'नगद (CASH)',
+  'UPI': 'ऑनलाइन (UPI)',
+  'CHEQUE': 'धनादेश (Cheque)',
+  'BANK_TRANSFER': 'बँक ट्रान्सफर',
+  'Ramtekdi': 'रामटेकडी',
+  'Ramtekdi, Pune': 'रामटेकडी, पुणे',
+  'Pune': 'पुणे',
+  'Mahesh Traders': 'महेश ट्रेडर्स',
+  'Prathama Building': 'प्रथमा बिल्डिंग',
+  'Pramod': 'प्रमोद',
+  'Amit Collector': 'अमित कलेक्टर',
+  'Shop': 'दुकान',
+};
+
+function applyAutoMarathiTranslation(text: string, placement?: Partial<TemplatePlacement>): string {
+  if (!placement?.autoMarathi && placement?.script !== 'Devanagari') return text;
+  let translated = text;
+  Object.entries(MARATHI_WORD_MAP).forEach(([eng, mr]) => {
+    translated = translated.replace(new RegExp(eng, 'gi'), mr);
+  });
+  return toMarathiDigits(translated);
+}
+
+function sampleFieldValue(key: string, label: string, placement?: Partial<TemplatePlacement>) {
+  const samples: Record<string, string> = {
+    amount: '5100',
+    areaName: 'Ramtekdi',
+    building_name: 'Prathama Building',
+    collectorName: 'Amit Collector',
+    contributorAddress: 'Ramtekdi, Pune',
+    contributorName: 'Mahesh Traders',
+    contributorPhone: '9876543210',
+    createdAt: '26/07/2026',
+    donorType: 'Shop',
+    paymentMode: 'UPI',
+    shopName: 'Mahesh Traders',
+    slipNumber: '003',
+  };
+  const raw = samples[key] ?? label;
+  return applyAutoMarathiTranslation(raw, placement);
+}
+
+function FontDialogModal({
+  initialPlacement,
+  onClose,
+  onSave,
+  sampleText = 'AaBbYyZz  ·  अमित कुलकर्णी  ₹ ५,१००',
+}: {
+  initialPlacement: Partial<TemplatePlacement>;
+  onClose: () => void;
+  onSave: (updated: Partial<TemplatePlacement>) => void;
+  sampleText?: string;
+}) {
+  const fonts = [
+    { label: 'Century Gothic', value: '"Century Gothic", sans-serif' },
+    { label: 'Noto Sans Devanagari', value: '"Noto Sans Devanagari", sans-serif' },
+    { label: 'Microsoft Sans Serif', value: '"Microsoft Sans Serif", sans-serif' },
+    { label: 'Arial', value: 'Arial, sans-serif' },
+    { label: 'Arial Narrow', value: '"Arial Narrow", Arial, sans-serif' },
+    { label: 'Helvetica', value: 'Helvetica, sans-serif' },
+    { label: 'Tahoma', value: 'Tahoma, sans-serif' },
+    { label: 'Yatra One', value: '"Yatra One", cursive' },
+    { label: 'Rozha One', value: '"Rozha One", serif' },
+    { label: 'Mukta', value: '"Mukta", sans-serif' },
+    { label: 'Times New Roman', value: '"Times New Roman", serif' },
+  ];
+
+  const fontStyles = [
+    { fontStyle: 'normal', fontWeight: 400, label: 'Regular' },
+    { fontStyle: 'italic', fontWeight: 400, label: 'Italic' },
+    { fontStyle: 'normal', fontWeight: 700, label: 'Bold' },
+    { fontStyle: 'italic', fontWeight: 700, label: 'Bold Italic' },
+    { fontStyle: 'normal', fontWeight: 900, label: 'Narrow Bold' },
+  ];
+
+  const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 31, 36, 40, 48, 56, 64, 72, 80, 96];
+
+  const [selectedFont, setSelectedFont] = useState(initialPlacement.fontFamily || '"Noto Sans Devanagari", sans-serif');
+  const [selectedStyle, setSelectedStyle] = useState(
+    initialPlacement.fontStyle === 'italic'
+      ? initialPlacement.fontWeight && initialPlacement.fontWeight >= 700
+        ? 'Bold Italic'
+        : 'Italic'
+      : initialPlacement.fontWeight && initialPlacement.fontWeight >= 850
+      ? 'Narrow Bold'
+      : initialPlacement.fontWeight && initialPlacement.fontWeight >= 700
+      ? 'Bold'
+      : 'Regular',
+  );
+  const [selectedSize, setSelectedSize] = useState(initialPlacement.fontSize || 24);
+  const [underline, setUnderline] = useState(initialPlacement.textDecoration === 'underline');
+  const [strikeout, setStrikeout] = useState(Boolean(initialPlacement.strikeout));
+  const [shadow, setShadow] = useState(Boolean(initialPlacement.shadow));
+  const [uppercase, setUppercase] = useState(initialPlacement.textTransform === 'uppercase');
+  const [script, setScript] = useState(initialPlacement.script || 'Devanagari');
+  const [autoMarathi, setAutoMarathi] = useState(Boolean(initialPlacement.autoMarathi));
+
+  const currentStyleObj = fontStyles.find((s) => s.label === selectedStyle) || fontStyles[0];
+
+  function handleSave() {
+    onSave({
+      autoMarathi,
+      fontFamily: selectedFont,
+      fontSize: Number(selectedSize),
+      fontStyle: currentStyleObj.fontStyle as 'normal' | 'italic',
+      fontWeight: currentStyleObj.fontWeight,
+      script,
+      shadow,
+      strikeout,
+      textDecoration: underline ? 'underline' : 'none',
+      textTransform: uppercase ? 'uppercase' : 'none',
+    });
+    onClose();
+  }
+
+  const samplePreviewText = applyAutoMarathiTranslation(sampleText, { autoMarathi, script });
+
+  return (
+    <div className="font-dialog-backdrop" onClick={onClose}>
+      <div className="font-dialog-box" onClick={(e) => e.stopPropagation()}>
+        <div className="font-dialog-header">
+          <span>Font</span>
+          <button onClick={onClose} type="button">✕</button>
+        </div>
+
+        <div className="font-dialog-body">
+          <div className="font-dialog-columns">
+            <div className="font-col">
+              <label>Font</label>
+              <input value={selectedFont.replaceAll('"', '').split(',')[0]} onChange={(e) => setSelectedFont(e.target.value)} />
+              <div className="font-col-list">
+                {fonts.map((f) => (
+                  <button
+                    className={selectedFont === f.value ? 'selected' : ''}
+                    key={f.label}
+                    onClick={() => setSelectedFont(f.value)}
+                    type="button"
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="font-col">
+              <label>Font Style</label>
+              <input value={selectedStyle} readOnly />
+              <div className="font-col-list">
+                {fontStyles.map((s) => (
+                  <button
+                    className={selectedStyle === s.label ? 'selected' : ''}
+                    key={s.label}
+                    onClick={() => setSelectedStyle(s.label)}
+                    type="button"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="font-col">
+              <label>Size</label>
+              <input type="number" value={selectedSize} onChange={(e) => setSelectedSize(Number(e.target.value))} />
+              <div className="font-col-list">
+                {fontSizes.map((sz) => (
+                  <button
+                    className={selectedSize === sz ? 'selected' : ''}
+                    key={sz}
+                    onClick={() => setSelectedSize(sz)}
+                    type="button"
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <fieldset className="font-dialog-group">
+            <legend>Effects</legend>
+            <div className="effects-grid">
+              <label><input type="checkbox" checked={strikeout} onChange={(e) => setStrikeout(e.target.checked)} /> Strikeout</label>
+              <label><input type="checkbox" checked={underline} onChange={(e) => setUnderline(e.target.checked)} /> Underline</label>
+              <label><input type="checkbox" checked={shadow} onChange={(e) => setShadow(e.target.checked)} /> Shadow</label>
+              <label><input type="checkbox" checked={uppercase} onChange={(e) => setUppercase(e.target.checked)} /> Uppercase</label>
+            </div>
+          </fieldset>
+
+          <fieldset className="font-dialog-group">
+            <legend>Sample</legend>
+            <div
+              className="sample-box"
+              style={{
+                color: '#111',
+                fontFamily: selectedFont,
+                fontSize: `${Math.min(32, selectedSize)}px`,
+                fontStyle: currentStyleObj.fontStyle,
+                fontWeight: currentStyleObj.fontWeight,
+                textDecoration: `${underline ? 'underline ' : ''}${strikeout ? 'line-through' : ''}`.trim() || 'none',
+                textShadow: shadow ? '0 2px 4px rgba(0,0,0,0.35)' : 'none',
+                textTransform: uppercase ? 'uppercase' : 'none',
+              }}
+            >
+              {samplePreviewText}
+            </div>
+          </fieldset>
+        </div>
+
+        <div className="font-dialog-footer">
+          <div className="script-select">
+            <label>Script:</label>
+            <select value={script} onChange={(e) => setScript(e.target.value)}>
+              <option value="Devanagari">Devanagari (Marathi)</option>
+              <option value="Western">Western</option>
+            </select>
+            <label style={{ marginLeft: '10px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={autoMarathi} onChange={(e) => setAutoMarathi(e.target.checked)} /> Auto Marathi
+            </label>
+          </div>
+
+          <div className="btn-group">
+            <button className="primary-btn" onClick={handleSave} type="button">OK</button>
+            <button onClick={onClose} type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TemplateView({
   activeForm,
   activeTemplate,
@@ -2145,6 +2390,7 @@ function TemplateView({
   const [interaction, setInteraction] = useState<FieldInteraction | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ fieldKey: string; x: number; y: number } | null>(null);
+  const [fontModalFieldKey, setFontModalFieldKey] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState('');
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>(() => {
     try {
@@ -2565,46 +2811,163 @@ function TemplateView({
             })}
             {contextMenu && (
               <div
-                className="field-context-menu"
+                className="field-context-menu hierarchical"
                 style={{
                   left: `${contextMenu.x}px`,
                   top: `${contextMenu.y}px`,
                 }}
               >
-                <div className="context-menu-title">Text Properties</div>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'larger')} type="button">Increase Text Size</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'smaller')} type="button">Reduce Text Size</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'bold')} type="button">Bold / Normal</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'italic')} type="button">Italic</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'underline')} type="button">Underline</button>
-                <div className="context-menu-title">Background Properties</div>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'transparentBg')} type="button">Transparent Background</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'whiteBg')} type="button">White Background</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'border')} type="button">Toggle Border</button>
-                <div className="context-menu-title">Alignments</div>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'centerField')} type="button">Center Field on Slip</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'fullWidth')} type="button">Full Width + Center Text</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'grid')} type="button">Grid View</button>
-                <div className="context-menu-title">Color / Rotate / Font</div>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'orange')} type="button">Color: Orange</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'red')} type="button">Color: Receipt Red</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'black')} type="button">Color: Black</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'rotateLeft')} type="button">Rotate -5 degrees</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'rotateRight')} type="button">Rotate +5 degrees</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'resetRotate')} type="button">Reset Rotate</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontArial')} type="button">Font: Arial</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontDevanagari')} type="button">Font: Devanagari</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'fontGeorgia')} type="button">Font: Serif</button>
-                <div className="context-menu-title">Size / Wrap</div>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'splitHold')} type="button">Split Hold Size</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'wrap')} type="button">WordWrap Text</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'shrink')} type="button">WordWrap / Reduce Font Size</button>
-                <button onClick={() => contextAction(contextMenu.fieldKey, 'shadow')} type="button">Shadow</button>
-                <div className="context-menu-title">Layer</div>
-                <button onClick={() => removePlacement(contextMenu.fieldKey)} type="button">Delete Field</button>
-                <button onClick={() => duplicatePlacement(contextMenu.fieldKey)} type="button">Duplicate Field</button>
-                <button onClick={() => bringPlacementForward(contextMenu.fieldKey)} type="button">Bring To Front</button>
+                <div className="menu-item has-submenu">
+                  <span>Image Properties</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { opacity: 0.8 }); setContextMenu(null); }} type="button">Opacity: 80%</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { opacity: 1 }); setContextMenu(null); }} type="button">Opacity: 100%</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { borderRadius: 12 }); setContextMenu(null); }} type="button">Rounded Corners (12px)</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { borderRadius: 0 }); setContextMenu(null); }} type="button">Square Corners (0px)</button>
+                  </div>
+                </div>
+
+                <div className="menu-item has-submenu">
+                  <span>Text Properties</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'larger'); setContextMenu(null); }} type="button">Increase Text Size</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'smaller'); setContextMenu(null); }} type="button">Reduce Text Size</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'bold'); setContextMenu(null); }} type="button">Bold / Normal</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'italic'); setContextMenu(null); }} type="button">Italic</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'underline'); setContextMenu(null); }} type="button">Underline</button>
+                    <button onClick={() => { setFontModalFieldKey(contextMenu.fieldKey); setContextMenu(null); }} type="button">Font Dialog...</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { autoMarathi: !placements[contextMenu.fieldKey]?.autoMarathi }); setContextMenu(null); }} type="button">Auto Marathi Translation</button>
+                  </div>
+                </div>
+
+                <div className="menu-item has-submenu">
+                  <span>Background Properties</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'transparentBg'); setContextMenu(null); }} type="button">Transparent Background</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'whiteBg'); setContextMenu(null); }} type="button">White Background</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { backgroundColor: '#fff3d5' }); setContextMenu(null); }} type="button">Yellow Highlight Tint</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'border'); setContextMenu(null); }} type="button">Toggle Border</button>
+                  </div>
+                </div>
+
+                <div className="menu-item has-submenu">
+                  <span>Alignments</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'left'); setContextMenu(null); }} type="button">Align Left</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'center'); setContextMenu(null); }} type="button">Align Center</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'right'); setContextMenu(null); }} type="button">Align Right</button>
+                  </div>
+                </div>
+
+                <button className="menu-item" onClick={() => { contextAction(contextMenu.fieldKey, 'grid'); setContextMenu(null); }} type="button">
+                  <span>Grid View</span>
+                </button>
+
+                <div className="menu-divider" />
+
+                <button className="menu-item" onClick={() => { contextAction(contextMenu.fieldKey, 'centerField'); setContextMenu(null); }} type="button">
+                  <span>Center Field on Card</span>
+                </button>
+
+                <button className="menu-item" onClick={() => { contextAction(contextMenu.fieldKey, 'fullWidth'); setContextMenu(null); }} type="button">
+                  <span>Full Width + Center Text</span>
+                </button>
+
+                <button
+                  className="menu-item"
+                  onClick={() => {
+                    const current = placements[contextMenu.fieldKey] ?? defaultPlacement();
+                    const input = window.prompt('Enter X, Y coordinates (e.g. 720, 680):', `${current.x}, ${current.y}`);
+                    if (input) {
+                      const [x, y] = input.split(',').map((val) => parseInt(val.trim(), 10));
+                      if (!isNaN(x) && !isNaN(y)) {
+                        updatePlacement(contextMenu.fieldKey, { x, y });
+                      }
+                    }
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  <span>Set Text Axis (X, Y)</span>
+                </button>
+
+                <div className="menu-item has-submenu">
+                  <span>Color</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'black'); setContextMenu(null); }} type="button">Black (#111111)</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'red'); setContextMenu(null); }} type="button">Receipt Red (#b62028)</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'orange'); setContextMenu(null); }} type="button">Orange (#ff4f0a)</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { color: '#059669' }); setContextMenu(null); }} type="button">Green (#059669)</button>
+                    <button onClick={() => { updatePlacement(contextMenu.fieldKey, { color: '#2563eb' }); setContextMenu(null); }} type="button">Blue (#2563eb)</button>
+                  </div>
+                </div>
+
+                <div className="menu-item has-submenu">
+                  <span>Rotate</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0°</button>
+                  </div>
+                </div>
+
+                <button
+                  className="menu-item highlighted"
+                  onClick={() => {
+                    setFontModalFieldKey(contextMenu.fieldKey);
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  <span>Font (Font Dialog)...</span>
+                </button>
+
+                <div className="menu-divider" />
+
+                <button className="menu-item" onClick={() => { contextAction(contextMenu.fieldKey, 'splitHold'); setContextMenu(null); }} type="button">
+                  <span>Split Hold Size</span>
+                </button>
+
+                <button className="menu-item" onClick={() => { contextAction(contextMenu.fieldKey, 'wrap'); setContextMenu(null); }} type="button">
+                  <span>WordWrap / Rotate Reduce Font Size</span>
+                </button>
+
+                <div className="menu-item has-submenu">
+                  <span>Layer</span>
+                  <ChevronRight size={14} />
+                  <div className="submenu">
+                    <button onClick={() => { removePlacement(contextMenu.fieldKey); setContextMenu(null); }} type="button">Delete Field</button>
+                    <button onClick={() => { duplicatePlacement(contextMenu.fieldKey); setContextMenu(null); }} type="button">Duplicate Field</button>
+                    <button onClick={() => { bringPlacementForward(contextMenu.fieldKey); setContextMenu(null); }} type="button">Bring To Front</button>
+                  </div>
+                </div>
+
+                <button
+                  className="menu-item marathi-item"
+                  onClick={() => {
+                    updatePlacement(contextMenu.fieldKey, { autoMarathi: !placements[contextMenu.fieldKey]?.autoMarathi });
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? '✓ Marathi Translation ON' : 'Auto Marathi Translation (मराठी)'}</span>
+                </button>
               </div>
+            )}
+
+            {fontModalFieldKey && (
+              <FontDialogModal
+                initialPlacement={placements[fontModalFieldKey] ?? defaultPlacement()}
+                onClose={() => setFontModalFieldKey(null)}
+                onSave={(updated) => updatePlacement(fontModalFieldKey, updated)}
+                sampleText={sampleFieldValue(fontModalFieldKey, fieldOptions.find((f) => f.key === fontModalFieldKey)?.label ?? fontModalFieldKey)}
+              />
             )}
           </div>
         </div>
@@ -2780,24 +3143,7 @@ function toColorInput(value: string) {
   return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, '0')).join('')}`;
 }
 
-function sampleFieldValue(key: string, label: string) {
-  const samples: Record<string, string> = {
-    amount: '5100',
-    areaName: 'Ramtekdi',
-    building_name: 'Prathama Building',
-    collectorName: 'Amit Collector',
-    contributorAddress: 'Ramtekdi, Pune',
-    contributorName: 'Mahesh Traders',
-    contributorPhone: '9876543210',
-    createdAt: '26/07/2026',
-    donorType: 'Shop',
-    paymentMode: 'UPI',
-    shopName: 'Mahesh Traders',
-    slipNumber: '003',
-  };
 
-  return samples[key] ?? label;
-}
 
 function isSlipPaid(slip: Slip) {
   return (slip.status ?? 'PAID').toUpperCase() !== 'PENDING';
