@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Clock,
   Plus,
   ReceiptText,
   RefreshCw,
@@ -293,7 +294,7 @@ export default function App() {
   const [slips, setSlips] = useState<Slip[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
-  const [selectedSlip, setSelectedSlip] = useState<Slip | null>(null);
+  const [, setSelectedSlip] = useState<Slip | null>(null);
   const [templatePreview, setTemplatePreview] = useState<string>(() => {
     try {
       const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
@@ -556,12 +557,19 @@ export default function App() {
     event.preventDefault();
     if (!session) return;
     const form = new FormData(event.currentTarget);
-    const customData = Object.fromEntries(
+    const paymentStatus = String(form.get('paymentStatus') || 'ACTIVE') === 'PENDING' ? 'PENDING' : 'ACTIVE';
+    const contributorPhone = String(form.get('contributorPhone') || '');
+    const customData: Record<string, unknown> = Object.fromEntries(
       (activeForm?.customFields ?? []).map((field) => [
         field.key,
         String(form.get(`custom_${field.key}`) || ''),
       ]),
     );
+    const tentativePaymentDate = String(form.get('tentativePaymentDate') || '');
+    if (tentativePaymentDate) {
+      customData.tentativePaymentDate = tentativePaymentDate;
+    }
+    const whatsappWindow = paymentStatus === 'ACTIVE' ? window.open('about:blank', '_blank') : null;
     setBusy(true);
     try {
       const slip = await apiRequest<Slip>(
@@ -572,11 +580,12 @@ export default function App() {
             areaName: String(form.get('areaName')),
             contributorAddress: String(form.get('contributorAddress')),
             contributorName: String(form.get('contributorName')),
-            contributorPhone: String(form.get('contributorPhone')),
+            contributorPhone,
             customData,
             idempotencyKey: crypto.randomUUID(),
             paymentMode: String(form.get('paymentMode')) as PaymentMode,
             shopName: String(form.get('shopName')),
+            status: paymentStatus,
           }),
           method: 'POST',
         },
@@ -586,8 +595,15 @@ export default function App() {
       setSelectedSlip(slip);
       event.currentTarget.reset();
       await loadWorkspace(session);
-      setNotice(`Slip ${slip.slipNumber} generated successfully.`);
+      if (paymentStatus === 'PENDING') {
+        whatsappWindow?.close();
+        setNotice(`Pending vargani entry ${slip.slipNumber} saved.`);
+      } else {
+        await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow);
+        setNotice(`Slip ${slip.slipNumber} generated. WhatsApp message prepared.`);
+      }
     } catch (error) {
+      whatsappWindow?.close();
       setNotice(error instanceof Error ? error.message : 'Could not generate slip.');
     } finally {
       setBusy(false);
@@ -758,45 +774,12 @@ export default function App() {
   }
 
   async function shareSlip(slip: Slip) {
-    const amountStr = money(Number(slip.amount));
-    const mandalName = activeForm?.festival.name ? `${activeForm.festival.name} Mandal` : 'Digital Vargani Mandal';
-    
-    const shareText = `🚩 *DIGITAL VARGANI RECEIPT* 🚩\n\n` +
-      `*Mandal:* ${mandalName}\n` +
-      `*Slip No:* ${slip.slipNumber}\n` +
-      `*Donor:* ${slip.contributorName}${slip.shopName ? ` (${slip.shopName})` : ''}\n` +
-      `*Amount:* ${amountStr}\n` +
-      `*Mode:* ${slip.paymentMode}\n` +
-      `*Date:* ${slip.createdAt.slice(0, 10)}\n\n` +
-      `Thank you for your valuable contribution! 🪔\n` +
-      `Powered by Digital Vargani`;
-
-    const rawPhone = slip.contributorPhone ? slip.contributorPhone.replace(/\D/g, '') : '';
-    const phone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Vargani Slip ${slip.slipNumber}`,
-          text: shareText,
-        });
-        setNotice('Receipt shared successfully!');
-        return;
-      } catch {
-        // Fallback to WhatsApp
-      }
+    if (!isSlipPaid(slip)) {
+      setNotice('Receipt can be shared only after payment is received.');
+      return;
     }
-
-    try {
-      await navigator.clipboard.writeText(shareText);
-    } catch {}
-
-    const waUrl = phone
-      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(shareText)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-    
-    window.open(waUrl, '_blank');
-    setNotice(`Receipt text copied & opening WhatsApp for Slip #${slip.slipNumber}!`);
+    await shareReceiptToWhatsApp(slip, slip.contributorPhone);
+    setNotice(`Slip  WhatsApp message copied and opened.`);
   }
 
   if (session?.user.role === 'MEMBER') {
@@ -811,7 +794,6 @@ export default function App() {
         onLogout={logout}
         onModalChange={setCollectorModalOpen}
         onShareSlip={shareSlip}
-        selectedSlip={selectedSlip}
         session={session}
         setSelectedSlip={setSelectedSlip}
         slips={slips}
@@ -915,7 +897,7 @@ function AdhyakshApp({
   notice: string;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
   onDownloadSlip: (slip: Slip) => Promise<void>;
-  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
+  onGenerate: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
   onRefresh: () => void;
@@ -932,6 +914,7 @@ function AdhyakshApp({
 }) {
   const [screen, setScreen] = useState<AdhyakshScreen>('members');
   const [entryOpen, setEntryOpen] = useState(false);
+  const [entryStatus, setEntryStatus] = useState<'ACTIVE' | 'PENDING'>('ACTIVE');
   const [memberOpen, setMemberOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [localNotice, setLocalNotice] = useState('');
@@ -1245,8 +1228,7 @@ function AdhyakshApp({
                   <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
                   <span className="row-actions">
                     <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
-                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>
-                    <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
+                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>`r`n                    <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
                     <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
@@ -1304,7 +1286,7 @@ function AdhyakshApp({
 
       {entryOpen && (
         <div className="modal-backdrop">
-          <form className="vargani-modal adhyaksh-modal" onSubmit={(event) => { onGenerate(event); setEntryOpen(false); }}>
+          <form className="vargani-modal adhyaksh-modal" onSubmit={async (event) => { await onGenerate(event); setEntryOpen(false); setEntryStatus('ACTIVE'); }}>
             <button className="modal-close" onClick={() => setEntryOpen(false)} type="button"><X size={20} /></button>
             <h2>New Vargani Entry</h2>
             <label>Name<input name="contributorName" required placeholder="Enter full name" /></label>
@@ -1313,9 +1295,13 @@ function AdhyakshApp({
             <label>Location<input name="areaName" required placeholder="Dapodi, Pune" /></label>
             <label>Address<textarea name="contributorAddress" placeholder="Full address optional" /></label>
             <label>WhatsApp Number<input name="contributorPhone" placeholder="10 digit WhatsApp number" /></label>
+            <PaymentStatusSelector value={entryStatus} onChange={setEntryStatus} />
             <label>Payment Mode<select name="paymentMode" defaultValue="CASH"><option value="CASH">Cash</option><option value="UPI">Online / UPI</option><option value="CHEQUE">Cheque</option></select></label>
+            {entryStatus === 'PENDING' && (
+              <label className="pending-date-card">Tentative Payment Date<input name="tentativePaymentDate" type="date" /></label>
+            )}
             {(activeForm?.customFields ?? []).map((field) => <label key={field.key}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>)}
-            <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className="success" type="submit">Confirm & Generate Slip</button></div>
+            <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button></div>
           </form>
         </div>
       )}
@@ -1747,6 +1733,46 @@ function MandalAvatar({ mandal }: { mandal: DemoMandal }) {
   return <span className="avatar">{mandal.name.charAt(0).toUpperCase()}</span>;
 }
 
+function PaymentStatusSelector({
+  onChange,
+  value,
+}: {
+  onChange: (value: 'ACTIVE' | 'PENDING') => void;
+  value: 'ACTIVE' | 'PENDING';
+}) {
+  return (
+    <fieldset className="payment-status-field">
+      <legend>Payment Status *</legend>
+      <div className="payment-status-grid">
+        <label className={`payment-card paid ${value === 'ACTIVE' ? 'active' : ''}`}>
+          <input
+            checked={value === 'ACTIVE'}
+            name="paymentStatus"
+            onChange={() => onChange('ACTIVE')}
+            type="radio"
+            value="ACTIVE"
+          />
+          <CheckCircle2 size={24} />
+          <strong>Payment Received</strong>
+          <span>Slip will be generated</span>
+        </label>
+        <label className={`payment-card pending ${value === 'PENDING' ? 'active' : ''}`}>
+          <input
+            checked={value === 'PENDING'}
+            name="paymentStatus"
+            onChange={() => onChange('PENDING')}
+            type="radio"
+            value="PENDING"
+          />
+          <Clock size={24} />
+          <strong>Pending</strong>
+          <span>No slip until paid</span>
+        </label>
+      </div>
+    </fieldset>
+  );
+}
+
 function MemberCollectorApp({
   activeForm,
   busy,
@@ -1757,7 +1783,6 @@ function MemberCollectorApp({
   onLogout,
   onModalChange,
   onShareSlip,
-  selectedSlip,
   session,
   setSelectedSlip,
   slips,
@@ -1767,15 +1792,15 @@ function MemberCollectorApp({
   modalOpen: boolean;
   notice: string;
   onDownloadSlip: (slip: Slip) => Promise<void>;
-  onGenerate: (event: FormEvent<HTMLFormElement>) => void;
+  onGenerate: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onLogout: () => void;
   onModalChange: (open: boolean) => void;
   onShareSlip: (slip: Slip) => Promise<void>;
-  selectedSlip: Slip | null;
   session: AuthSession;
   setSelectedSlip: (slip: Slip) => void;
   slips: Slip[];
 }) {
+  const [entryStatus, setEntryStatus] = useState<'ACTIVE' | 'PENDING'>('ACTIVE');
   const collected = slips.reduce((sum, slip) => sum + Number(slip.amount), 0);
   const paidSlips = slips.length;
 
@@ -1860,7 +1885,7 @@ function MemberCollectorApp({
             </div>
             {slips.map((slip) => (
               <button
-                className={selectedSlip?.id === slip.id ? 'member-slip-row selected' : 'member-slip-row'}
+                className="member-slip-row"
                 key={slip.id}
                 onClick={() => setSelectedSlip(slip)}
                 type="button"
@@ -1905,9 +1930,10 @@ function MemberCollectorApp({
         <div className="modal-backdrop">
           <form
             className="vargani-modal"
-            onSubmit={(event) => {
-              onGenerate(event);
+            onSubmit={async (event) => {
+              await onGenerate(event);
               onModalChange(false);
+              setEntryStatus('ACTIVE');
             }}
           >
             <button className="modal-close" onClick={() => onModalChange(false)} type="button">x</button>
@@ -1924,6 +1950,7 @@ function MemberCollectorApp({
             <label>Location *<input name="areaName" required placeholder="e.g. Ramtekdi, Pune" /></label>
             <label>Address<textarea name="contributorAddress" placeholder="Full address (optional)" /></label>
             <label>WhatsApp Number<input name="contributorPhone" placeholder="+91 10 digit WhatsApp number" /></label>
+            <PaymentStatusSelector value={entryStatus} onChange={setEntryStatus} />
             {(activeForm?.customFields ?? []).map((field) => (
               <label key={field.id}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>
             ))}
@@ -1936,9 +1963,12 @@ function MemberCollectorApp({
                 <option value="BANK_TRANSFER">Bank Transfer</option>
               </select>
             </label>
+            {entryStatus === 'PENDING' && (
+              <label className="pending-date-card">Tentative Payment Date<input name="tentativePaymentDate" type="date" /></label>
+            )}
             <div className="modal-actions">
               <button onClick={() => onModalChange(false)} type="button">Cancel</button>
-              <button className="success" disabled={busy} type="submit"><CheckCircle2 size={18} />Confirm & Generate Slip</button>
+              <button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} disabled={busy} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button>
             </div>
           </form>
         </div>
@@ -3146,7 +3176,101 @@ function toColorInput(value: string) {
 
 
 function isSlipPaid(slip: Slip) {
-  return (slip.status ?? 'PAID').toUpperCase() !== 'PENDING';
+  return (slip.status ?? 'ACTIVE').toUpperCase() !== 'PENDING';
+}
+
+function publicReceiptUrl(slipId: string) {
+  return `${API_BASE_URL}/public/vargani/slips/${slipId}/receipt.html`;
+}
+
+function buildWhatsAppReceiptMessage(slip: Slip) {
+  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
+
+आदरणीय भक्तगण,
+
+पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
+
+आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
+
+पावती क्रमांक: ${slip.slipNumber}
+नाव: ${slip.contributorName}
+रक्कम: ${money(Number(slip.amount))}
+डिजिटल पावती: ${publicReceiptUrl(slip.id)}
+
+आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
+
+श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
+
+📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
+
+आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
+
+॥ गणपती बाप्पा मोरया ॥
+मंगलमूर्ती मोरया! ❤️🌺
+
+– पुणे गणपती उत्सव`;
+}
+
+void buildWhatsAppReceiptMessage;
+
+function buildMarathiWhatsAppReceiptMessage(slip: Slip) {
+  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
+
+आदरणीय भक्तगण,
+
+पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
+
+आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
+
+पावती क्रमांक: ${slip.slipNumber}
+नाव: ${slip.contributorName}
+रक्कम: ${money(Number(slip.amount))}
+डिजिटल पावती: ${publicReceiptUrl(slip.id)}
+
+आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
+
+श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
+
+📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
+
+आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
+
+॥ गणपती बाप्पा मोरया ॥
+मंगलमूर्ती मोरया! ❤️🌺
+
+– पुणे गणपती उत्सव`;
+}
+
+async function copyShareMessage(slip: Slip) {
+  const text = buildMarathiWhatsAppReceiptMessage(slip);
+  await navigator.clipboard?.writeText(text).catch(() => undefined);
+  return text;
+}
+
+async function shareReceiptToWhatsApp(slip: Slip, phone?: string | null, targetWindow?: Window | null) {
+  const text = await copyShareMessage(slip);
+  openWhatsAppForSlip(slip, phone, text, targetWindow);
+}
+
+function openWhatsAppForSlip(slip: Slip, phone?: string | null, preparedText?: string, targetWindow?: Window | null) {
+  const text = preparedText ?? buildMarathiWhatsAppReceiptMessage(slip);
+  const digits = normalizeIndianPhone(phone);
+  const url = digits
+    ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
+    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  if (targetWindow) {
+    targetWindow.location.href = url;
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function normalizeIndianPhone(phone?: string | null) {
+  const digits = String(phone ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length === 12 && digits.startsWith('91')) return digits;
+  return digits;
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {
