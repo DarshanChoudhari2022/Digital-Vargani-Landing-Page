@@ -186,20 +186,6 @@ interface FestivalTask {
   title: string;
 }
 
-interface WorkspaceCache {
-  activeForm: ActiveForm | null;
-  demoMandals?: DemoMandal[];
-  groups: Group[];
-  kind?: 'OWNER' | 'MANDAL';
-  members: Member[];
-  report: CollectionReport | null;
-  savedAt: string;
-  slips: Slip[];
-  templates: Template[];
-  expenses?: Expense[];
-  tasks?: FestivalTask[];
-}
-
 interface DemoMandal {
   _count?: { festivals?: number; members?: number; slips?: number };
   additionalMembers: string;
@@ -265,7 +251,6 @@ type WorkspaceBootstrap = OwnerWorkspaceBootstrap | MandalWorkspaceBootstrap;
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const LANGUAGE_KEY = 'digital-vargani-language';
-const WORKSPACE_CACHE_PREFIX = 'digital-vargani-workspace-cache';
 const DEFAULT_OWNER_IDENTIFIER = 'owner@digitalvargani.local';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
@@ -366,31 +351,10 @@ export default function App() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [, setSelectedSlip] = useState<Slip | null>(null);
-  const [templatePreview, setTemplatePreview] = useState<string>(() => {
-    try {
-      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
-                    window.localStorage.getItem('digital-vargani-template-superadmin');
-      if (saved) {
-        const parsed = JSON.parse(saved) as { templatePreview?: string };
-        if (parsed.templatePreview && typeof parsed.templatePreview === 'string') {
-          return parsed.templatePreview;
-        }
-      }
-    } catch {}
-    return TEMPLATE_IMAGE;
-  });
+  const [templatePreview, setTemplatePreview] = useState<string>(TEMPLATE_IMAGE);
 
   const handlePreviewChange = useCallback((url: string) => {
     setTemplatePreview(url);
-    try {
-      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template');
-      const parsed = saved ? (JSON.parse(saved) as Record<string, unknown>) : {};
-      window.localStorage.setItem('digital-vargani-adhyaksh-template', JSON.stringify({
-        ...parsed,
-        savedAt: new Date().toISOString(),
-        templatePreview: url,
-      }));
-    } catch {}
   }, []);
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
@@ -429,7 +393,6 @@ export default function App() {
   }, [language]);
 
   async function saveTemplateConfig(
-    scope: string,
     placements: Record<string, TemplatePlacement>,
     target?: { festivalId?: string; mandalId?: string },
   ) {
@@ -455,77 +418,11 @@ export default function App() {
       session,
     );
 
-    window.localStorage.setItem(`digital-vargani-template-${scope}`, JSON.stringify({
-      placements,
-      savedAt: new Date().toISOString(),
-      templatePreview,
-    }));
     setNotice('Template saved to backend successfully.');
     await loadWorkspace(session);
   }
 
-  function workspaceCacheKey(currentSession: AuthSession) {
-    return `${WORKSPACE_CACHE_PREFIX}:${currentSession.user.id}:${currentSession.user.mandalId ?? 'owner'}`;
-  }
-
-  function readWorkspaceCache(currentSession: AuthSession): WorkspaceCache | null {
-    try {
-      const cached = window.localStorage.getItem(workspaceCacheKey(currentSession));
-      return cached ? (JSON.parse(cached) as WorkspaceCache) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function writeWorkspaceCache(currentSession: AuthSession, cache: Omit<WorkspaceCache, 'savedAt'>) {
-    try {
-      window.localStorage.setItem(workspaceCacheKey(currentSession), JSON.stringify({
-        ...cache,
-        savedAt: new Date().toISOString(),
-      }));
-    } catch {
-      // Local cache is a speed layer only. Live API remains the source of truth.
-    }
-  }
-
-  function hydrateWorkspaceFromCache(currentSession: AuthSession) {
-    const cached = readWorkspaceCache(currentSession);
-    if (!cached) {
-      setWorkspaceLoaded(false);
-      return false;
-    }
-
-    if (cached.kind === 'OWNER') {
-      setActiveForm(null);
-      setGroups([]);
-      setMembers([]);
-      setExpenses([]);
-      setSlips([]);
-      setTasks([]);
-      setTemplates([]);
-      setReport(null);
-      setSelectedSlip(null);
-      setDemoMandals(cached.demoMandals ?? []);
-      setWorkspaceLoaded(true);
-      return true;
-    }
-
-    setActiveForm(cached.activeForm);
-    setGroups(cached.groups);
-    setMembers(cached.members);
-    setExpenses(cached.expenses ?? []);
-    setSlips(cached.slips);
-    setTasks(cached.tasks ?? []);
-    setTemplates(cached.templates);
-    setReport(cached.report);
-    setSelectedSlip(cached.slips[0] ?? null);
-    const cachedActiveVersion = findActiveTemplateVersion(cached.templates);
-    if (cachedActiveVersion?.backgroundFileUrl) setTemplatePreview(cachedActiveVersion.backgroundFileUrl);
-    setWorkspaceLoaded(true);
-    return true;
-  }
-
-  function applyWorkspaceBootstrap(payload: WorkspaceBootstrap, currentSession: AuthSession) {
+  function applyWorkspaceBootstrap(payload: WorkspaceBootstrap) {
     if (payload.kind === 'OWNER') {
       const ownerMandals = payload.mandals.items.map(mapBackendMandal);
       setActiveForm(null);
@@ -538,18 +435,6 @@ export default function App() {
       setReport(null);
       setSelectedSlip(null);
       setDemoMandals(ownerMandals);
-      writeWorkspaceCache(currentSession, {
-        activeForm: null,
-        demoMandals: ownerMandals,
-        groups: [],
-        kind: 'OWNER',
-        members: [],
-        expenses: [],
-        report: null,
-        slips: [],
-        tasks: [],
-        templates: [],
-      });
       setWorkspaceLoaded(true);
       return;
     }
@@ -567,17 +452,6 @@ export default function App() {
     const activeVersion = findActiveTemplateVersion(payload.templates);
     if (activeVersion?.backgroundFileUrl) setTemplatePreview(activeVersion.backgroundFileUrl);
     setDemoMandals([]);
-    writeWorkspaceCache(currentSession, {
-      activeForm: payload.activeForm,
-      groups: payload.groups,
-      kind: 'MANDAL',
-      members: payload.members,
-      expenses: [],
-      report: payload.report,
-      slips: nextSlips,
-      tasks: [],
-      templates: payload.templates,
-    });
     setWorkspaceLoaded(true);
   }
 
@@ -595,20 +469,19 @@ export default function App() {
     }
   }
 
-  async function auditReceiptShare(slip: Slip, phone?: string | null) {
-    if (!session || !isSlipPaid(slip)) return;
-    await apiRequest(
+  async function createReceiptShare(slip: Slip, phone?: string | null) {
+    if (!session || !isSlipPaid(slip)) return null;
+    return apiRequest<{ auditEventId: string; expiresAt: string; ok: boolean; receiptUrl: string; sharedAt: string }>(
       `/vargani/slips/${slip.id}/share`,
       {
         body: JSON.stringify({
           channel: 'WHATSAPP',
           phone: normalizeIndianPhone(phone ?? slip.contributorPhone),
-          receiptUrl: publicReceiptUrl(slip.id),
         }),
         method: 'POST',
       },
       session,
-    ).catch(() => undefined);
+    );
   }
 
   async function restoreSession(storedSession: AuthSession) {
@@ -616,7 +489,7 @@ export default function App() {
       const profile = await apiRequest<{ user: AuthSession['user'] }>('/auth/me', {}, storedSession);
       const liveSession = { ...storedSession, user: profile.user };
       setSession(liveSession);
-      hydrateWorkspaceFromCache(liveSession);
+      setWorkspaceLoaded(false);
       void loadWorkspace(liveSession);
     } catch {
       window.localStorage.removeItem(SESSION_KEY);
@@ -641,7 +514,7 @@ export default function App() {
       });
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
-      hydrateWorkspaceFromCache(nextSession);
+      setWorkspaceLoaded(false);
       setNotice('');
       void loadWorkspace(nextSession);
     } catch (error) {
@@ -674,7 +547,7 @@ export default function App() {
     setWorkspaceRefreshing(true);
     try {
       const workspace = await apiRequest<WorkspaceBootstrap>('/workspace/bootstrap', {}, currentSession);
-      applyWorkspaceBootstrap(workspace, currentSession);
+      applyWorkspaceBootstrap(workspace);
       if (workspace.kind === 'MANDAL' && currentSession.user.mandalId && workspace.activeForm?.festival.id) {
         const [liveExpenses, liveTasks] = await Promise.all([
           apiRequest<Expense[]>(
@@ -690,10 +563,6 @@ export default function App() {
         ]);
         setExpenses(liveExpenses);
         setTasks(liveTasks);
-        const cached = readWorkspaceCache(currentSession);
-        if (cached?.kind === 'MANDAL') {
-          writeWorkspaceCache(currentSession, { ...cached, expenses: liveExpenses, tasks: liveTasks });
-        }
       }
       setNotice(
         workspace.kind === 'OWNER'
@@ -853,8 +722,8 @@ export default function App() {
         whatsappWindow?.close();
         setNotice(`Pending vargani entry ${slip.slipNumber} saved.`);
       } else {
-        await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow);
-        void auditReceiptShare(slip, contributorPhone);
+        const share = await createReceiptShare(slip, contributorPhone);
+        await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow, share?.receiptUrl);
         setNotice(`Slip ${slip.slipNumber} generated. WhatsApp message prepared.`);
       }
     } catch (error) {
@@ -871,21 +740,6 @@ export default function App() {
       let placements: Record<string, TemplatePlacement> =
         normalizeTemplatePlacements(latestTemplateVersion?.renderConfig?.fields);
       let bgUrl = latestTemplateVersion?.backgroundFileUrl || templatePreview || TEMPLATE_IMAGE;
-
-      try {
-        const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
-                      window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
-                      window.localStorage.getItem('digital-vargani-template-superadmin');
-        if (Object.keys(placements).length === 0 && saved) {
-          const parsed = JSON.parse(saved) as { placements?: Record<string, TemplatePlacement>; templatePreview?: string };
-          if (parsed.placements && Object.keys(parsed.placements).length > 0) {
-            placements = parsed.placements;
-          }
-          if (parsed.templatePreview) {
-            bgUrl = parsed.templatePreview;
-          }
-        }
-      } catch {}
 
       if (Object.keys(placements).length === 0) {
         placements = {
@@ -1035,8 +889,8 @@ export default function App() {
       return;
     }
     const whatsappWindow = window.open('about:blank', '_blank');
-    await shareReceiptToWhatsApp(slip, slip.contributorPhone, whatsappWindow);
-    void auditReceiptShare(slip, slip.contributorPhone);
+    const share = await createReceiptShare(slip, slip.contributorPhone);
+    await shareReceiptToWhatsApp(slip, slip.contributorPhone, whatsappWindow, share?.receiptUrl);
     setNotice(`Slip ${slip.slipNumber} WhatsApp message copied and opened.`);
   }
 
@@ -1368,7 +1222,7 @@ export default function App() {
       onRemindMember={remindMember}
       onRefresh={() => loadWorkspace()}
       onShareSlip={shareSlip}
-      onTemplateSaved={(placements) => saveTemplateConfig('adhyaksh', placements)}
+      onTemplateSaved={(placements) => saveTemplateConfig(placements)}
       onTaskDone={(task) => updateTask(task, { status: 'DONE' })}
       query={query}
       report={report}
@@ -1962,7 +1816,6 @@ function SuperAdminApp({
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
   onTemplateSaved: (
-    scope: string,
     placements: Record<string, TemplatePlacement>,
     target?: { festivalId?: string; mandalId?: string },
   ) => Promise<void> | void;
@@ -2227,7 +2080,7 @@ function SuperAdminApp({
                   latestTemplateVersion={selectedMandal.festivals?.[0]?.templates?.[0]?.versions?.[0]}
                   onAddField={() => undefined}
                   onPreviewChange={onPreviewChange}
-                  onSaveTemplate={(placements) => onTemplateSaved(slugify(selectedMandal.name), placements, {
+                  onSaveTemplate={(placements) => onTemplateSaved(placements, {
                     festivalId: selectedMandal.festivals?.[0]?.id,
                     mandalId: selectedMandal.id,
                   })}
@@ -2355,8 +2208,19 @@ function MemberCollectorApp({
   slips: Slip[];
 }) {
   const [entryStatus, setEntryStatus] = useState<'ACTIVE' | 'PENDING'>('ACTIVE');
-  const collected = slips.reduce((sum, slip) => sum + Number(slip.amount), 0);
-  const paidSlips = slips.length;
+  const [slipFilter, setSlipFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [slipQuery, setSlipQuery] = useState('');
+  const paidSlipRows = slips.filter(isSlipPaid);
+  const pendingSlipRows = slips.filter((slip) => !isSlipPaid(slip));
+  const filteredSlipRows = (slipFilter === 'paid' ? paidSlipRows : slipFilter === 'pending' ? pendingSlipRows : slips).filter((slip) => {
+    const query = slipQuery.trim().toLowerCase();
+    if (!query) return true;
+    return [slip.slipNumber, slip.contributorName, slip.shopName, slip.areaName, slip.contributorPhone]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query));
+  });
+  const collected = paidSlipRows.reduce((sum, slip) => sum + Number(slip.amount), 0);
+  const paidSlips = paidSlipRows.length;
 
   return (
     <main className="member-shell">
@@ -2421,34 +2285,38 @@ function MemberCollectorApp({
           <Stat icon={<ReceiptText />} label="Total Entries" note="Your slips" value={String(slips.length)} />
           <Stat icon={<BadgeIndianRupee />} label="Collected" note={`${paidSlips} paid`} value={money(collected)} />
           <Stat icon={<CheckCircle2 />} label="Paid Slips" note="Generated receipts" value={String(paidSlips)} />
-          <Stat icon={<FileText />} label="Pending Slips" note="No slip until paid" value="0" />
+          <Stat icon={<FileText />} label="Pending Slips" note="No slip until paid" value={String(pendingSlipRows.length)} />
         </section>
 
         <section className="member-table-card">
           <div className="table-toolbar">
             <div className="tab-strip">
-              <button className="active" type="button">All ({slips.length})</button>
-              <button type="button">Paid ({paidSlips})</button>
-              <button type="button">Pending (0)</button>
+              <button className={slipFilter === 'all' ? 'active' : ''} onClick={() => setSlipFilter('all')} type="button">All ({slips.length})</button>
+              <button className={slipFilter === 'paid' ? 'active' : ''} onClick={() => setSlipFilter('paid')} type="button">Paid ({paidSlips})</button>
+              <button className={slipFilter === 'pending' ? 'active' : ''} onClick={() => setSlipFilter('pending')} type="button">Pending ({pendingSlipRows.length})</button>
             </div>
-            <div className="search-box"><Search size={18} /><input placeholder="Search by name, shop, location..." /></div>
+            <div className="search-box"><Search size={18} /><input onChange={(event) => setSlipQuery(event.target.value)} placeholder="Search by name, shop, location..." value={slipQuery} /></div>
           </div>
           <div className="member-slip-table">
             <div className="member-slip-head">
               <span>Slip #</span><span>Name / Shop</span><span>Amount</span><span>Mobile</span><span>Status / Mode</span><span>Date</span><span>Actions</span>
             </div>
-            {slips.map((slip) => (
-              <button
+            {filteredSlipRows.map((slip) => (
+              <div
                 className="member-slip-row"
                 key={slip.id}
                 onClick={() => setSelectedSlip(slip)}
-                type="button"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') setSelectedSlip(slip);
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <strong>{slip.slipNumber}</strong>
                 <span>{slip.contributorName}<small>{slip.shopName || slip.areaName || '-'}</small></span>
                 <b>{money(Number(slip.amount))}</b>
                 <span>{slip.contributorPhone || '-'}</span>
-                <em>Paid Ã‚Â· {slip.paymentMode}</em>
+                <em>{isSlipPaid(slip) ? 'Paid' : 'Pending'} - {slip.paymentMode}</em>
                 <span>{new Date(slip.createdAt).toLocaleDateString('en-IN')}</span>
                 <span className="row-actions" style={{ display: 'flex', gap: '6px' }}>
                   <button
@@ -2474,8 +2342,9 @@ function MemberCollectorApp({
                     <Share2 size={15} /> Share
                   </button>
                 </span>
-              </button>
+              </div>
             ))}
+            {filteredSlipRows.length === 0 && <div className="empty-state">No slips found for this filter.</div>}
           </div>
         </section>
       </section>
@@ -2966,17 +2835,6 @@ function TemplateView({
   const [placements, setPlacements] = useState<Record<string, TemplatePlacement>>(() => {
     const backendPlacements = normalizeTemplatePlacements(latestTemplateVersion?.renderConfig?.fields);
     if (Object.keys(backendPlacements).length > 0) return backendPlacements;
-    try {
-      const saved = window.localStorage.getItem('digital-vargani-adhyaksh-template') ||
-                    window.localStorage.getItem('digital-vargani-template-adhyaksh') ||
-                    window.localStorage.getItem('digital-vargani-template-superadmin');
-      if (saved) {
-        const parsed = JSON.parse(saved) as { placements?: Record<string, TemplatePlacement> };
-        if (parsed.placements && typeof parsed.placements === 'object' && Object.keys(parsed.placements).length > 0) {
-          return parsed.placements;
-        }
-      }
-    } catch {}
     return {
       amount: {
         ...defaultPlacement(),
@@ -3763,15 +3621,7 @@ function isSlipPaid(slip: Slip) {
   return (slip.status ?? 'ACTIVE').toUpperCase() !== 'PENDING';
 }
 
-function publicReceiptUrl(slipId: string) {
-  return `${API_BASE_URL}/public/vargani/slips/${slipId}/receipt.html`;
-}
-
-function buildWhatsAppReceiptMessage(slip: Slip) {
-  return buildReceiptWhatsAppMessage(slip);
-}
-
-function buildReceiptWhatsAppMessage(slip: Slip) {
+function buildWhatsAppReceiptMessage(slip: Slip, receiptUrl = 'Receipt link will be generated by Digital Vargani.') {
   return `॥ श्री गणेशाय नमः ॥
 
 आदरणीय भक्तगण,
@@ -3783,7 +3633,7 @@ function buildReceiptWhatsAppMessage(slip: Slip) {
 पावती क्रमांक: ${slip.slipNumber}
 नाव: ${slip.contributorName}
 रक्कम: ${money(Number(slip.amount))}
-डिजिटल पावती: ${publicReceiptUrl(slip.id)}
+डिजिटल पावती: ${receiptUrl}
 
 आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
 
@@ -3799,14 +3649,14 @@ function buildReceiptWhatsAppMessage(slip: Slip) {
 – पुणे गणपती उत्सव`;
 }
 
-async function copyShareMessage(slip: Slip) {
-  const text = buildWhatsAppReceiptMessage(slip);
+async function copyShareMessage(slip: Slip, receiptUrl?: string) {
+  const text = buildWhatsAppReceiptMessage(slip, receiptUrl);
   await navigator.clipboard?.writeText(text).catch(() => undefined);
   return text;
 }
 
-async function shareReceiptToWhatsApp(slip: Slip, phone?: string | null, targetWindow?: Window | null) {
-  const text = await copyShareMessage(slip);
+async function shareReceiptToWhatsApp(slip: Slip, phone?: string | null, targetWindow?: Window | null, receiptUrl?: string) {
+  const text = await copyShareMessage(slip, receiptUrl);
   openWhatsAppForSlip(slip, phone, text, targetWindow);
 }
 
