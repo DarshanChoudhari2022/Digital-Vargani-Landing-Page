@@ -158,7 +158,9 @@ interface CollectionReport {
 
 interface WorkspaceCache {
   activeForm: ActiveForm | null;
+  demoMandals?: DemoMandal[];
   groups: Group[];
+  kind?: 'OWNER' | 'MANDAL';
   members: Member[];
   report: CollectionReport | null;
   savedAt: string;
@@ -185,6 +187,47 @@ interface DemoMandal {
   slug?: string;
   status?: string;
 }
+
+interface WorkspaceUser {
+  email: string;
+  id: string;
+  mandalId?: string | null;
+  name: string;
+  phone?: string | null;
+  role: UserRole;
+  status: string;
+}
+
+interface OwnerWorkspaceBootstrap {
+  generatedAt: string;
+  kind: 'OWNER';
+  mandals: {
+    items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }>;
+    meta: { limit: number; page: number; total: number; totalPages: number };
+  };
+  metrics: {
+    totalMandals: number;
+    totalMembers: number;
+    totalSlips: number;
+  };
+  user?: WorkspaceUser | null;
+}
+
+interface MandalWorkspaceBootstrap {
+  activeForm: ActiveForm | null;
+  generatedAt: string;
+  groups: Group[];
+  kind: 'MANDAL';
+  mandal?: DemoMandal | null;
+  members: Member[];
+  metrics?: Record<string, number>;
+  report: CollectionReport | null;
+  slips: { items: Slip[]; meta: { limit: number; page: number; total: number; totalPages: number } };
+  templates: Template[];
+  user?: WorkspaceUser | null;
+}
+
+type WorkspaceBootstrap = OwnerWorkspaceBootstrap | MandalWorkspaceBootstrap;
 
 interface LocalExpense {
   amount: number;
@@ -408,6 +451,19 @@ export default function App() {
       return false;
     }
 
+    if (cached.kind === 'OWNER') {
+      setActiveForm(null);
+      setGroups([]);
+      setMembers([]);
+      setSlips([]);
+      setTemplates([]);
+      setReport(null);
+      setSelectedSlip(null);
+      setDemoMandals(cached.demoMandals ?? []);
+      setWorkspaceLoaded(true);
+      return true;
+    }
+
     setActiveForm(cached.activeForm);
     setGroups(cached.groups);
     setMembers(cached.members);
@@ -417,6 +473,52 @@ export default function App() {
     setSelectedSlip(cached.slips[0] ?? null);
     setWorkspaceLoaded(true);
     return true;
+  }
+
+  function applyWorkspaceBootstrap(payload: WorkspaceBootstrap, currentSession: AuthSession) {
+    if (payload.kind === 'OWNER') {
+      const ownerMandals = payload.mandals.items.map(mapBackendMandal);
+      setActiveForm(null);
+      setGroups([]);
+      setMembers([]);
+      setSlips([]);
+      setTemplates([]);
+      setReport(null);
+      setSelectedSlip(null);
+      setDemoMandals(ownerMandals);
+      writeWorkspaceCache(currentSession, {
+        activeForm: null,
+        demoMandals: ownerMandals,
+        groups: [],
+        kind: 'OWNER',
+        members: [],
+        report: null,
+        slips: [],
+        templates: [],
+      });
+      setWorkspaceLoaded(true);
+      return;
+    }
+
+    const nextSlips = payload.slips.items;
+    setActiveForm(payload.activeForm);
+    setGroups(payload.groups);
+    setMembers(payload.members);
+    setSlips(nextSlips);
+    setTemplates(payload.templates);
+    setReport(payload.report);
+    setSelectedSlip(nextSlips[0] ?? null);
+    setDemoMandals([]);
+    writeWorkspaceCache(currentSession, {
+      activeForm: payload.activeForm,
+      groups: payload.groups,
+      kind: 'MANDAL',
+      members: payload.members,
+      report: payload.report,
+      slips: nextSlips,
+      templates: payload.templates,
+    });
+    setWorkspaceLoaded(true);
   }
 
   function prepareWhatsAppWindow(paymentStatus: 'ACTIVE' | 'PENDING') {
@@ -492,59 +594,14 @@ export default function App() {
   async function loadWorkspace(currentSession = session) {
     if (!currentSession) return;
     setWorkspaceRefreshing(true);
-    if (currentSession.user.role === 'SUPER_ADMIN' && !currentSession.user.mandalId) {
-      try {
-        const response = await apiRequest<{ items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }> }>('/mandals?limit=100', {}, currentSession);
-        setDemoMandals(response.items.map(mapBackendMandal));
-        setWorkspaceLoaded(true);
-        setNotice('Owner workspace loaded. Manage all onboarded mandals from here.');
-      } catch (error) {
-        setNotice(error instanceof Error ? error.message : 'Could not load mandals.');
-      } finally {
-        setWorkspaceRefreshing(false);
-      }
-      return;
-    }
     try {
-      const [form, slipList] = await Promise.all([
-        apiRequest<ActiveForm>('/vargani/active-form', {}, currentSession),
-        apiRequest<{ items: Slip[] }>('/vargani/slips?limit=50', {}, currentSession),
-      ]);
-      setActiveForm(form);
-      setSlips(slipList.items);
-      setSelectedSlip(slipList.items[0] ?? null);
-      let nextGroups: Group[] = [];
-      let nextMembers: Member[] = [];
-      let nextTemplates: Template[] = [];
-      let nextReport: CollectionReport | null = null;
-
-      if (
-        currentSession.user.mandalId &&
-        ['KHAJINDAR', 'MANDAL_ADMIN', 'SUPER_ADMIN'].includes(currentSession.user.role)
-      ) {
-        const base = `/mandals/${currentSession.user.mandalId}/festivals/${form.festival.id}`;
-        [nextGroups, nextMembers, nextTemplates, nextReport] = await Promise.all([
-          apiRequest<Group[]>(`${base}/groups`, {}, currentSession),
-          apiRequest<Member[]>(`${base}/members`, {}, currentSession),
-          apiRequest<Template[]>(`${base}/templates`, {}, currentSession),
-          apiRequest<CollectionReport>(`${base}/reports/collections`, {}, currentSession),
-        ]);
-        setGroups(nextGroups);
-        setMembers(nextMembers);
-        setTemplates(nextTemplates);
-        setReport(nextReport);
-      }
-
-      writeWorkspaceCache(currentSession, {
-        activeForm: form,
-        groups: nextGroups,
-        members: nextMembers,
-        report: nextReport,
-        slips: slipList.items,
-        templates: nextTemplates,
-      });
-      setWorkspaceLoaded(true);
-      setNotice('Live mandal data loaded from Supabase.');
+      const workspace = await apiRequest<WorkspaceBootstrap>('/workspace/bootstrap', {}, currentSession);
+      applyWorkspaceBootstrap(workspace, currentSession);
+      setNotice(
+        workspace.kind === 'OWNER'
+          ? 'Owner workspace loaded. Manage all onboarded mandals from here.'
+          : 'Live mandal data loaded from Supabase.',
+      );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not load workspace.');
     } finally {
