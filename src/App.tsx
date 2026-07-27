@@ -1740,7 +1740,7 @@ function LoginPanel({
   notice: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [loginType, setLoginType] = useState<'owner' | 'adhyaksh' | 'member'>('owner');
+  const [loginType, setLoginType] = useState<'owner' | 'adhyaksh' | 'member'>('adhyaksh');
   const isAdhyaksh = loginType === 'adhyaksh';
   const isOwner = loginType === 'owner';
 
@@ -1771,16 +1771,37 @@ function LoginPanel({
 
       <section className="auth-form-panel">
         <div className="auth-card">
-          <div className="login-toggle two">
-            <button className={isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('adhyaksh')} type="button">
-              <ShieldCheck size={18} />
-              Adhyaksh Login
-            </button>
-            <button className={loginType === 'member' ? 'active' : ''} onClick={() => setLoginType('member')} type="button">
-              <UsersRound size={18} />
-              Member Login
-            </button>
-          </div>
+          {!isOwner ? (
+            <div className="login-toggle two">
+              <button className={isAdhyaksh ? 'active' : ''} onClick={() => setLoginType('adhyaksh')} type="button">
+                <ShieldCheck size={18} />
+                Adhyaksh Login
+              </button>
+              <button className={loginType === 'member' ? 'active' : ''} onClick={() => setLoginType('member')} type="button">
+                <UsersRound size={18} />
+                Member Login
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>⚡ Super Admin Portal</span>
+              <button
+                onClick={() => setLoginType('adhyaksh')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+                type="button"
+              >
+                ← Back to Mandal Login
+              </button>
+            </div>
+          )}
 
           <form className="login-panel clean" key={loginType} onSubmit={onSubmit}>
             <div className="panel-title">
@@ -1818,6 +1839,43 @@ function LoginPanel({
           <div className="login-help">
             <strong>Do not have login details?</strong>
             <span>Contact your mandal admin to create your member account.</span>
+          </div>
+
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            {isOwner ? (
+              <button
+                onClick={() => setLoginType('adhyaksh')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+                type="button"
+              >
+                ← Back to Mandal Login
+              </button>
+            ) : (
+              <button
+                onClick={() => setLoginType('owner')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  opacity: 0.85,
+                  textDecoration: 'underline',
+                }}
+                type="button"
+              >
+                Platform Super Admin Login
+              </button>
+            )}
           </div>
         </div>
       </section>
