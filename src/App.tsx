@@ -327,6 +327,7 @@ export default function App() {
   const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const whatsappWindowRef = useRef<Window | null>(null);
   const [language, setLanguage] = useState<Language>(() => {
     const stored = window.localStorage.getItem(LANGUAGE_KEY);
     return stored === 'mr' || stored === 'hi' ? stored : 'en';
@@ -361,6 +362,20 @@ export default function App() {
       templatePreview,
     }));
     setNotice('Template saved successfully.');
+  }
+
+  function prepareWhatsAppWindow(paymentStatus: 'ACTIVE' | 'PENDING') {
+    if (paymentStatus === 'PENDING') {
+      whatsappWindowRef.current?.close();
+      whatsappWindowRef.current = null;
+      return;
+    }
+
+    whatsappWindowRef.current = window.open('about:blank', '_blank');
+    if (whatsappWindowRef.current) {
+      whatsappWindowRef.current.document.write('<!doctype html><title>Preparing WhatsApp</title><p style="font-family:system-ui;padding:24px">Preparing WhatsApp receipt...</p>');
+      whatsappWindowRef.current.document.close();
+    }
   }
 
   async function restoreSession(storedSession: AuthSession) {
@@ -569,7 +584,8 @@ export default function App() {
     if (tentativePaymentDate) {
       customData.tentativePaymentDate = tentativePaymentDate;
     }
-    const whatsappWindow = paymentStatus === 'ACTIVE' ? window.open('about:blank', '_blank') : null;
+    const whatsappWindow = paymentStatus === 'ACTIVE' ? whatsappWindowRef.current : null;
+    whatsappWindowRef.current = null;
     setBusy(true);
     try {
       const slip = await apiRequest<Slip>(
@@ -778,8 +794,9 @@ export default function App() {
       setNotice('Receipt can be shared only after payment is received.');
       return;
     }
-    await shareReceiptToWhatsApp(slip, slip.contributorPhone);
-    setNotice(`Slip  WhatsApp message copied and opened.`);
+    const whatsappWindow = window.open('about:blank', '_blank');
+    await shareReceiptToWhatsApp(slip, slip.contributorPhone, whatsappWindow);
+    setNotice(`Slip ${slip.slipNumber} WhatsApp message copied and opened.`);
   }
 
   if (session?.user.role === 'MEMBER') {
@@ -793,6 +810,7 @@ export default function App() {
         onGenerate={generateSlip}
         onLogout={logout}
         onModalChange={setCollectorModalOpen}
+        onPrepareWhatsApp={prepareWhatsAppWindow}
         onShareSlip={shareSlip}
         session={session}
         setSelectedSlip={setSelectedSlip}
@@ -848,6 +866,7 @@ export default function App() {
       activeTemplate={activeTemplate}
       latestTemplateVersion={latestTemplateVersion}
       onPreviewChange={handlePreviewChange}
+      onPrepareWhatsApp={prepareWhatsAppWindow}
       templatePreview={templatePreview}
     />
   );
@@ -876,6 +895,7 @@ function AdhyakshApp({
   onGenerate,
   onLogout,
   onPreviewChange,
+  onPrepareWhatsApp,
   onRefresh,
   onShareSlip,
   query,
@@ -900,6 +920,7 @@ function AdhyakshApp({
   onGenerate: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
+  onPrepareWhatsApp: (paymentStatus: 'ACTIVE' | 'PENDING') => void;
   onRefresh: () => void;
   onShareSlip: (slip: Slip) => Promise<void>;
   query: string;
@@ -1301,7 +1322,7 @@ function AdhyakshApp({
               <label className="pending-date-card">Tentative Payment Date<input name="tentativePaymentDate" type="date" /></label>
             )}
             {(activeForm?.customFields ?? []).map((field) => <label key={field.key}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>)}
-            <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button></div>
+            <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} onClick={(event) => { if (event.currentTarget.form?.checkValidity()) onPrepareWhatsApp(entryStatus); }} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button></div>
           </form>
         </div>
       )}
@@ -1782,6 +1803,7 @@ function MemberCollectorApp({
   onGenerate,
   onLogout,
   onModalChange,
+  onPrepareWhatsApp,
   onShareSlip,
   session,
   setSelectedSlip,
@@ -1795,6 +1817,7 @@ function MemberCollectorApp({
   onGenerate: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onLogout: () => void;
   onModalChange: (open: boolean) => void;
+  onPrepareWhatsApp: (paymentStatus: 'ACTIVE' | 'PENDING') => void;
   onShareSlip: (slip: Slip) => Promise<void>;
   session: AuthSession;
   setSelectedSlip: (slip: Slip) => void;
@@ -1968,7 +1991,7 @@ function MemberCollectorApp({
             )}
             <div className="modal-actions">
               <button onClick={() => onModalChange(false)} type="button">Cancel</button>
-              <button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} disabled={busy} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button>
+              <button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} disabled={busy} onClick={(event) => { if (event.currentTarget.form?.checkValidity()) onPrepareWhatsApp(entryStatus); }} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button>
             </div>
           </form>
         </div>
@@ -1986,7 +2009,10 @@ function LoginPanel({
   notice: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [loginType, setLoginType] = useState<'owner' | 'adhyaksh' | 'member'>('adhyaksh');
+  const [loginType, setLoginType] = useState<'owner' | 'adhyaksh' | 'member'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('login') === 'owner' || window.location.hash === '#owner' ? 'owner' : 'adhyaksh';
+  });
   const isAdhyaksh = loginType === 'adhyaksh';
   const isOwner = loginType === 'owner';
 
@@ -2087,8 +2113,8 @@ function LoginPanel({
             <span>Contact your mandal admin to create your member account.</span>
           </div>
 
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            {isOwner ? (
+          {isOwner && (
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <button
                 onClick={() => setLoginType('adhyaksh')}
                 style={{
@@ -2102,27 +2128,10 @@ function LoginPanel({
                 }}
                 type="button"
               >
-                ← Back to Mandal Login
+                Back to Mandal Login
               </button>
-            ) : (
-              <button
-                onClick={() => setLoginType('owner')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  opacity: 0.85,
-                  textDecoration: 'underline',
-                }}
-                type="button"
-              >
-                Platform Super Admin Login
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
     </main>
