@@ -563,7 +563,40 @@ export default function App() {
     }
   }
 
-  const receiptUrl = selectedSlip ? `${API_BASE_URL}/vargani/slips/${selectedSlip.id}/receipt.html` : '';
+  async function openSlipReceipt(slipId: string) {
+    if (!session?.accessToken) {
+      setNotice('Session expired. Please log in again.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/vargani/slips/${slipId}/receipt.html`, {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(readErrorMessage(await response.text(), response.status));
+      }
+
+      const html = await response.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, '_blank');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.target = '_blank';
+        a.click();
+      }
+      setNotice('Slip receipt opened.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not open receipt.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (session?.user.role === 'MEMBER') {
     return (
@@ -575,7 +608,7 @@ export default function App() {
         onGenerate={generateSlip}
         onLogout={logout}
         onModalChange={setCollectorModalOpen}
-        receiptUrl={receiptUrl}
+        onOpenReceipt={openSlipReceipt}
         selectedSlip={selectedSlip}
         session={session}
         setSelectedSlip={setSelectedSlip}
@@ -617,11 +650,10 @@ export default function App() {
       onCreateMember={createMember}
       onGenerate={generateSlip}
       onLogout={logout}
+      onOpenReceipt={openSlipReceipt}
       onRefresh={() => loadWorkspace()}
       query={query}
-      receiptUrl={receiptUrl}
       report={report}
-      selectedSlip={selectedSlip}
       session={session}
       setQuery={setQuery}
       setSelectedSlip={setSelectedSlip}
@@ -659,10 +691,9 @@ function AdhyakshApp({
   onLogout,
   onPreviewChange,
   onRefresh,
+  onOpenReceipt,
   query,
-  receiptUrl,
   report,
-  selectedSlip,
   session,
   setQuery,
   setSelectedSlip,
@@ -681,12 +712,11 @@ function AdhyakshApp({
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
   onGenerate: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
+  onOpenReceipt: (slipId: string) => Promise<void>;
   onPreviewChange: (url: string) => void;
   onRefresh: () => void;
   query: string;
-  receiptUrl: string;
   report: CollectionReport | null;
-  selectedSlip: Slip | null;
   session: AuthSession;
   setQuery: (value: string) => void;
   setSelectedSlip: (slip: Slip) => void;
@@ -1014,7 +1044,7 @@ function AdhyakshApp({
                   <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
                   <span className="row-actions">
                     <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
-                    <a className="mini-link" href={selectedSlip?.id === slip.id ? receiptUrl : '#'} onClick={() => { setSelectedSlip(slip); if (selectedSlip?.id !== slip.id) showToast('Slip selected. Click Slip again to open the receipt.'); }} target="_blank"><Download size={16} />Slip</a>
+                    <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onOpenReceipt(slip.id); }} type="button"><Download size={16} />Slip</button>
                     <button onClick={() => { void shareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
                     <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
                   </span>
@@ -1524,7 +1554,7 @@ function MemberCollectorApp({
   onGenerate,
   onLogout,
   onModalChange,
-  receiptUrl,
+  onOpenReceipt,
   selectedSlip,
   session,
   setSelectedSlip,
@@ -1537,7 +1567,7 @@ function MemberCollectorApp({
   onGenerate: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
   onModalChange: (open: boolean) => void;
-  receiptUrl: string;
+  onOpenReceipt: (slipId: string) => Promise<void>;
   selectedSlip: Slip | null;
   session: AuthSession;
   setSelectedSlip: (slip: Slip) => void;
@@ -1638,7 +1668,17 @@ function MemberCollectorApp({
                 <span>{slip.contributorPhone || '-'}</span>
                 <em>Paid · {slip.paymentMode}</em>
                 <span>{new Date(slip.createdAt).toLocaleDateString('en-IN')}</span>
-                <a className={selectedSlip?.id === slip.id && receiptUrl ? '' : 'disabled'} href={receiptUrl || '#'} target="_blank">Slip</a>
+                <button
+                  className="mini-link"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedSlip(slip);
+                    void onOpenReceipt(slip.id);
+                  }}
+                  type="button"
+                >
+                  Slip
+                </button>
               </button>
             ))}
           </div>
