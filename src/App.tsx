@@ -43,6 +43,9 @@ type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 type Language = 'en' | 'mr' | 'hi';
+type ExpenseStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 interface TemplatePlacement {
   autoMarathi?: boolean;
@@ -102,7 +105,7 @@ interface Member {
   displayName: string;
   phone?: string | null;
   group?: { id: string; name: string; areaName?: string | null } | null;
-  user?: { email?: string | null; name: string; phone?: string | null; role: UserRole; status: string };
+  user?: { email?: string | null; id?: string; name: string; phone?: string | null; role: UserRole; status: string };
 }
 
 interface Group {
@@ -158,6 +161,31 @@ interface CollectionReport {
   totalExpenses: number;
 }
 
+interface Expense {
+  id: string;
+  amount: number | string;
+  billFileUrl?: string | null;
+  category?: { id: string; name: string } | null;
+  categoryId?: string | null;
+  createdAt?: string;
+  creator?: { id: string; name: string } | null;
+  expenseDate: string;
+  notes?: string | null;
+  status: ExpenseStatus;
+  vendorName?: string | null;
+}
+
+interface FestivalTask {
+  id: string;
+  assignee?: { id: string; name: string; role: UserRole } | null;
+  assigneeUserId?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  title: string;
+}
+
 interface WorkspaceCache {
   activeForm: ActiveForm | null;
   demoMandals?: DemoMandal[];
@@ -168,6 +196,8 @@ interface WorkspaceCache {
   savedAt: string;
   slips: Slip[];
   templates: Template[];
+  expenses?: Expense[];
+  tasks?: FestivalTask[];
 }
 
 interface DemoMandal {
@@ -232,109 +262,91 @@ interface MandalWorkspaceBootstrap {
 
 type WorkspaceBootstrap = OwnerWorkspaceBootstrap | MandalWorkspaceBootstrap;
 
-interface LocalExpense {
-  amount: number;
-  category: string;
-  date: string;
-  description: string;
-  paidBy: string;
-  refund: string;
-  vendor: string;
-}
-
-interface LocalTask {
-  assignee: string;
-  due: string;
-  status: string;
-  task: string;
-}
-
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const LANGUAGE_KEY = 'digital-vargani-language';
 const WORKSPACE_CACHE_PREFIX = 'digital-vargani-workspace-cache';
-const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
-const DEMO_PASSWORD = 'Demo@123456789';
+const DEFAULT_OWNER_IDENTIFIER = 'owner@digitalvargani.local';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
 const translations: Record<Exclude<Language, 'en'>, Record<string, string>> = {
   hi: {
-    'Add Mandal': 'मंडल जोड़ें',
-    'Add mandals and manage each client account.': 'मंडल जोड़ें और हर क्लाइंट अकाउंट संभालें।',
-    'Address': 'पता',
-    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
-    'Back to Mandals': 'मंडलों पर वापस',
-    'Dashboard': 'डैशबोर्ड',
-    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š',
+    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š Ã Â¤â€Ã Â¤Â° Ã Â¤Â¹Ã Â¤Â° Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€¦Ã Â¤â€¢Ã Â¤Â¾Ã Â¤â€°Ã Â¤â€šÃ Â¤Å¸ Ã Â¤Â¸Ã Â¤â€šÃ Â¤Â­Ã Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
+    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾',
+    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
+    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€š Ã Â¤ÂªÃ Â¤Â° Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â¸',
+    'Dashboard': 'Ã Â¤Â¡Ã Â¥Ë†Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
+    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
     'English': 'English',
-    'Generate Login': 'लॉगिन बनाएं',
-    'Generate More Logins': 'और लॉगिन बनाएं',
-    'Hindi': 'हिंदी',
-    'Login URL': 'लॉगिन URL',
-    'Logout': 'लॉगआउट',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडल नाम आवश्यक है। पता, लोगो, संपर्क और सदस्य संख्या वैकल्पिक हैं।',
-    'Mandals': 'मंडल',
-    'Marathi': 'मराठी',
-    'Members': 'सदस्य',
-    'Overview': 'ओवरव्यू',
-    'Password': 'पासवर्ड',
-    'Phone No.': 'फोन नंबर',
-    'Save Template': 'टेम्पलेट सेव करें',
-    'Saved': 'सेव हो गया',
-    'Search': 'खोजें',
-    'Search mandals by name, area, email...': 'नाम, क्षेत्र, ईमेल से मंडल खोजें...',
-    'Slips Generated': 'बनी हुई रसीदें',
-    'Slip Settings': 'रसीद सेटिंग्स',
-    'Slip Size': 'रसीद आकार',
-    'Super Admin Console': 'सुपर एडमिन कंसोल',
-    'Template': 'टेम्पलेट',
-    'Template Size': 'टेम्पलेट आकार',
-    'Total Mandals': 'कुल मंडल',
-    'Total Members': 'कुल सदस्य',
-    'Upload Template': 'टेम्पलेट अपलोड करें',
-    'Username': 'यूजरनेम',
-    'Field Mapping': 'फील्ड मैपिंग',
-    'Place boxes exactly on printed slip labels.': 'बॉक्स को छपी हुई रसीद के लेबल पर ठीक से रखें।',
-    'Selected Field': 'चुनी हुई फील्ड',
+    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
+    'Generate More Logins': 'Ã Â¤â€Ã Â¤Â° Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
+    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
+    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
+    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â® Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¥Â¤ Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€Ã Â¤Â° Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂµÃ Â¥Ë†Ã Â¤â€¢Ã Â¤Â²Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¤â€šÃ Â¥Â¤',
+    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
+    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
+    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
+    'Overview': 'Ã Â¤â€œÃ Â¤ÂµÃ Â¤Â°Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¥â€š',
+    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
+    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
+    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
+    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤Â¹Ã Â¥â€¹ Ã Â¤â€”Ã Â¤Â¯Ã Â¤Â¾',
+    'Search': 'Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š',
+    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â®, Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â·Ã Â¥â€¡Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š...',
+    'Slips Generated': 'Ã Â¤Â¬Ã Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦Ã Â¥â€¡Ã Â¤â€š',
+    'Slip Settings': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Â¸',
+    'Slip Size': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
+    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤ÂÃ Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤â€šÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
+    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
+    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
+    'Total Mandals': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
+    'Total Members': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
+    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
+    'Username': 'Ã Â¤Â¯Ã Â¥â€šÃ Â¤Å“Ã Â¤Â°Ã Â¤Â¨Ã Â¥â€¡Ã Â¤Â®',
+    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥Ë†Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
+    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€¢Ã Â¥â€¹ Ã Â¤â€ºÃ Â¤ÂªÃ Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€¢Ã Â¥â€¡ Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â² Ã Â¤ÂªÃ Â¤Â° Ã Â¤Â Ã Â¥â‚¬Ã Â¤â€¢ Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â°Ã Â¤â€“Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
+    'Selected Field': 'Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
   },
   mr: {
-    'Add Mandal': 'मंडळ जोडा',
-    'Add mandals and manage each client account.': 'मंडळे जोडा आणि प्रत्येक क्लायंट खाते व्यवस्थापित करा.',
-    'Address': 'पत्ता',
-    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
-    'Back to Mandals': 'मंडळांकडे परत',
-    'Dashboard': 'डॅशबोर्ड',
-    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾',
+    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡Ã Â¤â€¢ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤Â¯Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¤ÂµÃ Â¤Â¸Ã Â¥ÂÃ Â¤Â¥Ã Â¤Â¾Ã Â¤ÂªÃ Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾.',
+    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾',
+    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
+    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€¢Ã Â¤Â¡Ã Â¥â€¡ Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¤',
+    'Dashboard': 'Ã Â¤Â¡Ã Â¥â€¦Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
+    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
     'English': 'English',
-    'Generate Login': 'लॉगिन तयार करा',
-    'Generate More Logins': 'अधिक लॉगिन तयार करा',
-    'Hindi': 'हिंदी',
-    'Login URL': 'लॉगिन URL',
-    'Logout': 'लॉगआउट',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडळाचे नाव आवश्यक आहे. पत्ता, लोगो, संपर्क आणि सदस्य संख्या ऐच्छिक आहेत.',
-    'Mandals': 'मंडळे',
-    'Marathi': 'मराठी',
-    'Members': 'सदस्य',
-    'Overview': 'आढावा',
-    'Password': 'पासवर्ड',
-    'Phone No.': 'फोन नंबर',
-    'Save Template': 'टेम्पलेट सेव्ह करा',
-    'Saved': 'सेव्ह झाले',
-    'Search': 'शोधा',
-    'Search mandals by name, area, email...': 'नाव, परिसर, ईमेलने मंडळ शोधा...',
-    'Slips Generated': 'तयार झालेल्या पावत्या',
-    'Slip Settings': 'पावती सेटिंग्ज',
-    'Slip Size': 'पावती आकार',
-    'Super Admin Console': 'सुपर अॅडमिन कन्सोल',
-    'Template': 'टेम्पलेट',
-    'Template Size': 'टेम्पलेट आकार',
-    'Total Mandals': 'एकूण मंडळे',
-    'Total Members': 'एकूण सदस्य',
-    'Upload Template': 'टेम्पलेट अपलोड करा',
-    'Username': 'वापरकर्ता नाव',
-    'Field Mapping': 'फील्ड मॅपिंग',
-    'Place boxes exactly on printed slip labels.': 'बॉक्स छापलेल्या पावतीवरील लेबलवर अचूक ठेवा.',
-    'Selected Field': 'निवडलेली फील्ड',
+    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
+    'Generate More Logins': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¤Â¿Ã Â¤â€¢ Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
+    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
+    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
+    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂÃ Â¤Å¡Ã Â¥ÂÃ Â¤â€ºÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤.',
+    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
+    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
+    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
+    'Overview': 'Ã Â¤â€ Ã Â¤Â¢Ã Â¤Â¾Ã Â¤ÂµÃ Â¤Â¾',
+    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
+    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
+    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
+    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡',
+    'Search': 'Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾',
+    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ, Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¿Ã Â¤Â¸Ã Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾...',
+    'Slips Generated': 'Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾',
+    'Slip Settings': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Å“',
+    'Slip Size': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
+    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤â€¦Ã Â¥â€¦Ã Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
+    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
+    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
+    'Total Mandals': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
+    'Total Members': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
+    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
+    'Username': 'Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ',
+    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥â€¦Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
+    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€ºÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬Ã Â¤ÂµÃ Â¤Â°Ã Â¥â‚¬Ã Â¤Â² Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â²Ã Â¤ÂµÃ Â¤Â° Ã Â¤â€¦Ã Â¤Å¡Ã Â¥â€šÃ Â¤â€¢ Ã Â¤Â Ã Â¥â€¡Ã Â¤ÂµÃ Â¤Â¾.',
+    'Selected Field': 'Ã Â¤Â¨Ã Â¤Â¿Ã Â¤ÂµÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
   },
 };
 
@@ -348,7 +360,9 @@ export default function App() {
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [slips, setSlips] = useState<Slip[]>([]);
+  const [tasks, setTasks] = useState<FestivalTask[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [report, setReport] = useState<CollectionReport | null>(null);
   const [, setSelectedSlip] = useState<Slip | null>(null);
@@ -485,7 +499,9 @@ export default function App() {
       setActiveForm(null);
       setGroups([]);
       setMembers([]);
+      setExpenses([]);
       setSlips([]);
+      setTasks([]);
       setTemplates([]);
       setReport(null);
       setSelectedSlip(null);
@@ -497,7 +513,9 @@ export default function App() {
     setActiveForm(cached.activeForm);
     setGroups(cached.groups);
     setMembers(cached.members);
+    setExpenses(cached.expenses ?? []);
     setSlips(cached.slips);
+    setTasks(cached.tasks ?? []);
     setTemplates(cached.templates);
     setReport(cached.report);
     setSelectedSlip(cached.slips[0] ?? null);
@@ -513,7 +531,9 @@ export default function App() {
       setActiveForm(null);
       setGroups([]);
       setMembers([]);
+      setExpenses([]);
       setSlips([]);
+      setTasks([]);
       setTemplates([]);
       setReport(null);
       setSelectedSlip(null);
@@ -524,8 +544,10 @@ export default function App() {
         groups: [],
         kind: 'OWNER',
         members: [],
+        expenses: [],
         report: null,
         slips: [],
+        tasks: [],
         templates: [],
       });
       setWorkspaceLoaded(true);
@@ -536,7 +558,9 @@ export default function App() {
     setActiveForm(payload.activeForm);
     setGroups(payload.groups);
     setMembers(payload.members);
+    setExpenses([]);
     setSlips(nextSlips);
+    setTasks([]);
     setTemplates(payload.templates);
     setReport(payload.report);
     setSelectedSlip(nextSlips[0] ?? null);
@@ -548,8 +572,10 @@ export default function App() {
       groups: payload.groups,
       kind: 'MANDAL',
       members: payload.members,
+      expenses: [],
       report: payload.report,
       slips: nextSlips,
+      tasks: [],
       templates: payload.templates,
     });
     setWorkspaceLoaded(true);
@@ -632,7 +658,9 @@ export default function App() {
     setActiveForm(null);
     setGroups([]);
     setMembers([]);
+    setExpenses([]);
     setSlips([]);
+    setTasks([]);
     setTemplates([]);
     setReport(null);
     setSelectedSlip(null);
@@ -647,6 +675,26 @@ export default function App() {
     try {
       const workspace = await apiRequest<WorkspaceBootstrap>('/workspace/bootstrap', {}, currentSession);
       applyWorkspaceBootstrap(workspace, currentSession);
+      if (workspace.kind === 'MANDAL' && currentSession.user.mandalId && workspace.activeForm?.festival.id) {
+        const [liveExpenses, liveTasks] = await Promise.all([
+          apiRequest<Expense[]>(
+            `/mandals/${currentSession.user.mandalId}/festivals/${workspace.activeForm.festival.id}/expenses`,
+            {},
+            currentSession,
+          ),
+          apiRequest<FestivalTask[]>(
+            `/mandals/${currentSession.user.mandalId}/festivals/${workspace.activeForm.festival.id}/tasks`,
+            {},
+            currentSession,
+          ),
+        ]);
+        setExpenses(liveExpenses);
+        setTasks(liveTasks);
+        const cached = readWorkspaceCache(currentSession);
+        if (cached?.kind === 'MANDAL') {
+          writeWorkspaceCache(currentSession, { ...cached, expenses: liveExpenses, tasks: liveTasks });
+        }
+      }
       setNotice(
         workspace.kind === 'OWNER'
           ? 'Owner workspace loaded. Manage all onboarded mandals from here.'
@@ -663,6 +711,11 @@ export default function App() {
     event.preventDefault();
     if (!session || !mandalId || !festivalId) return;
     const form = new FormData(event.currentTarget);
+    const password = String(form.get('password') || '');
+    if (!password) {
+      setNotice('Password is required to create a member login.');
+      return;
+    }
     setBusy(true);
     try {
       await apiRequest(
@@ -673,7 +726,7 @@ export default function App() {
             email: String(form.get('email') || ''),
             groupId: String(form.get('groupId') || '') || undefined,
             name: String(form.get('name') || ''),
-            password: String(form.get('password') || DEMO_PASSWORD),
+            password,
             phone: String(form.get('phone') || ''),
             role: String(form.get('role') || 'MEMBER') as UserRole,
           }),
@@ -695,12 +748,13 @@ export default function App() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const logo = form.get('logo');
+    const generatedPassword = generateTemporaryPassword();
     const newMandal: DemoMandal = {
       additionalMembers: String(form.get('additionalMembers') || ''),
       address: String(form.get('address') || ''),
       adhyakshName: String(form.get('adhyakshName') || ''),
       adminEmail: String(form.get('adminEmail') || `admin@${slugify(String(form.get('name') || 'mandal'))}.local`),
-      adminPassword: String(form.get('adminPassword') || DEMO_PASSWORD),
+      adminPassword: String(form.get('adminPassword') || generatedPassword),
       city: String(form.get('city') || ''),
       contactEmail: String(form.get('contactEmail') || ''),
       contactPhone: String(form.get('contactPhone') || ''),
@@ -739,7 +793,7 @@ export default function App() {
         );
         event.currentTarget.reset();
         await loadWorkspace(session);
-        setNotice(`${newMandal.name} added to backend and owner dashboard.`);
+        setNotice(`${newMandal.name} added. Admin password: ${newMandal.adminPassword}`);
       } catch (error) {
         setNotice(error instanceof Error ? error.message : 'Could not add mandal.');
       } finally {
@@ -755,6 +809,9 @@ export default function App() {
     const form = new FormData(event.currentTarget);
     const paymentStatus = String(form.get('paymentStatus') || 'ACTIVE') === 'PENDING' ? 'PENDING' : 'ACTIVE';
     const contributorPhone = String(form.get('contributorPhone') || '');
+    if (paymentStatus === 'ACTIVE' && !whatsappWindowRef.current) {
+      prepareWhatsAppWindow('ACTIVE');
+    }
     const customData: Record<string, unknown> = Object.fromEntries(
       (activeForm?.customFields ?? []).map((field) => [
         field.key,
@@ -983,6 +1040,266 @@ export default function App() {
     setNotice(`Slip ${slip.slipNumber} WhatsApp message copied and opened.`);
   }
 
+  async function createExpense(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session || !mandalId || !festivalId) return;
+    const form = new FormData(event.currentTarget);
+    const description = String(form.get('description') || '').trim();
+    const category = String(form.get('category') || '').trim();
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/expenses`,
+        {
+          body: JSON.stringify({
+            amount: Number(form.get('amount') || 0),
+            expenseDate: String(form.get('date') || new Date().toISOString().slice(0, 10)),
+            notes: category ? `${description}\nCategory: ${category}` : description,
+            status: 'APPROVED',
+            vendorName: String(form.get('vendor') || ''),
+          }),
+          method: 'POST',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Expense saved to backend.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not save expense.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateExpense(expense: Expense) {
+    if (!session || !mandalId || !festivalId) return;
+    const amount = window.prompt('Expense amount', String(expense.amount));
+    if (amount === null) return;
+    const vendorName = window.prompt('Vendor name', expense.vendorName ?? '') ?? expense.vendorName ?? '';
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/expenses/${expense.id}`,
+        {
+          body: JSON.stringify({
+            amount: Number(amount),
+            expenseDate: expense.expenseDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+            notes: expense.notes,
+            status: expense.status,
+            vendorName,
+          }),
+          method: 'PATCH',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Expense updated.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update expense.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteExpense(expense: Expense) {
+    if (!session || !mandalId || !festivalId || !window.confirm('Delete this expense permanently?')) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/expenses/${expense.id}`,
+        { method: 'DELETE' },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Expense deleted.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not delete expense.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTask() {
+    if (!session || !mandalId || !festivalId) return;
+    const title = window.prompt('Task name');
+    if (!title?.trim()) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/tasks`,
+        {
+          body: JSON.stringify({ priority: 'MEDIUM', status: 'OPEN', title: title.trim() }),
+          method: 'POST',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Task added.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not add task.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateTask(task: FestivalTask, patch?: Partial<FestivalTask>) {
+    if (!session || !mandalId || !festivalId) return;
+    const title = patch?.title ?? window.prompt('Task name', task.title);
+    if (!title) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/tasks/${task.id}`,
+        {
+          body: JSON.stringify({
+            dueDate: patch?.dueDate ?? task.dueDate,
+            notes: patch?.notes ?? task.notes,
+            priority: patch?.priority ?? task.priority,
+            status: patch?.status ?? task.status,
+            title,
+          }),
+          method: 'PATCH',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Task updated.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update task.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteTask(task: FestivalTask) {
+    if (!session || !mandalId || !festivalId || !window.confirm('Delete this task?')) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/tasks/${task.id}`,
+        { method: 'DELETE' },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Task deleted.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not delete task.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateMember(member: Member) {
+    if (!session || !mandalId || !festivalId) return;
+    const name = window.prompt('Member name', member.displayName);
+    if (!name?.trim()) return;
+    const phone = window.prompt('Phone number', member.phone ?? member.user?.phone ?? '') ?? member.phone ?? member.user?.phone ?? '';
+    const areaName = window.prompt('Area', member.areaName ?? '') ?? member.areaName ?? '';
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/members/${member.id}`,
+        {
+          body: JSON.stringify({ areaName, name: name.trim(), phone, role: member.user?.role ?? 'MEMBER' }),
+          method: 'PATCH',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Member updated.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update member.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function archiveMember(member: Member) {
+    if (!session || !mandalId || !festivalId || !window.confirm(`Archive ${member.displayName}?`)) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${mandalId}/festivals/${festivalId}/members/${member.id}`,
+        { method: 'DELETE' },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Member archived.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not archive member.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function remindMember(member: Member) {
+    const phone = normalizeIndianPhone(member.phone ?? member.user?.phone);
+    if (!phone) {
+      setNotice('Member phone number is missing.');
+      return;
+    }
+    const message = encodeURIComponent(`Namaskar ${member.displayName}, please complete your Digital Vargani collection update for ${activeForm?.festival.name ?? 'the festival'}.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    setNotice(`WhatsApp reminder opened for ${member.displayName}.`);
+  }
+
+  async function updateSlip(slip: Slip) {
+    if (!session) return;
+    const amount = window.prompt('Slip amount', String(slip.amount));
+    if (amount === null) return;
+    const contributorName = window.prompt('Contributor name', slip.contributorName) ?? slip.contributorName;
+    const statusInput = window.prompt('Status: ACTIVE or PENDING', isSlipPaid(slip) ? 'ACTIVE' : 'PENDING')?.toUpperCase();
+    const status = statusInput === 'PENDING' ? 'PENDING' : 'ACTIVE';
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/vargani/slips/${slip.id}`,
+        {
+          body: JSON.stringify({
+            amount: Number(amount),
+            areaName: slip.areaName,
+            contributorAddress: slip.contributorAddress,
+            contributorName,
+            contributorPhone: slip.contributorPhone,
+            customData: slip.customData ?? {},
+            paymentMode: slip.paymentMode,
+            shopName: slip.shopName,
+            status,
+          }),
+          method: 'PATCH',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Slip updated.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update slip.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelSlip(slip: Slip) {
+    if (!session || !window.confirm(`Cancel slip ${slip.slipNumber}?`)) return;
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/vargani/slips/${slip.id}/cancel`,
+        {
+          body: JSON.stringify({ reason: 'Cancelled from Adhyaksh console' }),
+          method: 'POST',
+        },
+        session,
+      );
+      await loadWorkspace(session);
+      setNotice('Slip cancelled.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not cancel slip.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (session?.user.role === 'MEMBER') {
     return (
       <MemberCollectorApp
@@ -1030,16 +1347,29 @@ export default function App() {
     <AdhyakshApp
       activeForm={activeForm}
       busy={busy}
+      expenses={expenses}
       groups={groups}
       members={members}
       notice={notice}
+      onArchiveMember={archiveMember}
+      onCancelSlip={cancelSlip}
       onCreateMember={createMember}
+      onCreateExpense={createExpense}
+      onCreateTask={createTask}
+      onDeleteExpense={deleteExpense}
+      onDeleteTask={deleteTask}
       onDownloadSlip={downloadSlipAsJpeg}
+      onEditExpense={updateExpense}
+      onEditMember={updateMember}
+      onEditSlip={updateSlip}
+      onEditTask={(task) => updateTask(task)}
       onGenerate={generateSlip}
       onLogout={logout}
+      onRemindMember={remindMember}
       onRefresh={() => loadWorkspace()}
       onShareSlip={shareSlip}
       onTemplateSaved={(placements) => saveTemplateConfig('adhyaksh', placements)}
+      onTaskDone={(task) => updateTask(task, { status: 'DONE' })}
       query={query}
       report={report}
       session={session}
@@ -1048,6 +1378,7 @@ export default function App() {
       setSidebarOpen={setSidebarOpen}
       sidebarOpen={sidebarOpen}
       slips={filteredSlips}
+      tasks={tasks}
       workspaceRefreshing={workspaceRefreshing}
       activeTemplate={activeTemplate}
       latestTemplateVersion={latestTemplateVersion}
@@ -1073,19 +1404,32 @@ function AdhyakshApp({
   activeTemplate,
   activeForm,
   busy,
+  expenses,
   groups,
   latestTemplateVersion,
   members,
   notice,
+  onArchiveMember,
+  onCancelSlip,
   onCreateMember,
+  onCreateExpense,
+  onCreateTask,
+  onDeleteExpense,
+  onDeleteTask,
   onDownloadSlip,
+  onEditExpense,
+  onEditMember,
+  onEditSlip,
+  onEditTask,
   onGenerate,
   onLogout,
   onPreviewChange,
   onPrepareWhatsApp,
+  onRemindMember,
   onRefresh,
   onShareSlip,
   onTemplateSaved,
+  onTaskDone,
   query,
   report,
   session,
@@ -1094,6 +1438,7 @@ function AdhyakshApp({
   setSidebarOpen,
   sidebarOpen,
   slips,
+  tasks,
   templatePreview,
   workspaceLoaded,
   workspaceRefreshing,
@@ -1101,19 +1446,32 @@ function AdhyakshApp({
   activeTemplate?: Template;
   activeForm: ActiveForm | null;
   busy: boolean;
+  expenses: Expense[];
   groups: Group[];
   latestTemplateVersion?: Template['versions'][number];
   members: Member[];
   notice: string;
+  onArchiveMember: (member: Member) => Promise<void> | void;
+  onCancelSlip: (slip: Slip) => Promise<void> | void;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateExpense: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
+  onCreateTask: () => Promise<void> | void;
+  onDeleteExpense: (expense: Expense) => Promise<void> | void;
+  onDeleteTask: (task: FestivalTask) => Promise<void> | void;
   onDownloadSlip: (slip: Slip) => Promise<void>;
+  onEditExpense: (expense: Expense) => Promise<void> | void;
+  onEditMember: (member: Member) => Promise<void> | void;
+  onEditSlip: (slip: Slip) => Promise<void> | void;
+  onEditTask: (task: FestivalTask) => Promise<void> | void;
   onGenerate: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onLogout: () => void;
   onPreviewChange: (url: string) => void;
   onPrepareWhatsApp: (paymentStatus: 'ACTIVE' | 'PENDING') => void;
+  onRemindMember: (member: Member) => void;
   onRefresh: () => void;
   onShareSlip: (slip: Slip) => Promise<void>;
   onTemplateSaved: (placements: Record<string, TemplatePlacement>) => Promise<void> | void;
+  onTaskDone: (task: FestivalTask) => Promise<void> | void;
   query: string;
   report: CollectionReport | null;
   session: AuthSession;
@@ -1122,6 +1480,7 @@ function AdhyakshApp({
   setSidebarOpen: (value: boolean | ((open: boolean) => boolean)) => void;
   sidebarOpen: boolean;
   slips: Slip[];
+  tasks: FestivalTask[];
   templatePreview: string;
   workspaceLoaded: boolean;
   workspaceRefreshing: boolean;
@@ -1133,25 +1492,28 @@ function AdhyakshApp({
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [localNotice, setLocalNotice] = useState('');
   const [slipFilter, setSlipFilter] = useState<'all' | 'paid' | 'pending'>('all');
-  const [hiddenSlipIds, setHiddenSlipIds] = useState<string[]>([]);
-  const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
-  const [localTasks, setLocalTasks] = useState<LocalTask[]>([]);
-  const memberRows = members.map((member) => ({
-    contact: member.user?.phone ?? member.phone ?? '-',
-    name: member.displayName,
-    paid: false,
-    role: member.user?.role.replaceAll('_', ' ') ?? 'Member',
-    vargani: 0,
-  }));
-  const slipRows = slips.filter((slip) => !hiddenSlipIds.includes(slip.id));
+  const slipRows = slips;
   const paidSlipRows = slipRows.filter(isSlipPaid);
   const pendingSlipRows = slipRows.filter((slip) => !isSlipPaid(slip));
   const filteredSlipRows =
     slipFilter === 'paid' ? paidSlipRows : slipFilter === 'pending' ? pendingSlipRows : slipRows;
   const totalSlipCollection = paidSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0);
+  const memberRows = members.map((member) => {
+    const phone = member.phone ?? member.user?.phone ?? '';
+    const memberSlips = slipRows.filter((slip) => phone && normalizeIndianPhone(slip.contributorPhone) === normalizeIndianPhone(phone));
+    const vargani = memberSlips.filter(isSlipPaid).reduce((sum, slip) => sum + Number(slip.amount || 0), 0);
+    return {
+      contact: phone || '-',
+      member,
+      name: member.displayName,
+      paid: vargani > 0,
+      role: member.user?.role.replaceAll('_', ' ') ?? 'Member',
+      vargani,
+    };
+  });
   const memberVargani = memberRows.filter((member) => member.paid).reduce((sum, member) => sum + member.vargani, 0);
   const pendingMemberVargani = memberRows.filter((member) => !member.paid).reduce((sum, member) => sum + member.vargani, 0);
-  const expensesTotal = localExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const expensesTotal = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const balance = Number(report?.balance ?? totalSlipCollection + memberVargani - expensesTotal);
   const isInitialSync = workspaceRefreshing && !workspaceLoaded;
   const displayNotice = localNotice || (notice && /error|failed|expired|could not|logged out|unauthorized/i.test(notice) ? notice : '');
@@ -1162,6 +1524,7 @@ function AdhyakshApp({
       email: 'current-login',
       entries: slipRows.length,
       joined: 'Active now',
+      member: undefined as Member | undefined,
       name: session.user.name,
       role: session.user.role.replaceAll('_', ' '),
     },
@@ -1169,6 +1532,7 @@ function AdhyakshApp({
       email: member.user?.email ?? '-',
       entries: slipRows.filter((slip) => slip.contributorPhone && slip.contributorPhone === (member.phone ?? member.user?.phone)).length,
       joined: 'Live member',
+      member,
       name: member.displayName,
       role: member.user?.role.replaceAll('_', ' ') ?? 'MEMBER',
     })),
@@ -1181,50 +1545,7 @@ function AdhyakshApp({
 
   async function saveTemplate(placements: Record<string, TemplatePlacement>) {
     await onTemplateSaved(placements);
-    const payload = JSON.stringify({
-      placements,
-      savedAt: new Date().toISOString(),
-      templatePreview,
-    });
-    window.localStorage.setItem('digital-vargani-adhyaksh-template', payload);
-    window.localStorage.setItem('digital-vargani-template-adhyaksh', payload);
     showToast('Template saved successfully.');
-  }
-
-  function saveExpense(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const expense: LocalExpense = {
-      amount: Number(form.get('amount') || 0),
-      category: String(form.get('category') || 'Miscellaneous'),
-      date: String(form.get('date') || new Date().toISOString().slice(0, 10)),
-      description: String(form.get('description') || 'Expense'),
-      paidBy: String(form.get('paidBy') || session.user.name),
-      refund: 'PENDING',
-      vendor: String(form.get('vendor') || '-'),
-    };
-    setLocalExpenses((current) => [expense, ...current]);
-    setExpenseOpen(false);
-    showToast('Expense saved successfully.');
-  }
-
-  function addTask() {
-    const title = window.prompt('Task name');
-    if (!title?.trim()) return;
-    setLocalTasks((current) => [{
-      assignee: session.user.name,
-      due: new Date().toISOString().slice(0, 10),
-      status: 'OPEN',
-      task: title.trim(),
-    }, ...current]);
-    showToast('Task added successfully.');
-  }
-
-  function completeTask(taskName: string) {
-    setLocalTasks((current) => current.map((task) => (
-      task.task === taskName ? { ...task, status: 'DONE' } : task
-    )));
-    showToast('Task marked complete.');
   }
 
   function closeSidebar() {
@@ -1253,8 +1574,8 @@ function AdhyakshApp({
         <div className="mandal-identity">
           <span className="mandal-seal">DV</span>
           <div>
-            <strong>{activeForm?.festival?.name ? 'राहुल मित्र मंडळ' : 'Akhilnayak Mitra Mandal'}</strong>
-            <small>दापोडी, पुणे</small>
+            <strong>{activeForm?.festival?.name ? 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¹Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â° Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³' : 'Akhilnayak Mitra Mandal'}</strong>
+            <small>Ã Â¤Â¦Ã Â¤Â¾Ã Â¤ÂªÃ Â¥â€¹Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡</small>
           </div>
         </div>
         <div className="mandal-contact-card">
@@ -1324,9 +1645,9 @@ function AdhyakshApp({
                   <span>{member.contact}</span>
                   <span><b>{money(member.vargani)}</b><i className={member.paid ? 'pill paid' : 'pill pending'}>{member.paid ? 'Paid' : 'Pending'}</i></span>
                   <span className="row-actions">
-                    <button onClick={() => showToast('Member edit action opened.')} type="button"><Edit3 size={16} /></button>
-                    <button onClick={() => showToast(`Reminder prepared for ${member.name}.`)} type="button"><MessageSquare size={16} /></button>
-                    <button onClick={() => showToast('Member delete requires backend permission.')} type="button"><Trash2 size={16} /></button>
+                    <button onClick={() => void onEditMember(member.member)} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => onRemindMember(member.member)} type="button"><MessageSquare size={16} /></button>
+                    <button onClick={() => void onArchiveMember(member.member)} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
               ))}
@@ -1338,22 +1659,23 @@ function AdhyakshApp({
           <section className="adhyaksh-page">
             <div className="wide-card action-card">
               <div><h2>Task Board (2026)</h2><span>Assign festival work and monitor open responsibilities.</span></div>
-              <button className="blue-action" onClick={addTask} type="button"><Plus size={18} />Add Task</button>
+              <button className="blue-action" onClick={() => void onCreateTask()} type="button"><Plus size={18} />Add Task</button>
             </div>
             <div className="metric-strip">
-              <Metric label="Open Tasks" value={String(localTasks.filter((task) => task.status !== 'DONE').length)} />
-              <Metric blue label="Teams Assigned" value={String(new Set(localTasks.map((task) => task.assignee)).size)} />
-              <Metric green label="This Week" value={String(localTasks.length)} />
+              <Metric label="Open Tasks" value={String(tasks.filter((task) => task.status !== 'DONE').length)} />
+              <Metric blue label="Teams Assigned" value={String(new Set(tasks.map((task) => task.assignee?.name).filter(Boolean)).size)} />
+              <Metric green label="This Week" value={String(tasks.length)} />
             </div>
             <div className="ops-table">
               <div className="ops-head five"><span>Task</span><span>Assignee</span><span>Due Date</span><span>Status</span><span>Actions</span></div>
-              {localTasks.length === 0 && <EmptyTableState message="No tasks added yet." />}
-              {localTasks.map((task) => (
-                <div className="ops-row five" key={task.task}>
-                  <strong>{task.task}</strong><span>{task.assignee}</span><span>{task.due}</span><i className="pill pending">{task.status}</i>
+              {tasks.length === 0 && <EmptyTableState message="No tasks added yet." />}
+              {tasks.map((task) => (
+                <div className="ops-row five" key={task.id}>
+                  <strong>{task.title}</strong><span>{task.assignee?.name ?? '-'}</span><span>{task.dueDate?.slice(0, 10) ?? '-'}</span><i className={task.status === 'DONE' ? 'pill paid' : 'pill pending'}>{task.status}</i>
                   <span className="row-actions">
-                    <button onClick={() => completeTask(task.task)} type="button"><CheckCircle2 size={16} /></button>
-                    <button onClick={() => showToast('Task edit action opened.')} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => void onTaskDone(task)} type="button"><CheckCircle2 size={16} /></button>
+                    <button onClick={() => void onEditTask(task)} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => void onDeleteTask(task)} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
               ))}
@@ -1369,13 +1691,13 @@ function AdhyakshApp({
             </div>
             <div className="ops-table expenses-table">
               <div className="ops-head six"><span>Description</span><span>Vendor</span><span>Paid By</span><span>Category</span><span>Date</span><span>Amount</span><span>Refund?</span><span>Actions</span></div>
-              {localExpenses.length === 0 && <EmptyTableState message="No expenses added yet." />}
-              {localExpenses.map((expense, index) => (
-                <div className="ops-row six" key={`${expense.description}-${expense.amount}-${index}`}>
-                  <strong>{expense.description}</strong><span>{expense.vendor}</span><i className="pill role">{expense.paidBy}</i><span>{expense.category}</span><span>{expense.date}</span><b>{money(expense.amount)}</b><i className="pill pending">{expense.refund}</i>
+              {expenses.length === 0 && <EmptyTableState message="No expenses added yet." />}
+              {expenses.map((expense) => (
+                <div className="ops-row six" key={expense.id}>
+                  <strong>{expense.notes || 'Expense'}</strong><span>{expense.vendorName || '-'}</span><i className="pill role">{expense.creator?.name ?? session.user.name}</i><span>{expense.category?.name ?? 'Miscellaneous'}</span><span>{expense.expenseDate.slice(0, 10)}</span><b>{money(Number(expense.amount))}</b><i className="pill pending">{expense.status}</i>
                   <span className="row-actions">
-                    <button onClick={() => showToast('Expense edit action opened.')} type="button"><Edit3 size={16} /></button>
-                    <button onClick={() => { setLocalExpenses((current) => current.filter((_, itemIndex) => itemIndex !== index)); showToast('Expense removed.'); }} type="button"><Trash2 size={16} /></button>
+                    <button onClick={() => void onEditExpense(expense)} type="button"><Edit3 size={16} /></button>
+                    <button onClick={() => void onDeleteExpense(expense)} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
               ))}
@@ -1448,10 +1770,10 @@ function AdhyakshApp({
                   <b>{slip.slipNumber}</b><strong>{slip.contributorName}<small>{slip.shopName ?? '-'}</small></strong><b>{money(Number(slip.amount))}</b><span>{slip.contributorPhone ?? '-'}</span>
                   <span><i className={isSlipPaid(slip) ? 'pill paid' : 'pill pending'}>{isSlipPaid(slip) ? 'Paid' : 'Pending'}</i><i className="pill mode">{slip.paymentMode}</i></span><span>{slip.createdAt.slice(0, 10)}</span>
                   <span className="row-actions">
-                    <button onClick={() => { setSelectedSlip(slip); showToast('Slip selected for editing.'); }} type="button"><Edit3 size={16} />Edit</button>
+                    <button onClick={() => { setSelectedSlip(slip); void onEditSlip(slip); }} type="button"><Edit3 size={16} />Edit</button>
                     <button className="mini-link" onClick={() => { setSelectedSlip(slip); void onDownloadSlip(slip); }} type="button"><Download size={16} />Slip</button>
                     <button onClick={() => { setSelectedSlip(slip); void onShareSlip(slip); }} type="button"><Share2 size={16} />Share</button>
-                    <button onClick={() => { setHiddenSlipIds((current) => [...current, slip.id]); showToast('Slip removed from this view.'); }} type="button"><Trash2 size={16} /></button>
+                    <button onClick={() => void onCancelSlip(slip)} type="button"><Trash2 size={16} /></button>
                   </span>
                 </div>
               ))}
@@ -1477,7 +1799,7 @@ function AdhyakshApp({
                 <div className="ops-row five" key={`${user.name}-${user.email}`}>
                   <strong><span className="avatar tiny">{user.name.charAt(0).toUpperCase()}</span>{user.name}<small>{user.joined}</small></strong>
                   <span>{user.email}</span><i className="pill role">{user.role}</i><span>{user.entries}</span>
-                  <span className="row-actions"><button onClick={() => showToast('Role edit action opened.')} type="button"><UserCog size={16} />Edit Role</button></span>
+                  <span className="row-actions"><button onClick={() => user.member ? void onEditMember(user.member) : showToast('Super admin controls the main admin role.')} type="button"><UserCog size={16} />Edit Role</button></span>
                 </div>
               ))}
             </div>
@@ -1536,7 +1858,7 @@ function AdhyakshApp({
             <label>Name<input name="name" required placeholder="Member name" /></label>
             <label>Email<input name="email" required placeholder="member@mandal.local" /></label>
             <label>Phone<input name="phone" placeholder="+91..." /></label>
-            <label>Password<input name="password" required defaultValue={DEMO_PASSWORD} /></label>
+            <label>Password<input name="password" required placeholder="Create a strong password" type="password" /></label>
             <label>Role<select name="role" defaultValue="MEMBER"><option value="KHAJINDAR">Khajindar</option><option value="GROUP_LEADER">Group Leader</option><option value="MEMBER">Member</option></select></label>
             <label>Group<select name="groupId"><option value="">No group</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
             <label>Area<input name="areaName" placeholder="Ramtekdi Market" /></label>
@@ -1547,7 +1869,7 @@ function AdhyakshApp({
 
       {expenseOpen && (
         <div className="modal-backdrop">
-          <form className="vargani-modal adhyaksh-modal" onSubmit={saveExpense}>
+          <form className="vargani-modal adhyaksh-modal" onSubmit={async (event) => { await onCreateExpense(event); setExpenseOpen(false); }}>
             <button className="modal-close" onClick={() => setExpenseOpen(false)} type="button"><X size={20} /></button>
             <h2>Add Expense</h2>
             <label>Description<input name="description" required placeholder="Expense description" /></label>
@@ -1693,7 +2015,7 @@ function SuperAdminApp({
     if (!selectedMandal?.id) return;
     const form = new FormData(event.currentTarget);
     const nextLogin = {
-      password: String(form.get('password') || DEMO_PASSWORD),
+      password: String(form.get('password') || generateTemporaryPassword()),
       role: String(form.get('role') || 'Khajindar'),
       username: String(form.get('username') || ''),
     };
@@ -1885,7 +2207,7 @@ function SuperAdminApp({
                     <button className="primary" type="submit"><Plus size={18} />{t(language, 'Generate Login')}</button>
                   </form>
                   <div className="table-list">
-                    {[{ role: 'Adhyaksh', username: selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`, password: selectedMandal.adminPassword || DEMO_PASSWORD }, ...extraLogins].map((login) => (
+                    {[{ role: 'Adhyaksh', username: selectedMandal.adminEmail || `admin@${slugify(selectedMandal.name)}.local`, password: selectedMandal.adminPassword || 'Stored securely in backend' }, ...extraLogins].map((login) => (
                       <div className="table-row owner-login-row" key={`${login.role}-${login.username}`}>
                         <span className="avatar small">{login.role.charAt(0)}</span>
                         <strong>{login.role}</strong>
@@ -2126,7 +2448,7 @@ function MemberCollectorApp({
                 <span>{slip.contributorName}<small>{slip.shopName || slip.areaName || '-'}</small></span>
                 <b>{money(Number(slip.amount))}</b>
                 <span>{slip.contributorPhone || '-'}</span>
-                <em>Paid · {slip.paymentMode}</em>
+                <em>Paid Ã‚Â· {slip.paymentMode}</em>
                 <span>{new Date(slip.createdAt).toLocaleDateString('en-IN')}</span>
                 <span className="row-actions" style={{ display: 'flex', gap: '6px' }}>
                   <button
@@ -2265,7 +2587,7 @@ function LoginPanel({
             </div>
           ) : (
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>⚡ Super Admin Portal</span>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>Ã¢Å¡Â¡ Super Admin Portal</span>
               <button
                 onClick={() => setLoginType('adhyaksh')}
                 style={{
@@ -2279,7 +2601,7 @@ function LoginPanel({
                 }}
                 type="button"
               >
-                ← Back to Mandal Login
+                Ã¢â€ Â Back to Mandal Login
               </button>
             </div>
           )}
@@ -2303,12 +2625,13 @@ function LoginPanel({
               <input
                 name="identifier"
                 required
-                defaultValue={isOwner ? '' : isAdhyaksh ? DEMO_IDENTIFIER : 'amit@akhilnayak.local'}
+                defaultValue={isOwner ? DEFAULT_OWNER_IDENTIFIER : ''}
+                placeholder={isOwner ? DEFAULT_OWNER_IDENTIFIER : 'Enter username or email'}
               />
             </label>
             <label>
               Password
-              <input name="password" required type="password" defaultValue={DEMO_PASSWORD} />
+              <input name="password" required type="password" placeholder="Enter password" />
             </label>
             <button className="primary" disabled={busy} type="submit">
               <ShieldCheck size={18} />
@@ -2349,26 +2672,26 @@ function LoginPanel({
 
 function toMarathiDigits(val: string | number): string {
   const map: Record<string, string> = {
-    '0': '०', '1': '१', '2': '२', '3': '३', '4': '४',
-    '5': '५', '6': '६', '7': '७', '8': '८', '9': '९',
+    '0': 'Ã Â¥Â¦', '1': 'Ã Â¥Â§', '2': 'Ã Â¥Â¨', '3': 'Ã Â¥Â©', '4': 'Ã Â¥Âª',
+    '5': 'Ã Â¥Â«', '6': 'Ã Â¥Â¬', '7': 'Ã Â¥Â­', '8': 'Ã Â¥Â®', '9': 'Ã Â¥Â¯',
   };
   return String(val).replace(/[0-9]/g, (digit) => map[digit] ?? digit);
 }
 
 const MARATHI_WORD_MAP: Record<string, string> = {
-  'Cash': 'नगद',
-  'CASH': 'नगद (CASH)',
-  'UPI': 'ऑनलाइन (UPI)',
-  'CHEQUE': 'धनादेश (Cheque)',
-  'BANK_TRANSFER': 'बँक ट्रान्सफर',
-  'Ramtekdi': 'रामटेकडी',
-  'Ramtekdi, Pune': 'रामटेकडी, पुणे',
-  'Pune': 'पुणे',
-  'Mahesh Traders': 'महेश ट्रेडर्स',
-  'Prathama Building': 'प्रथमा बिल्डिंग',
-  'Pramod': 'प्रमोद',
-  'Amit Collector': 'अमित कलेक्टर',
-  'Shop': 'दुकान',
+  'Cash': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦',
+  'CASH': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦ (CASH)',
+  'UPI': 'Ã Â¤â€˜Ã Â¤Â¨Ã Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤Â¨ (UPI)',
+  'CHEQUE': 'Ã Â¤Â§Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Â¶ (Cheque)',
+  'BANK_TRANSFER': 'Ã Â¤Â¬Ã Â¤ÂÃ Â¤â€¢ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¤Â¾Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¤Â«Ã Â¤Â°',
+  'Ramtekdi': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬',
+  'Ramtekdi, Pune': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
+  'Pune': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
+  'Mahesh Traders': 'Ã Â¤Â®Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¶ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¥â€¡Ã Â¤Â¡Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¸',
+  'Prathama Building': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¥Ã Â¤Â®Ã Â¤Â¾ Ã Â¤Â¬Ã Â¤Â¿Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
+  'Pramod': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â®Ã Â¥â€¹Ã Â¤Â¦',
+  'Amit Collector': 'Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Å¸Ã Â¤Â°',
+  'Shop': 'Ã Â¤Â¦Ã Â¥ÂÃ Â¤â€¢Ã Â¤Â¾Ã Â¤Â¨',
 };
 
 function applyAutoMarathiTranslation(text: string, placement?: Partial<TemplatePlacement>): string {
@@ -2403,7 +2726,7 @@ function FontDialogModal({
   initialPlacement,
   onClose,
   onSave,
-  sampleText = 'AaBbYyZz  ·  अमित कुलकर्णी  ₹ ५,१००',
+  sampleText = 'AaBbYyZz  Ã‚Â·  Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â£Ã Â¥â‚¬  Ã¢â€šÂ¹ Ã Â¥Â«,Ã Â¥Â§Ã Â¥Â¦Ã Â¥Â¦',
 }: {
   initialPlacement: Partial<TemplatePlacement>;
   onClose: () => void;
@@ -2479,7 +2802,7 @@ function FontDialogModal({
       <div className="font-dialog-box" onClick={(e) => e.stopPropagation()}>
         <div className="font-dialog-header">
           <span>Font</span>
-          <button onClick={onClose} type="button">✕</button>
+          <button onClick={onClose} type="button">Ã¢Å“â€¢</button>
         </div>
 
         <div className="font-dialog-body">
@@ -3179,9 +3502,9 @@ function TemplateView({
                   <span>Rotate</span>
                   <ChevronRight size={14} />
                   <div className="submenu">
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5Ã‚Â°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5Ã‚Â°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0Ã‚Â°</button>
                   </div>
                 </div>
 
@@ -3224,7 +3547,7 @@ function TemplateView({
                   }}
                   type="button"
                 >
-                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? '✓ Marathi Translation ON' : 'Auto Marathi Translation (मराठी)'}</span>
+                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? 'Ã¢Å“â€œ Marathi Translation ON' : 'Auto Marathi Translation (Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬)'}</span>
                 </button>
               </div>
             )}
@@ -3445,41 +3768,15 @@ function publicReceiptUrl(slipId: string) {
 }
 
 function buildWhatsAppReceiptMessage(slip: Slip) {
-  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
-
-आदरणीय भक्तगण,
-
-पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
-
-आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
-
-पावती क्रमांक: ${slip.slipNumber}
-नाव: ${slip.contributorName}
-रक्कम: ${money(Number(slip.amount))}
-डिजिटल पावती: ${publicReceiptUrl(slip.id)}
-
-आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
-
-श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
-
-📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
-
-आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
-
-॥ गणपती बाप्पा मोरया ॥
-मंगलमूर्ती मोरया! ❤️🌺
-
-– पुणे गणपती उत्सव`;
+  return buildReceiptWhatsAppMessage(slip);
 }
 
-void buildWhatsAppReceiptMessage;
-
-function buildMarathiWhatsAppReceiptMessage(slip: Slip) {
-  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
+function buildReceiptWhatsAppMessage(slip: Slip) {
+  return `॥ श्री गणेशाय नमः ॥
 
 आदरणीय भक्तगण,
 
-पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
+पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार!
 
 आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
 
@@ -3490,20 +3787,20 @@ function buildMarathiWhatsAppReceiptMessage(slip: Slip) {
 
 आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
 
-श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
+श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना.
 
-📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
+टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
 
-आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
+आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद!
 
 ॥ गणपती बाप्पा मोरया ॥
-मंगलमूर्ती मोरया! ❤️🌺
+मंगलमूर्ती मोरया!
 
 – पुणे गणपती उत्सव`;
 }
 
 async function copyShareMessage(slip: Slip) {
-  const text = buildMarathiWhatsAppReceiptMessage(slip);
+  const text = buildWhatsAppReceiptMessage(slip);
   await navigator.clipboard?.writeText(text).catch(() => undefined);
   return text;
 }
@@ -3514,7 +3811,7 @@ async function shareReceiptToWhatsApp(slip: Slip, phone?: string | null, targetW
 }
 
 function openWhatsAppForSlip(slip: Slip, phone?: string | null, preparedText?: string, targetWindow?: Window | null) {
-  const text = preparedText ?? buildMarathiWhatsAppReceiptMessage(slip);
+  const text = preparedText ?? buildWhatsAppReceiptMessage(slip);
   const digits = normalizeIndianPhone(phone);
   const url = digits
     ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
@@ -3606,5 +3903,9 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'mandal';
+}
+
+function generateTemporaryPassword() {
+  return `Dv@${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
 }
 
