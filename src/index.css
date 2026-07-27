@@ -127,6 +127,16 @@ label {
   border-color: var(--yellow);
 }
 
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .shell {
   background: var(--bg);
   display: grid;

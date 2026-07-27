@@ -323,6 +323,7 @@ export default function App() {
   }
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
+  const [workspaceRefreshing, setWorkspaceRefreshing] = useState(false);
   const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
   const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -383,7 +384,7 @@ export default function App() {
       const profile = await apiRequest<{ user: AuthSession['user'] }>('/auth/me', {}, storedSession);
       const liveSession = { ...storedSession, user: profile.user };
       setSession(liveSession);
-      await loadWorkspace(liveSession);
+      void loadWorkspace(liveSession);
     } catch {
       window.localStorage.removeItem(SESSION_KEY);
       setSession(null);
@@ -407,8 +408,8 @@ export default function App() {
       });
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
-      await loadWorkspace(nextSession);
       setNotice(`Logged in as ${nextSession.user.name}.`);
+      void loadWorkspace(nextSession);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Login failed.');
     } finally {
@@ -428,12 +429,13 @@ export default function App() {
     setReport(null);
     setSelectedSlip(null);
     setNotice('Logged out. Login again to use the console.');
+    setWorkspaceRefreshing(false);
   }
 
   async function loadWorkspace(currentSession = session) {
     if (!currentSession) return;
+    setWorkspaceRefreshing(true);
     if (currentSession.user.role === 'SUPER_ADMIN' && !currentSession.user.mandalId) {
-      setBusy(true);
       try {
         const response = await apiRequest<{ items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }> }>('/mandals?limit=100', {}, currentSession);
         setDemoMandals(response.items.map(mapBackendMandal));
@@ -441,14 +443,15 @@ export default function App() {
       } catch (error) {
         setNotice(error instanceof Error ? error.message : 'Could not load mandals.');
       } finally {
-        setBusy(false);
+        setWorkspaceRefreshing(false);
       }
       return;
     }
-    setBusy(true);
     try {
-      const form = await apiRequest<ActiveForm>('/vargani/active-form', {}, currentSession);
-      const slipList = await apiRequest<{ items: Slip[] }>('/vargani/slips?limit=50', {}, currentSession);
+      const [form, slipList] = await Promise.all([
+        apiRequest<ActiveForm>('/vargani/active-form', {}, currentSession),
+        apiRequest<{ items: Slip[] }>('/vargani/slips?limit=50', {}, currentSession),
+      ]);
       setActiveForm(form);
       setSlips(slipList.items);
       setSelectedSlip(slipList.items[0] ?? null);
@@ -474,7 +477,7 @@ export default function App() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not load workspace.');
     } finally {
-      setBusy(false);
+      setWorkspaceRefreshing(false);
     }
   }
 
@@ -863,6 +866,7 @@ export default function App() {
       setSidebarOpen={setSidebarOpen}
       sidebarOpen={sidebarOpen}
       slips={filteredSlips}
+      workspaceRefreshing={workspaceRefreshing}
       activeTemplate={activeTemplate}
       latestTemplateVersion={latestTemplateVersion}
       onPreviewChange={handlePreviewChange}
@@ -907,6 +911,7 @@ function AdhyakshApp({
   sidebarOpen,
   slips,
   templatePreview,
+  workspaceRefreshing,
 }: {
   activeTemplate?: Template;
   activeForm: ActiveForm | null;
@@ -932,6 +937,7 @@ function AdhyakshApp({
   sidebarOpen: boolean;
   slips: Slip[];
   templatePreview: string;
+  workspaceRefreshing: boolean;
 }) {
   const [screen, setScreen] = useState<AdhyakshScreen>('members');
   const [entryOpen, setEntryOpen] = useState(false);
@@ -960,7 +966,7 @@ function AdhyakshApp({
   const pendingMemberVargani = memberRows.filter((member) => !member.paid).reduce((sum, member) => sum + member.vargani, 0);
   const expensesTotal = localExpenses.reduce((sum, item) => sum + item.amount, 0);
   const balance = Number(report?.balance ?? totalSlipCollection + memberVargani - expensesTotal);
-  const displayNotice = busy ? 'Working...' : localNotice || notice;
+  const displayNotice = localNotice || (notice && !notice.toLowerCase().includes('loaded') ? notice : '');
   const userRows = [
     {
       email: 'current-login',
@@ -1092,13 +1098,13 @@ function AdhyakshApp({
         <header className="adhyaksh-header">
           <h1>{pageTitle()}</h1>
           <div className="year-select">
-            <button disabled={busy} onClick={onRefresh} type="button"><RefreshCw size={17} />Refresh</button>
+            <button disabled={busy || workspaceRefreshing} onClick={onRefresh} type="button"><RefreshCw size={17} className={workspaceRefreshing ? 'spin-icon' : ''} />{workspaceRefreshing ? 'Syncing' : 'Refresh'}</button>
             <span>Active Year</span>
             <select defaultValue="2026"><option>Year 2026</option><option>Year 2027</option></select>
             <div className="top-user mini"><span>{session.user.name.charAt(0)}</span><div><strong>{session.user.name}</strong><small>{session.user.role.replaceAll('_', ' ')}</small></div></div>
           </div>
         </header>
-        <div className={`notice ${displayNotice ? 'show' : ''} ${busy ? 'busy' : ''}`}>{displayNotice || 'Ready.'}</div>
+        {displayNotice && <div className={`notice show ${busy ? 'busy' : ''}`}>{displayNotice}</div>}
 
         {screen === 'members' && (
           <section className="adhyaksh-page">
