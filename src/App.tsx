@@ -156,6 +156,16 @@ interface CollectionReport {
   totalExpenses: number;
 }
 
+interface WorkspaceCache {
+  activeForm: ActiveForm | null;
+  groups: Group[];
+  members: Member[];
+  report: CollectionReport | null;
+  savedAt: string;
+  slips: Slip[];
+  templates: Template[];
+}
+
 interface DemoMandal {
   _count?: { festivals?: number; members?: number; slips?: number };
   additionalMembers: string;
@@ -196,6 +206,7 @@ interface LocalTask {
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const LANGUAGE_KEY = 'digital-vargani-language';
+const WORKSPACE_CACHE_PREFIX = 'digital-vargani-workspace-cache';
 const DEMO_IDENTIFIER = 'admin@akhilnayak.local';
 const DEMO_PASSWORD = 'Demo@123456789';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
@@ -324,6 +335,7 @@ export default function App() {
   const [notice, setNotice] = useState('Login with main mandal admin to open the console.');
   const [busy, setBusy] = useState(false);
   const [workspaceRefreshing, setWorkspaceRefreshing] = useState(false);
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const [demoMandals, setDemoMandals] = useState<DemoMandal[]>([]);
   const [collectorModalOpen, setCollectorModalOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -365,6 +377,48 @@ export default function App() {
     setNotice('Template saved successfully.');
   }
 
+  function workspaceCacheKey(currentSession: AuthSession) {
+    return `${WORKSPACE_CACHE_PREFIX}:${currentSession.user.id}:${currentSession.user.mandalId ?? 'owner'}`;
+  }
+
+  function readWorkspaceCache(currentSession: AuthSession): WorkspaceCache | null {
+    try {
+      const cached = window.localStorage.getItem(workspaceCacheKey(currentSession));
+      return cached ? (JSON.parse(cached) as WorkspaceCache) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeWorkspaceCache(currentSession: AuthSession, cache: Omit<WorkspaceCache, 'savedAt'>) {
+    try {
+      window.localStorage.setItem(workspaceCacheKey(currentSession), JSON.stringify({
+        ...cache,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {
+      // Local cache is a speed layer only. Live API remains the source of truth.
+    }
+  }
+
+  function hydrateWorkspaceFromCache(currentSession: AuthSession) {
+    const cached = readWorkspaceCache(currentSession);
+    if (!cached) {
+      setWorkspaceLoaded(false);
+      return false;
+    }
+
+    setActiveForm(cached.activeForm);
+    setGroups(cached.groups);
+    setMembers(cached.members);
+    setSlips(cached.slips);
+    setTemplates(cached.templates);
+    setReport(cached.report);
+    setSelectedSlip(cached.slips[0] ?? null);
+    setWorkspaceLoaded(true);
+    return true;
+  }
+
   function prepareWhatsAppWindow(paymentStatus: 'ACTIVE' | 'PENDING') {
     if (paymentStatus === 'PENDING') {
       whatsappWindowRef.current?.close();
@@ -384,6 +438,7 @@ export default function App() {
       const profile = await apiRequest<{ user: AuthSession['user'] }>('/auth/me', {}, storedSession);
       const liveSession = { ...storedSession, user: profile.user };
       setSession(liveSession);
+      hydrateWorkspaceFromCache(liveSession);
       void loadWorkspace(liveSession);
     } catch {
       window.localStorage.removeItem(SESSION_KEY);
@@ -408,7 +463,8 @@ export default function App() {
       });
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
-      setNotice(`Logged in as ${nextSession.user.name}.`);
+      hydrateWorkspaceFromCache(nextSession);
+      setNotice('');
       void loadWorkspace(nextSession);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Login failed.');
@@ -428,6 +484,7 @@ export default function App() {
     setTemplates([]);
     setReport(null);
     setSelectedSlip(null);
+    setWorkspaceLoaded(false);
     setNotice('Logged out. Login again to use the console.');
     setWorkspaceRefreshing(false);
   }
@@ -439,6 +496,7 @@ export default function App() {
       try {
         const response = await apiRequest<{ items: Array<DemoMandal & { contactName?: string | null; contactPhone?: string | null; logoUrl?: string | null }> }>('/mandals?limit=100', {}, currentSession);
         setDemoMandals(response.items.map(mapBackendMandal));
+        setWorkspaceLoaded(true);
         setNotice('Owner workspace loaded. Manage all onboarded mandals from here.');
       } catch (error) {
         setNotice(error instanceof Error ? error.message : 'Could not load mandals.');
@@ -455,13 +513,17 @@ export default function App() {
       setActiveForm(form);
       setSlips(slipList.items);
       setSelectedSlip(slipList.items[0] ?? null);
+      let nextGroups: Group[] = [];
+      let nextMembers: Member[] = [];
+      let nextTemplates: Template[] = [];
+      let nextReport: CollectionReport | null = null;
 
       if (
         currentSession.user.mandalId &&
         ['KHAJINDAR', 'MANDAL_ADMIN', 'SUPER_ADMIN'].includes(currentSession.user.role)
       ) {
         const base = `/mandals/${currentSession.user.mandalId}/festivals/${form.festival.id}`;
-        const [nextGroups, nextMembers, nextTemplates, nextReport] = await Promise.all([
+        [nextGroups, nextMembers, nextTemplates, nextReport] = await Promise.all([
           apiRequest<Group[]>(`${base}/groups`, {}, currentSession),
           apiRequest<Member[]>(`${base}/members`, {}, currentSession),
           apiRequest<Template[]>(`${base}/templates`, {}, currentSession),
@@ -473,6 +535,15 @@ export default function App() {
         setReport(nextReport);
       }
 
+      writeWorkspaceCache(currentSession, {
+        activeForm: form,
+        groups: nextGroups,
+        members: nextMembers,
+        report: nextReport,
+        slips: slipList.items,
+        templates: nextTemplates,
+      });
+      setWorkspaceLoaded(true);
       setNotice('Live mandal data loaded from Supabase.');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not load workspace.');
@@ -872,6 +943,7 @@ export default function App() {
       onPreviewChange={handlePreviewChange}
       onPrepareWhatsApp={prepareWhatsAppWindow}
       templatePreview={templatePreview}
+      workspaceLoaded={workspaceLoaded}
     />
   );
 }
@@ -911,6 +983,7 @@ function AdhyakshApp({
   sidebarOpen,
   slips,
   templatePreview,
+  workspaceLoaded,
   workspaceRefreshing,
 }: {
   activeTemplate?: Template;
@@ -937,6 +1010,7 @@ function AdhyakshApp({
   sidebarOpen: boolean;
   slips: Slip[];
   templatePreview: string;
+  workspaceLoaded: boolean;
   workspaceRefreshing: boolean;
 }) {
   const [screen, setScreen] = useState<AdhyakshScreen>('members');
@@ -966,7 +1040,10 @@ function AdhyakshApp({
   const pendingMemberVargani = memberRows.filter((member) => !member.paid).reduce((sum, member) => sum + member.vargani, 0);
   const expensesTotal = localExpenses.reduce((sum, item) => sum + item.amount, 0);
   const balance = Number(report?.balance ?? totalSlipCollection + memberVargani - expensesTotal);
-  const displayNotice = localNotice || (notice && !notice.toLowerCase().includes('loaded') ? notice : '');
+  const isInitialSync = workspaceRefreshing && !workspaceLoaded;
+  const displayNotice = localNotice || (notice && /error|failed|expired|could not|logged out|unauthorized/i.test(notice) ? notice : '');
+  const metricValue = (value: string) => (workspaceLoaded ? value : '--');
+  const metricNote = (note: string) => (workspaceLoaded ? note : 'Loading live data');
   const userRows = [
     {
       email: 'current-login',
@@ -1116,15 +1193,17 @@ function AdhyakshApp({
               <button className="blue-action" onClick={() => setMemberOpen(true)} type="button"><Plus size={18} />Add Member</button>
             </div>
             <div className="metric-strip six">
-              <Metric label="Total Members" value={String(memberRows.length)} />
-              <Metric green label="Member Vargani" note={`${memberRows.filter((member) => member.paid).length} Members Paid`} value={money(memberVargani)} />
-              <Metric green label="Slip Vargani" note={`${slipRows.length} Slips Paid`} value={money(totalSlipCollection)} />
-              <Metric red label="Pending (Members)" note={`${memberRows.filter((member) => !member.paid).length} Pending`} value={money(pendingMemberVargani)} />
-              <Metric blue label="Mandal Expenses" note="Paid by Mandal" value={money(expensesTotal)} />
-              <Metric blue label="Remaining Balance" note="Available Funds" value={money(balance)} />
+              <Metric label="Total Members" value={metricValue(String(memberRows.length))} />
+              <Metric green label="Member Vargani" note={metricNote(`${memberRows.filter((member) => member.paid).length} Members Paid`)} value={metricValue(money(memberVargani))} />
+              <Metric green label="Slip Vargani" note={metricNote(`${slipRows.length} Slips Paid`)} value={metricValue(money(totalSlipCollection))} />
+              <Metric red label="Pending (Members)" note={metricNote(`${memberRows.filter((member) => !member.paid).length} Pending`)} value={metricValue(money(pendingMemberVargani))} />
+              <Metric blue label="Mandal Expenses" note={metricNote('Paid by Mandal')} value={metricValue(money(expensesTotal))} />
+              <Metric blue label="Remaining Balance" note={metricNote('Available Funds')} value={metricValue(money(balance))} />
             </div>
             <div className="ops-table members-table">
               <div className="ops-head"><span>Name & Role</span><span>Contact</span><span>Vargani (2026)</span><span>Actions</span></div>
+              {isInitialSync && <EmptyTableState message="Loading live member data..." />}
+              {workspaceLoaded && memberRows.length === 0 && <EmptyTableState message="No members added yet." />}
               {memberRows.map((member) => (
                 <div className="ops-row" key={member.name}>
                   <strong>{member.name}<small>{member.role}</small></strong>
@@ -1218,11 +1297,11 @@ function AdhyakshApp({
               <button className="blue-action" onClick={() => setEntryOpen(true)} type="button"><Plus size={18} />New Vargani Entry</button>
             </div>
             <div className="metric-strip five-cols">
-              <Metric label="Total Entries" value={String(slipRows.length)} />
-              <Metric green label="Collected" note={`${paidSlipRows.length} Paid`} value={money(totalSlipCollection)} />
-              <Metric red label="Pending" note={`${pendingSlipRows.length} Pending`} value={money(pendingSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0))} />
-              <Metric green label="Paid Slips" value={String(paidSlipRows.length)} />
-              <Metric blue label="Pending Slips" value={String(pendingSlipRows.length)} />
+              <Metric label="Total Entries" value={metricValue(String(slipRows.length))} />
+              <Metric green label="Collected" note={metricNote(`${paidSlipRows.length} Paid`)} value={metricValue(money(totalSlipCollection))} />
+              <Metric red label="Pending" note={metricNote(`${pendingSlipRows.length} Pending`)} value={metricValue(money(pendingSlipRows.reduce((sum, slip) => sum + Number(slip.amount || 0), 0)))} />
+              <Metric green label="Paid Slips" value={metricValue(String(paidSlipRows.length))} />
+              <Metric blue label="Pending Slips" value={metricValue(String(pendingSlipRows.length))} />
             </div>
             <div className="slip-insights">
               <div className="insight-card warning">
@@ -1248,7 +1327,8 @@ function AdhyakshApp({
             </div>
             <div className="ops-table slips-table">
               <div className="ops-head six"><span>Slip #</span><span>Name / Shop</span><span>Amount</span><span>Mobile</span><span>Status / Mode</span><span>Date / Info</span><span>Actions</span></div>
-              {filteredSlipRows.length === 0 && <EmptyTableState message="No slips found for this filter." />}
+              {isInitialSync && <EmptyTableState message="Loading live slip data..." />}
+              {workspaceLoaded && filteredSlipRows.length === 0 && <EmptyTableState message="No slips found for this filter." />}
               {filteredSlipRows.map((slip) => (
                 <div className="ops-row six" key={slip.id}>
                   <b>{slip.slipNumber}</b><strong>{slip.contributorName}<small>{slip.shopName ?? '-'}</small></strong><b>{money(Number(slip.amount))}</b><span>{slip.contributorPhone ?? '-'}</span>
