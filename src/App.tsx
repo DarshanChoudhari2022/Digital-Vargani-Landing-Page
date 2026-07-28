@@ -31,8 +31,10 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, PointerEvent, ReactNode } from 'react';
+import { apiRequest } from './api/client';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
 type TextAlign = 'left' | 'center' | 'right';
@@ -73,6 +75,13 @@ interface TemplatePlacement {
   width: number;
   x: number;
   y: number;
+}
+
+interface TemplateAssetUpload {
+  bucket: string | null;
+  key: string | null;
+  storage: 'inline' | 'supabase';
+  url: string;
 }
 
 interface AuthSession {
@@ -248,7 +257,6 @@ interface MandalWorkspaceBootstrap {
 
 type WorkspaceBootstrap = OwnerWorkspaceBootstrap | MandalWorkspaceBootstrap;
 
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const LANGUAGE_KEY = 'digital-vargani-language';
 const DEFAULT_OWNER_IDENTIFIER = 'owner@digitalvargani.local';
@@ -335,12 +343,93 @@ const translations: Record<Exclude<Language, 'en'>, Record<string, string>> = {
   },
 };
 
+const cleanTranslations: Record<Language, Record<string, string>> = {
+  en: {},
+  hi: {
+    'Add Mandal': 'मंडल जोड़ें',
+    'Add mandals and manage each client account.': 'मंडल जोड़ें और हर ग्राहक खाते को संभालें.',
+    'Address': 'पता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडल पर वापस',
+    'Dashboard': 'डैशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Generate Login': 'लॉगिन बनाएं',
+    'Generate More Logins': 'और लॉगिन बनाएं',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉग आउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडल का नाम आवश्यक है. पता, लोगो, संपर्क और सदस्य संख्या वैकल्पिक हैं.',
+    'Mandals': 'मंडल',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'अवलोकन',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव करें',
+    'Saved': 'सेव हो गया',
+    'Search': 'खोजें',
+    'Search mandals by name, area, email...': 'नाम, क्षेत्र या ईमेल से मंडल खोजें...',
+    'Selected Field': 'चुना हुआ फील्ड',
+    'Slip Settings': 'पावती सेटिंग्स',
+    'Slip Size': 'पावती आकार',
+    'Slips Generated': 'बनी हुई पावतियां',
+    'Super Admin Console': 'सुपर एडमिन कंसोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'कुल मंडल',
+    'Total Members': 'कुल सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करें',
+    'Username': 'यूज़रनेम',
+    'Field Mapping': 'फील्ड मैपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स को पावती के छपे हुए लेबल पर सही रखें.',
+  },
+  mr: {
+    'Add Mandal': 'मंडळ जोडा',
+    'Add mandals and manage each client account.': 'मंडळे जोडा आणि प्रत्येक ग्राहक खाते व्यवस्थापित करा.',
+    'Address': 'पत्ता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडळांकडे परत',
+    'Dashboard': 'डॅशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Generate Login': 'लॉगिन तयार करा',
+    'Generate More Logins': 'अधिक लॉगिन तयार करा',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉग आउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडळाचे नाव आवश्यक आहे. पत्ता, लोगो, संपर्क आणि सदस्य संख्या ऐच्छिक आहेत.',
+    'Mandals': 'मंडळे',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'आढावा',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव्ह करा',
+    'Saved': 'सेव्ह झाले',
+    'Search': 'शोधा',
+    'Search mandals by name, area, email...': 'नाव, परिसर किंवा ईमेलने मंडळ शोधा...',
+    'Selected Field': 'निवडलेले फील्ड',
+    'Slip Settings': 'पावती सेटिंग्ज',
+    'Slip Size': 'पावती आकार',
+    'Slips Generated': 'तयार झालेल्या पावत्या',
+    'Super Admin Console': 'सुपर अॅडमिन कन्सोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'एकूण मंडळे',
+    'Total Members': 'एकूण सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करा',
+    'Username': 'वापरकर्ता नाव',
+    'Field Mapping': 'फील्ड मॅपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स छापलेल्या पावतीवरील लेबलवर अचूक ठेवा.',
+  },
+};
+
 function t(language: Language, text: string) {
   if (language === 'en') return text;
-  return translations[language][text] ?? text;
+  return cleanTranslations[language][text] ?? translations[language][text] ?? text;
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -385,6 +474,7 @@ export default function App() {
     if (!stored) return;
     const parsed = JSON.parse(stored) as AuthSession;
     void restoreSession(parsed);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -403,11 +493,13 @@ export default function App() {
       throw new Error('Active mandal festival not found. Refresh workspace and try again.');
     }
 
+    const backgroundFileUrl = await persistTemplatePreview(targetMandalId, targetFestivalId);
+
     await apiRequest(
       `/mandals/${targetMandalId}/festivals/${targetFestivalId}/templates/active-version`,
       {
         body: JSON.stringify({
-          backgroundFileUrl: templatePreview || TEMPLATE_IMAGE,
+          backgroundFileUrl,
           canvasHeight: 800,
           canvasWidth: 1328,
           name: 'Vargani Receipt Template',
@@ -419,7 +511,28 @@ export default function App() {
     );
 
     setNotice('Template saved to backend successfully.');
+    await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
     await loadWorkspace(session);
+  }
+
+  async function persistTemplatePreview(targetMandalId: string, targetFestivalId: string) {
+    const preview = templatePreview || TEMPLATE_IMAGE;
+    if (!preview.startsWith('data:')) return preview;
+
+    const asset = await apiRequest<TemplateAssetUpload>(
+      `/mandals/${targetMandalId}/festivals/${targetFestivalId}/templates/assets`,
+      {
+        body: JSON.stringify({
+          dataUrl: preview,
+          fileName: `vargani-template-${Date.now()}.png`,
+        }),
+        method: 'POST',
+      },
+      session,
+    );
+
+    setTemplatePreview(asset.url);
+    return asset.url;
   }
 
   function applyWorkspaceBootstrap(payload: WorkspaceBootstrap) {
@@ -527,6 +640,7 @@ export default function App() {
   async function logout() {
     if (session) await apiRequest('/auth/logout', { method: 'POST' }, session).catch(() => undefined);
     window.localStorage.removeItem(SESSION_KEY);
+    queryClient.clear();
     setSession(null);
     setActiveForm(null);
     setGroups([]);
@@ -547,6 +661,7 @@ export default function App() {
     setWorkspaceRefreshing(true);
     try {
       const workspace = await apiRequest<WorkspaceBootstrap>('/workspace/bootstrap', {}, currentSession);
+      queryClient.setQueryData(workspaceQueryKey(currentSession), workspace);
       applyWorkspaceBootstrap(workspace);
       if (workspace.kind === 'MANDAL' && currentSession.user.mandalId && workspace.activeForm?.festival.id) {
         const [liveExpenses, liveTasks] = await Promise.all([
@@ -1428,6 +1543,10 @@ function AdhyakshApp({
         <div className="mandal-identity">
           <span className="mandal-seal">DV</span>
           <div>
+            <strong>Akhilnayak Mitra Mandal</strong>
+            <small>दापोडी, पुणे</small>
+          </div>
+          <div hidden>
             <strong>{activeForm?.festival?.name ? 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¹Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â° Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³' : 'Akhilnayak Mitra Mandal'}</strong>
             <small>Ã Â¤Â¦Ã Â¤Â¾Ã Â¤ÂªÃ Â¥â€¹Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡</small>
           </div>
@@ -3681,34 +3800,8 @@ function normalizeIndianPhone(phone?: string | null) {
   return digits;
 }
 
-async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
-      ...options.headers,
-    },
-  });
-  if (!response.ok) throw new Error(readErrorMessage(await response.text(), response.status));
-  return response.json() as Promise<T>;
-}
-
-function readErrorMessage(body: string, status: number) {
-  try {
-    const parsed = JSON.parse(body) as { error?: string; message?: string | string[] };
-    if (Array.isArray(parsed.message)) return parsed.message.join(', ');
-    return parsed.message || parsed.error || `Request failed with ${status}`;
-  } catch {
-    return `Request failed with ${status}`;
-  }
-}
-
-function normalizeApiBaseUrl(value?: string) {
-  const baseUrl = (value || 'https://digital-vargani-api.vercel.app').replace(/\/$/, '');
-  if (/\/api\/v\d+$/.test(baseUrl)) return baseUrl;
-  if (baseUrl.endsWith('/api')) return `${baseUrl}/v1`;
-  return `${baseUrl}/api/v1`;
+function workspaceQueryKey(session: AuthSession) {
+  return ['workspace-bootstrap', session.user.role, session.user.mandalId ?? 'owner', session.user.id];
 }
 
 function mapBackendMandal(
