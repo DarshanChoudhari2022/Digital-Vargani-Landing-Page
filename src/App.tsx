@@ -31,15 +31,17 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, PointerEvent, ReactNode } from 'react';
+import { apiRequest } from './api/client';
 
 type PaymentMode = 'CASH' | 'UPI' | 'CHEQUE' | 'BANK_TRANSFER' | 'OTHER';
 type TextAlign = 'left' | 'center' | 'right';
 type TextWrapMode = 'single' | 'wrap' | 'shrink';
 type TextDecoration = 'none' | 'underline' | 'line-through';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
-type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'users' | 'logs';
+type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'form' | 'users' | 'logs';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 type Language = 'en' | 'mr' | 'hi';
@@ -75,6 +77,13 @@ interface TemplatePlacement {
   y: number;
 }
 
+interface TemplateAssetUpload {
+  bucket: string | null;
+  key: string | null;
+  storage: 'inline' | 'supabase';
+  url: string;
+}
+
 interface AuthSession {
   accessToken: string;
   refreshToken: string;
@@ -82,9 +91,12 @@ interface AuthSession {
 }
 
 interface CustomField {
+  dashboardFilter?: boolean;
   id: string;
   key: string;
   label: string;
+  options?: string[];
+  printOnSlip?: boolean;
   required: boolean;
   sortOrder: number;
   type: string;
@@ -248,99 +260,102 @@ interface MandalWorkspaceBootstrap {
 
 type WorkspaceBootstrap = OwnerWorkspaceBootstrap | MandalWorkspaceBootstrap;
 
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const SESSION_KEY = 'digital-vargani-admin-session';
 const LANGUAGE_KEY = 'digital-vargani-language';
 const DEFAULT_OWNER_IDENTIFIER = 'owner@digitalvargani.local';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
 const translations: Record<Exclude<Language, 'en'>, Record<string, string>> = {
-  hi: {
-    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š',
-    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š Ã Â¤â€Ã Â¤Â° Ã Â¤Â¹Ã Â¤Â° Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€¦Ã Â¤â€¢Ã Â¤Â¾Ã Â¤â€°Ã Â¤â€šÃ Â¤Å¸ Ã Â¤Â¸Ã Â¤â€šÃ Â¤Â­Ã Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
-    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾',
-    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
-    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€š Ã Â¤ÂªÃ Â¤Â° Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â¸',
-    'Dashboard': 'Ã Â¤Â¡Ã Â¥Ë†Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
-    'English': 'English',
-    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
-    'Generate More Logins': 'Ã Â¤â€Ã Â¤Â° Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
-    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
-    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
-    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â® Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¥Â¤ Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€Ã Â¤Â° Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂµÃ Â¥Ë†Ã Â¤â€¢Ã Â¤Â²Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¤â€šÃ Â¥Â¤',
-    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
-    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
-    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Overview': 'Ã Â¤â€œÃ Â¤ÂµÃ Â¤Â°Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¥â€š',
-    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
-    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
-    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤Â¹Ã Â¥â€¹ Ã Â¤â€”Ã Â¤Â¯Ã Â¤Â¾',
-    'Search': 'Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š',
-    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â®, Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â·Ã Â¥â€¡Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š...',
-    'Slips Generated': 'Ã Â¤Â¬Ã Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦Ã Â¥â€¡Ã Â¤â€š',
-    'Slip Settings': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Â¸',
-    'Slip Size': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤ÂÃ Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤â€šÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
-    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
-    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Total Mandals': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
-    'Total Members': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
-    'Username': 'Ã Â¤Â¯Ã Â¥â€šÃ Â¤Å“Ã Â¤Â°Ã Â¤Â¨Ã Â¥â€¡Ã Â¤Â®',
-    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥Ë†Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€¢Ã Â¥â€¹ Ã Â¤â€ºÃ Â¤ÂªÃ Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€¢Ã Â¥â€¡ Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â² Ã Â¤ÂªÃ Â¤Â° Ã Â¤Â Ã Â¥â‚¬Ã Â¤â€¢ Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â°Ã Â¤â€“Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
-    'Selected Field': 'Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
-  },
-  mr: {
-    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾',
-    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡Ã Â¤â€¢ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤Â¯Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¤ÂµÃ Â¤Â¸Ã Â¥ÂÃ Â¤Â¥Ã Â¤Â¾Ã Â¤ÂªÃ Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾.',
-    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾',
-    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
-    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€¢Ã Â¤Â¡Ã Â¥â€¡ Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¤',
-    'Dashboard': 'Ã Â¤Â¡Ã Â¥â€¦Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
-    'English': 'English',
-    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Generate More Logins': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¤Â¿Ã Â¤â€¢ Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
-    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
-    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂÃ Â¤Å¡Ã Â¥ÂÃ Â¤â€ºÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤.',
-    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
-    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
-    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Overview': 'Ã Â¤â€ Ã Â¤Â¢Ã Â¤Â¾Ã Â¤ÂµÃ Â¤Â¾',
-    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
-    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡',
-    'Search': 'Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾',
-    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ, Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¿Ã Â¤Â¸Ã Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾...',
-    'Slips Generated': 'Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾',
-    'Slip Settings': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Å“',
-    'Slip Size': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤â€¦Ã Â¥â€¦Ã Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
-    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
-    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Total Mandals': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
-    'Total Members': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Username': 'Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ',
-    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥â€¦Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€ºÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬Ã Â¤ÂµÃ Â¤Â°Ã Â¥â‚¬Ã Â¤Â² Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â²Ã Â¤ÂµÃ Â¤Â° Ã Â¤â€¦Ã Â¤Å¡Ã Â¥â€šÃ Â¤â€¢ Ã Â¤Â Ã Â¥â€¡Ã Â¤ÂµÃ Â¤Â¾.',
-    'Selected Field': 'Ã Â¤Â¨Ã Â¤Â¿Ã Â¤ÂµÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
-  },
+  hi: {},
+  mr: {},
 };
 
+const cleanTranslations: Record<Language, Record<string, string>> = {
+  en: {},
+  hi: {
+    'Add Mandal': 'मंडल जोड़ें',
+    'Add mandals and manage each client account.': 'मंडल जोड़ें और हर ग्राहक खाते को संभालें.',
+    'Address': 'पता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडल पर वापस',
+    'Dashboard': 'डैशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Generate Login': 'लॉगिन बनाएं',
+    'Generate More Logins': 'और लॉगिन बनाएं',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉग आउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडल का नाम आवश्यक है. पता, लोगो, संपर्क और सदस्य संख्या वैकल्पिक हैं.',
+    'Mandals': 'मंडल',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'अवलोकन',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव करें',
+    'Saved': 'सेव हो गया',
+    'Search': 'खोजें',
+    'Search mandals by name, area, email...': 'नाम, क्षेत्र या ईमेल से मंडल खोजें...',
+    'Slips Generated': 'बनी हुई पावती',
+    'Slip Settings': 'पावती सेटिंग्स',
+    'Slip Size': 'पावती आकार',
+    'Super Admin Console': 'सुपर एडमिन कंसोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'कुल मंडल',
+    'Total Members': 'कुल सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करें',
+    'Username': 'यूजरनेम',
+    'Field Mapping': 'फील्ड मैपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स को छपी हुई पावती के लेबल पर ठीक से रखें.',
+    'Selected Field': 'चुना हुआ फील्ड',
+  },
+  mr: {
+    'Add Mandal': 'मंडळ जोडा',
+    'Add mandals and manage each client account.': 'मंडळे जोडा आणि प्रत्येक ग्राहक खाते व्यवस्थापित करा.',
+    'Address': 'पत्ता',
+    'Adhyaksh Login': 'अध्यक्ष लॉगिन',
+    'Back to Mandals': 'मंडळांकडे परत',
+    'Dashboard': 'डॅशबोर्ड',
+    'Digital Vargani': 'डिजिटल वर्गणी',
+    'Generate Login': 'लॉगिन तयार करा',
+    'Generate More Logins': 'अधिक लॉगिन तयार करा',
+    'Hindi': 'हिंदी',
+    'Login URL': 'लॉगिन URL',
+    'Logout': 'लॉग आउट',
+    'Mandal name is required. Address, logo, contacts and member count are optional.': 'मंडळाचे नाव आवश्यक आहे. पत्ता, लोगो, संपर्क आणि सदस्य संख्या ऐच्छिक आहेत.',
+    'Mandals': 'मंडळे',
+    'Marathi': 'मराठी',
+    'Members': 'सदस्य',
+    'Overview': 'आढावा',
+    'Password': 'पासवर्ड',
+    'Phone No.': 'फोन नंबर',
+    'Save Template': 'टेम्पलेट सेव्ह करा',
+    'Saved': 'सेव्ह झाले',
+    'Search': 'शोधा',
+    'Search mandals by name, area, email...': 'नाव, परिसर किंवा ईमेलने मंडळ शोधा...',
+    'Slips Generated': 'तयार झालेल्या पावत्या',
+    'Slip Settings': 'पावती सेटिंग्ज',
+    'Slip Size': 'पावती आकार',
+    'Super Admin Console': 'सुपर अॅडमिन कन्सोल',
+    'Template': 'टेम्पलेट',
+    'Template Size': 'टेम्पलेट आकार',
+    'Total Mandals': 'एकूण मंडळे',
+    'Total Members': 'एकूण सदस्य',
+    'Upload Template': 'टेम्पलेट अपलोड करा',
+    'Username': 'वापरकर्ता नाव',
+    'Field Mapping': 'फील्ड मॅपिंग',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स छापलेल्या पावतीवरील लेबलवर अचूक ठेवा.',
+    'Selected Field': 'निवडलेले फील्ड',
+  },
+};
 function t(language: Language, text: string) {
   if (language === 'en') return text;
-  return translations[language][text] ?? text;
+  return cleanTranslations[language][text] ?? translations[language][text] ?? text;
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -385,6 +400,7 @@ export default function App() {
     if (!stored) return;
     const parsed = JSON.parse(stored) as AuthSession;
     void restoreSession(parsed);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -403,11 +419,13 @@ export default function App() {
       throw new Error('Active mandal festival not found. Refresh workspace and try again.');
     }
 
+    const backgroundFileUrl = await persistTemplatePreview(targetMandalId, targetFestivalId);
+
     await apiRequest(
       `/mandals/${targetMandalId}/festivals/${targetFestivalId}/templates/active-version`,
       {
         body: JSON.stringify({
-          backgroundFileUrl: templatePreview || TEMPLATE_IMAGE,
+          backgroundFileUrl,
           canvasHeight: 800,
           canvasWidth: 1328,
           name: 'Vargani Receipt Template',
@@ -419,7 +437,119 @@ export default function App() {
     );
 
     setNotice('Template saved to backend successfully.');
+    await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
     await loadWorkspace(session);
+  }
+
+  async function persistTemplatePreview(targetMandalId: string, targetFestivalId: string) {
+    const preview = templatePreview || TEMPLATE_IMAGE;
+    if (!preview.startsWith('data:')) return preview;
+
+    const asset = await apiRequest<TemplateAssetUpload>(
+      `/mandals/${targetMandalId}/festivals/${targetFestivalId}/templates/assets`,
+      {
+        body: JSON.stringify({
+          dataUrl: preview,
+          fileName: `vargani-template-${Date.now()}.png`,
+        }),
+        method: 'POST',
+      },
+      session,
+    );
+
+    setTemplatePreview(asset.url);
+    return asset.url;
+  }
+
+  async function createCustomField(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session || !session.user.mandalId || !activeForm) return;
+
+    const form = new FormData(event.currentTarget);
+    const label = String(form.get('label') || '').trim();
+    const type = String(form.get('type') || 'TEXT');
+    const options = String(form.get('options') || '')
+      .split(',')
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    if (!label) {
+      setNotice('Enter a field label before adding it.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields`,
+        {
+          body: JSON.stringify({
+            dashboardFilter: form.get('dashboardFilter') === 'on',
+            label,
+            options: type === 'DROPDOWN' ? options : undefined,
+            printOnSlip: form.get('printOnSlip') === 'on',
+            required: form.get('required') === 'on',
+            sortOrder: (activeForm.customFields?.length ?? 0) + 1,
+            type,
+          }),
+          method: 'POST',
+        },
+        session,
+      );
+      event.currentTarget.reset();
+      setNotice('Form question added.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not add form question.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateCustomField(field: CustomField, patch: Partial<CustomField>) {
+    if (!session || !session.user.mandalId || !activeForm) return;
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields/${field.id}`,
+        {
+          body: JSON.stringify(patch),
+          method: 'PATCH',
+        },
+        session,
+      );
+      setNotice('Form question updated.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update form question.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCustomField(field: CustomField) {
+    if (!session || !session.user.mandalId || !activeForm) return;
+    const confirmed = window.confirm(`Delete "${field.label}" from the vargani form? Existing slips will keep their old data.`);
+    if (!confirmed) return;
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields/${field.id}`,
+        { method: 'DELETE' },
+        session,
+      );
+      setNotice('Form question deleted.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not delete form question.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function applyWorkspaceBootstrap(payload: WorkspaceBootstrap) {
@@ -527,6 +657,7 @@ export default function App() {
   async function logout() {
     if (session) await apiRequest('/auth/logout', { method: 'POST' }, session).catch(() => undefined);
     window.localStorage.removeItem(SESSION_KEY);
+    queryClient.clear();
     setSession(null);
     setActiveForm(null);
     setGroups([]);
@@ -547,6 +678,7 @@ export default function App() {
     setWorkspaceRefreshing(true);
     try {
       const workspace = await apiRequest<WorkspaceBootstrap>('/workspace/bootstrap', {}, currentSession);
+      queryClient.setQueryData(workspaceQueryKey(currentSession), workspace);
       applyWorkspaceBootstrap(workspace);
       if (workspace.kind === 'MANDAL' && currentSession.user.mandalId && workspace.activeForm?.festival.id) {
         const [liveExpenses, liveTasks] = await Promise.all([
@@ -684,7 +816,9 @@ export default function App() {
     const customData: Record<string, unknown> = Object.fromEntries(
       (activeForm?.customFields ?? []).map((field) => [
         field.key,
-        String(form.get(`custom_${field.key}`) || ''),
+        field.type === 'CHECKBOX'
+          ? form.get(`custom_${field.key}`) === 'yes'
+          : String(form.get(`custom_${field.key}`) || ''),
       ]),
     );
     const tentativePaymentDate = String(form.get('tentativePaymentDate') || '');
@@ -724,7 +858,7 @@ export default function App() {
       } else {
         const share = await createReceiptShare(slip, contributorPhone);
         await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow, share?.receiptUrl);
-        setNotice(`Slip ${slip.slipNumber} generated. WhatsApp message prepared.`);
+        setNotice(`Slip ${slip.slipNumber} generated. WhatsApp opened and receipt message copied.`);
       }
     } catch (error) {
       whatsappWindow?.close();
@@ -1209,7 +1343,9 @@ export default function App() {
       onCancelSlip={cancelSlip}
       onCreateMember={createMember}
       onCreateExpense={createExpense}
+      onCreateCustomField={createCustomField}
       onCreateTask={createTask}
+      onDeleteCustomField={deleteCustomField}
       onDeleteExpense={deleteExpense}
       onDeleteTask={deleteTask}
       onDownloadSlip={downloadSlipAsJpeg}
@@ -1224,6 +1360,7 @@ export default function App() {
       onShareSlip={shareSlip}
       onTemplateSaved={(placements) => saveTemplateConfig(placements)}
       onTaskDone={(task) => updateTask(task, { status: 'DONE' })}
+      onUpdateCustomField={updateCustomField}
       query={query}
       report={report}
       session={session}
@@ -1250,6 +1387,7 @@ const adhyakshNavItems: Array<{ id: AdhyakshScreen; icon: ReactNode; label: stri
   { id: 'expenses', icon: <WalletCards size={20} />, label: 'Expenses' },
   { id: 'template', icon: <FileText size={20} />, label: 'Vargani Template' },
   { id: 'slips', icon: <BadgeIndianRupee size={20} />, label: 'Vargani Slips' },
+  { id: 'form', icon: <SlidersHorizontal size={20} />, label: 'Form Management' },
   { id: 'users', icon: <UserCog size={20} />, label: 'User Management' },
   { id: 'logs', icon: <ClipboardList size={20} />, label: 'System Logs' },
 ];
@@ -1267,7 +1405,9 @@ function AdhyakshApp({
   onCancelSlip,
   onCreateMember,
   onCreateExpense,
+  onCreateCustomField,
   onCreateTask,
+  onDeleteCustomField,
   onDeleteExpense,
   onDeleteTask,
   onDownloadSlip,
@@ -1284,6 +1424,7 @@ function AdhyakshApp({
   onShareSlip,
   onTemplateSaved,
   onTaskDone,
+  onUpdateCustomField,
   query,
   report,
   session,
@@ -1309,7 +1450,9 @@ function AdhyakshApp({
   onCancelSlip: (slip: Slip) => Promise<void> | void;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
   onCreateExpense: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
+  onCreateCustomField: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onCreateTask: () => Promise<void> | void;
+  onDeleteCustomField: (field: CustomField) => Promise<void> | void;
   onDeleteExpense: (expense: Expense) => Promise<void> | void;
   onDeleteTask: (task: FestivalTask) => Promise<void> | void;
   onDownloadSlip: (slip: Slip) => Promise<void>;
@@ -1326,6 +1469,7 @@ function AdhyakshApp({
   onShareSlip: (slip: Slip) => Promise<void>;
   onTemplateSaved: (placements: Record<string, TemplatePlacement>) => Promise<void> | void;
   onTaskDone: (task: FestivalTask) => Promise<void> | void;
+  onUpdateCustomField: (field: CustomField, patch: Partial<CustomField>) => Promise<void> | void;
   query: string;
   report: CollectionReport | null;
   session: AuthSession;
@@ -1409,6 +1553,7 @@ function AdhyakshApp({
   function pageTitle() {
     return {
       expenses: 'Expenses',
+      form: 'Form Management',
       logs: 'Logs',
       members: 'Members',
       slips: 'Vargani Slips',
@@ -1428,8 +1573,12 @@ function AdhyakshApp({
         <div className="mandal-identity">
           <span className="mandal-seal">DV</span>
           <div>
-            <strong>{activeForm?.festival?.name ? 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¹Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â° Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³' : 'Akhilnayak Mitra Mandal'}</strong>
-            <small>Ã Â¤Â¦Ã Â¤Â¾Ã Â¤ÂªÃ Â¥â€¹Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡</small>
+            <strong>Akhilnayak Mitra Mandal</strong>
+            <small>दापोडी, पुणे</small>
+          </div>
+          <div hidden>
+            <strong>{activeForm?.festival?.name ? 'राहुल मित्र मंडळ' : 'Akhilnayak Mitra Mandal'}</strong>
+            <small>दापोडी, पुणे</small>
           </div>
         </div>
         <div className="mandal-contact-card">
@@ -1635,6 +1784,16 @@ function AdhyakshApp({
           </section>
         )}
 
+        {screen === 'form' && (
+          <FormManagementView
+            activeForm={activeForm}
+            busy={busy}
+            onCreateField={onCreateCustomField}
+            onDeleteField={onDeleteCustomField}
+            onUpdateField={onUpdateCustomField}
+          />
+        )}
+
         {screen === 'users' && (
           <section className="adhyaksh-page">
             <div className="wide-card action-card">
@@ -1698,7 +1857,7 @@ function AdhyakshApp({
             {entryStatus === 'PENDING' && (
               <label className="pending-date-card">Tentative Payment Date<input name="tentativePaymentDate" type="date" /></label>
             )}
-            {(activeForm?.customFields ?? []).map((field) => <label key={field.key}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>)}
+            {(activeForm?.customFields ?? []).map((field) => <CustomFieldInput field={field} key={field.id} />)}
             <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} onClick={(event) => { if (event.currentTarget.form?.checkValidity()) onPrepareWhatsApp(entryStatus); }} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button></div>
           </form>
         </div>
@@ -1756,6 +1915,147 @@ function EmptyTableState({ message }: { message: string }) {
       <ReceiptText size={28} />
       <strong>{message}</strong>
     </div>
+  );
+}
+
+function CustomFieldInput({ field }: { field: CustomField }) {
+  const name = `custom_${field.key}`;
+  const label = `${field.label}${field.required ? ' *' : ''}`;
+  const type = field.type.toUpperCase();
+
+  if (type === 'DROPDOWN') {
+    return (
+      <label>
+        {label}
+        <select name={name} required={field.required} defaultValue="">
+          <option value="">Select {field.label}</option>
+          {(field.options ?? []).map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (type === 'LONG_TEXT') {
+    return <label>{label}<textarea name={name} required={field.required} /></label>;
+  }
+
+  if (type === 'NUMBER') {
+    return <label>{label}<input inputMode="numeric" name={name} required={field.required} /></label>;
+  }
+
+  if (type === 'DATE') {
+    return <label>{label}<input name={name} required={field.required} type="date" /></label>;
+  }
+
+  if (type === 'CHECKBOX') {
+    return (
+      <label className="check-line">
+        <input name={name} required={field.required} type="checkbox" value="yes" />
+        {label}
+      </label>
+    );
+  }
+
+  return <label>{label}<input name={name} required={field.required} /></label>;
+}
+
+function FormManagementView({
+  activeForm,
+  busy,
+  onCreateField,
+  onDeleteField,
+  onUpdateField,
+}: {
+  activeForm: ActiveForm | null;
+  busy: boolean;
+  onCreateField: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
+  onDeleteField: (field: CustomField) => Promise<void> | void;
+  onUpdateField: (field: CustomField, patch: Partial<CustomField>) => Promise<void> | void;
+}) {
+  const fields = [...(activeForm?.customFields ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <section className="adhyaksh-page">
+      <div className="wide-card action-card">
+        <div>
+          <h2>Vargani Form Management</h2>
+          <span>Add, edit, delete, and mark custom vargani questions as compulsory or optional.</span>
+        </div>
+      </div>
+
+      <div className="form-management-grid">
+        <form className="form-management-card add-question-card" onSubmit={onCreateField}>
+          <div>
+            <h3>Add Custom Question</h3>
+            <p>Use this for extra fields like donor type, building / lane, receipt note, sponsor category, or area metadata.</p>
+          </div>
+          <label>Question Label<input name="label" placeholder="e.g. Donor Type" required /></label>
+          <label>
+            Type
+            <select name="type" defaultValue="TEXT">
+              <option value="TEXT">Text</option>
+              <option value="LONG_TEXT">Long Text</option>
+              <option value="NUMBER">Number</option>
+              <option value="DATE">Date</option>
+              <option value="DROPDOWN">Dropdown</option>
+              <option value="CHECKBOX">Checkbox</option>
+            </select>
+          </label>
+          <label>Dropdown Options<input name="options" placeholder="Family, Shop, Sponsor" /></label>
+          <div className="form-switches">
+            <label><input name="required" type="checkbox" />Compulsory</label>
+            <label><input name="printOnSlip" type="checkbox" />Print on slip</label>
+            <label><input name="dashboardFilter" type="checkbox" />Use in dashboard filters</label>
+          </div>
+          <button className="blue-action" disabled={busy || !activeForm} type="submit"><Plus size={18} />Add Question</button>
+        </form>
+
+        <div className="form-management-card current-questions-card">
+          <div>
+            <h3>Current Form Questions</h3>
+            <p>Core receipt fields are fixed for audit accuracy. Custom fields below are fully configurable.</p>
+          </div>
+          <div className="managed-fields-table">
+            <div className="managed-fields-head">
+              <span>ID</span>
+              <span>Type</span>
+              <span>Required</span>
+              <span>English Label</span>
+              <span>Actions</span>
+            </div>
+            {fields.length === 0 && <EmptyTableState message="No custom form questions added yet." />}
+            {fields.map((field) => (
+              <div className="managed-fields-row" key={field.id}>
+                <code>{field.key}</code>
+                <span>{field.type.replace('_', ' ')}</span>
+                <strong>{field.required ? 'Yes' : 'No'}</strong>
+                <span>{field.label}</span>
+                <span className="row-actions">
+                  <button
+                    onClick={() => {
+                      const nextLabel = window.prompt('Edit question label', field.label)?.trim();
+                      if (nextLabel && nextLabel !== field.label) void onUpdateField(field, { label: nextLabel });
+                    }}
+                    type="button"
+                  >
+                    <Edit3 size={16} />Edit
+                  </button>
+                  <button onClick={() => void onUpdateField(field, { required: !field.required })} type="button">
+                    {field.required ? 'Make Optional' : 'Make Compulsory'}
+                  </button>
+                  <button onClick={() => void onUpdateField(field, { printOnSlip: !field.printOnSlip })} type="button">
+                    {field.printOnSlip ? 'Hide on Slip' : 'Print on Slip'}
+                  </button>
+                  <button className="danger" onClick={() => void onDeleteField(field)} type="button"><Trash2 size={16} />Delete</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2374,9 +2674,7 @@ function MemberCollectorApp({
             <label>Address<textarea name="contributorAddress" placeholder="Full address (optional)" /></label>
             <label>WhatsApp Number<input name="contributorPhone" placeholder="+91 10 digit WhatsApp number" /></label>
             <PaymentStatusSelector value={entryStatus} onChange={setEntryStatus} />
-            {(activeForm?.customFields ?? []).map((field) => (
-              <label key={field.id}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>
-            ))}
+            {(activeForm?.customFields ?? []).map((field) => <CustomFieldInput field={field} key={field.id} />)}
             <label>
               Payment Mode *
               <select name="paymentMode" defaultValue="CASH">
@@ -2456,7 +2754,7 @@ function LoginPanel({
             </div>
           ) : (
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>Ã¢Å¡Â¡ Super Admin Portal</span>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>Super Admin Portal</span>
               <button
                 onClick={() => setLoginType('adhyaksh')}
                 style={{
@@ -2470,7 +2768,7 @@ function LoginPanel({
                 }}
                 type="button"
               >
-                Ã¢â€ Â Back to Mandal Login
+                ← Back to Mandal Login
               </button>
             </div>
           )}
@@ -2541,26 +2839,26 @@ function LoginPanel({
 
 function toMarathiDigits(val: string | number): string {
   const map: Record<string, string> = {
-    '0': 'Ã Â¥Â¦', '1': 'Ã Â¥Â§', '2': 'Ã Â¥Â¨', '3': 'Ã Â¥Â©', '4': 'Ã Â¥Âª',
-    '5': 'Ã Â¥Â«', '6': 'Ã Â¥Â¬', '7': 'Ã Â¥Â­', '8': 'Ã Â¥Â®', '9': 'Ã Â¥Â¯',
+    '0': '०', '1': '१', '2': '२', '3': '३', '4': '४',
+    '5': '५', '6': '६', '7': '७', '8': '८', '9': '९',
   };
   return String(val).replace(/[0-9]/g, (digit) => map[digit] ?? digit);
 }
 
 const MARATHI_WORD_MAP: Record<string, string> = {
-  'Cash': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦',
-  'CASH': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦ (CASH)',
-  'UPI': 'Ã Â¤â€˜Ã Â¤Â¨Ã Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤Â¨ (UPI)',
-  'CHEQUE': 'Ã Â¤Â§Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Â¶ (Cheque)',
-  'BANK_TRANSFER': 'Ã Â¤Â¬Ã Â¤ÂÃ Â¤â€¢ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¤Â¾Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¤Â«Ã Â¤Â°',
-  'Ramtekdi': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬',
-  'Ramtekdi, Pune': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
-  'Pune': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
-  'Mahesh Traders': 'Ã Â¤Â®Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¶ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¥â€¡Ã Â¤Â¡Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¸',
-  'Prathama Building': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¥Ã Â¤Â®Ã Â¤Â¾ Ã Â¤Â¬Ã Â¤Â¿Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-  'Pramod': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â®Ã Â¥â€¹Ã Â¤Â¦',
-  'Amit Collector': 'Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Å¸Ã Â¤Â°',
-  'Shop': 'Ã Â¤Â¦Ã Â¥ÂÃ Â¤â€¢Ã Â¤Â¾Ã Â¤Â¨',
+  'Cash': 'नगद',
+  'CASH': 'नगद (Cash)',
+  'UPI': 'ऑनलाइन (UPI)',
+  'CHEQUE': 'धनादेश (Cheque)',
+  'BANK_TRANSFER': 'बँक ट्रान्सफर',
+  'Ramtekdi': 'रामटेकडी',
+  'Ramtekdi, Pune': 'रामटेकडी, पुणे',
+  'Pune': 'पुणे',
+  'Mahesh Traders': 'महेश ट्रेडर्स',
+  'Prathama Building': 'प्रथमा बिल्डिंग',
+  'Pramod': 'प्रमोद',
+  'Amit Collector': 'अमित कलेक्टर',
+  'Shop': 'दुकान',
 };
 
 function applyAutoMarathiTranslation(text: string, placement?: Partial<TemplatePlacement>): string {
@@ -2595,7 +2893,7 @@ function FontDialogModal({
   initialPlacement,
   onClose,
   onSave,
-  sampleText = 'AaBbYyZz  Ã‚Â·  Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â£Ã Â¥â‚¬  Ã¢â€šÂ¹ Ã Â¥Â«,Ã Â¥Â§Ã Â¥Â¦Ã Â¥Â¦',
+  sampleText = 'AaBbYyZz · अमित कुलकर्णी ₹ ५,१००',
 }: {
   initialPlacement: Partial<TemplatePlacement>;
   onClose: () => void;
@@ -2671,7 +2969,7 @@ function FontDialogModal({
       <div className="font-dialog-box" onClick={(e) => e.stopPropagation()}>
         <div className="font-dialog-header">
           <span>Font</span>
-          <button onClick={onClose} type="button">Ã¢Å“â€¢</button>
+          <button onClick={onClose} type="button">×</button>
         </div>
 
         <div className="font-dialog-body">
@@ -3360,9 +3658,9 @@ function TemplateView({
                   <span>Rotate</span>
                   <ChevronRight size={14} />
                   <div className="submenu">
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5Ã‚Â°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5Ã‚Â°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0Ã‚Â°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0°</button>
                   </div>
                 </div>
 
@@ -3405,7 +3703,7 @@ function TemplateView({
                   }}
                   type="button"
                 >
-                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? 'Ã¢Å“â€œ Marathi Translation ON' : 'Auto Marathi Translation (Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬)'}</span>
+                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? '✓ Marathi Translation ON' : 'Auto Marathi Translation (मराठी)'}</span>
                 </button>
               </div>
             )}
@@ -3621,34 +3919,36 @@ function isSlipPaid(slip: Slip) {
   return (slip.status ?? 'ACTIVE').toUpperCase() !== 'PENDING';
 }
 
-function buildWhatsAppReceiptMessage(slip: Slip, receiptUrl = 'Receipt link will be generated by Digital Vargani.') {
-  return `॥ श्री गणेशाय नमः ॥
+function buildWhatsAppReceiptMessage(slip: Slip, receiptUrl = 'Digital receipt link is being generated.') {
+  const shopLine = slip.shopName ? `दुकान / संस्था: ${slip.shopName}\n` : '';
+  const areaLine = slip.areaName ? `परिसर: ${slip.areaName}\n` : '';
+
+  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
 
 आदरणीय भक्तगण,
 
-पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार!
+पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
 
 आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
 
 पावती क्रमांक: ${slip.slipNumber}
 नाव: ${slip.contributorName}
-रक्कम: ${money(Number(slip.amount))}
+${shopLine}${areaLine}रक्कम: ${money(Number(slip.amount))}
 डिजिटल पावती: ${receiptUrl}
 
 आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
 
-श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना.
+श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
 
-टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
+📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
 
-आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद!
+आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
 
 ॥ गणपती बाप्पा मोरया ॥
-मंगलमूर्ती मोरया!
+मंगलमूर्ती मोरया! ❤️🌺
 
 – पुणे गणपती उत्सव`;
 }
-
 async function copyShareMessage(slip: Slip, receiptUrl?: string) {
   const text = buildWhatsAppReceiptMessage(slip, receiptUrl);
   await navigator.clipboard?.writeText(text).catch(() => undefined);
@@ -3668,6 +3968,7 @@ function openWhatsAppForSlip(slip: Slip, phone?: string | null, preparedText?: s
     : `https://wa.me/?text=${encodeURIComponent(text)}`;
   if (targetWindow) {
     targetWindow.location.href = url;
+    targetWindow.focus();
     return;
   }
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -3681,34 +3982,8 @@ function normalizeIndianPhone(phone?: string | null) {
   return digits;
 }
 
-async function apiRequest<T>(path: string, options: RequestInit = {}, session?: AuthSession | null): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
-      ...options.headers,
-    },
-  });
-  if (!response.ok) throw new Error(readErrorMessage(await response.text(), response.status));
-  return response.json() as Promise<T>;
-}
-
-function readErrorMessage(body: string, status: number) {
-  try {
-    const parsed = JSON.parse(body) as { error?: string; message?: string | string[] };
-    if (Array.isArray(parsed.message)) return parsed.message.join(', ');
-    return parsed.message || parsed.error || `Request failed with ${status}`;
-  } catch {
-    return `Request failed with ${status}`;
-  }
-}
-
-function normalizeApiBaseUrl(value?: string) {
-  const baseUrl = (value || 'https://digital-vargani-api.vercel.app').replace(/\/$/, '');
-  if (/\/api\/v\d+$/.test(baseUrl)) return baseUrl;
-  if (baseUrl.endsWith('/api')) return `${baseUrl}/v1`;
-  return `${baseUrl}/api/v1`;
+function workspaceQueryKey(session: AuthSession) {
+  return ['workspace-bootstrap', session.user.role, session.user.mandalId ?? 'owner', session.user.id];
 }
 
 function mapBackendMandal(
@@ -3758,4 +4033,5 @@ function slugify(value: string) {
 function generateTemporaryPassword() {
   return `Dv@${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
 }
+
 
