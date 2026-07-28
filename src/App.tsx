@@ -263,84 +263,8 @@ const DEFAULT_OWNER_IDENTIFIER = 'owner@digitalvargani.local';
 const TEMPLATE_IMAGE = '/templates/akhilnayak-mitra-mandal-vargani.jpeg';
 
 const translations: Record<Exclude<Language, 'en'>, Record<string, string>> = {
-  hi: {
-    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š',
-    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¼Ã Â¥â€¡Ã Â¤â€š Ã Â¤â€Ã Â¤Â° Ã Â¤Â¹Ã Â¤Â° Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€¦Ã Â¤â€¢Ã Â¤Â¾Ã Â¤â€°Ã Â¤â€šÃ Â¤Å¸ Ã Â¤Â¸Ã Â¤â€šÃ Â¤Â­Ã Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
-    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾',
-    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
-    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€š Ã Â¤ÂªÃ Â¤Â° Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â¸',
-    'Dashboard': 'Ã Â¤Â¡Ã Â¥Ë†Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
-    'English': 'English',
-    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
-    'Generate More Logins': 'Ã Â¤â€Ã Â¤Â° Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¬Ã Â¤Â¨Ã Â¤Â¾Ã Â¤ÂÃ Â¤â€š',
-    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
-    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
-    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â® Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¥Â¤ Ã Â¤ÂªÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€Ã Â¤Â° Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂµÃ Â¥Ë†Ã Â¤â€¢Ã Â¤Â²Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤Â¹Ã Â¥Ë†Ã Â¤â€šÃ Â¥Â¤',
-    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
-    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
-    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Overview': 'Ã Â¤â€œÃ Â¤ÂµÃ Â¤Â°Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¥â€š',
-    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
-    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
-    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Âµ Ã Â¤Â¹Ã Â¥â€¹ Ã Â¤â€”Ã Â¤Â¯Ã Â¤Â¾',
-    'Search': 'Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š',
-    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â®, Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â·Ã Â¥â€¡Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â² Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â² Ã Â¤â€“Ã Â¥â€¹Ã Â¤Å“Ã Â¥â€¡Ã Â¤â€š...',
-    'Slips Generated': 'Ã Â¤Â¬Ã Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦Ã Â¥â€¡Ã Â¤â€š',
-    'Slip Settings': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Â¸',
-    'Slip Size': 'Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤ÂÃ Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤â€šÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
-    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
-    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Total Mandals': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â²',
-    'Total Members': 'Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â² Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¥â€¡Ã Â¤â€š',
-    'Username': 'Ã Â¤Â¯Ã Â¥â€šÃ Â¤Å“Ã Â¤Â°Ã Â¤Â¨Ã Â¥â€¡Ã Â¤Â®',
-    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥Ë†Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€¢Ã Â¥â€¹ Ã Â¤â€ºÃ Â¤ÂªÃ Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â°Ã Â¤Â¸Ã Â¥â‚¬Ã Â¤Â¦ Ã Â¤â€¢Ã Â¥â€¡ Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â² Ã Â¤ÂªÃ Â¤Â° Ã Â¤Â Ã Â¥â‚¬Ã Â¤â€¢ Ã Â¤Â¸Ã Â¥â€¡ Ã Â¤Â°Ã Â¤â€“Ã Â¥â€¡Ã Â¤â€šÃ Â¥Â¤',
-    'Selected Field': 'Ã Â¤Å¡Ã Â¥ÂÃ Â¤Â¨Ã Â¥â‚¬ Ã Â¤Â¹Ã Â¥ÂÃ Â¤Ë† Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
-  },
-  mr: {
-    'Add Mandal': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾',
-    'Add mandals and manage each client account.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡ Ã Â¤Å“Ã Â¥â€¹Ã Â¤Â¡Ã Â¤Â¾ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¥â€¡Ã Â¤â€¢ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤Â¾Ã Â¤Â¯Ã Â¤â€šÃ Â¤Å¸ Ã Â¤â€“Ã Â¤Â¾Ã Â¤Â¤Ã Â¥â€¡ Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¯Ã Â¤ÂµÃ Â¤Â¸Ã Â¥ÂÃ Â¤Â¥Ã Â¤Â¾Ã Â¤ÂªÃ Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾.',
-    'Address': 'Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾',
-    'Adhyaksh Login': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â· Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨',
-    'Back to Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤â€šÃ Â¤â€¢Ã Â¤Â¡Ã Â¥â€¡ Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¤',
-    'Dashboard': 'Ã Â¤Â¡Ã Â¥â€¦Ã Â¤Â¶Ã Â¤Â¬Ã Â¥â€¹Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Digital Vargani': 'Ã Â¤Â¡Ã Â¤Â¿Ã Â¤Å“Ã Â¤Â¿Ã Â¤Å¸Ã Â¤Â² Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤â€”Ã Â¤Â£Ã Â¥â‚¬',
-    'English': 'English',
-    'Generate Login': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Generate More Logins': 'Ã Â¤â€¦Ã Â¤Â§Ã Â¤Â¿Ã Â¤â€¢ Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Hindi': 'Ã Â¤Â¹Ã Â¤Â¿Ã Â¤â€šÃ Â¤Â¦Ã Â¥â‚¬',
-    'Login URL': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤Â¿Ã Â¤Â¨ URL',
-    'Logout': 'Ã Â¤Â²Ã Â¥â€°Ã Â¤â€”Ã Â¤â€ Ã Â¤â€°Ã Â¤Å¸',
-    'Mandal name is required. Address, logo, contacts and member count are optional.': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¤Â¾Ã Â¤Å¡Ã Â¥â€¡ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ Ã Â¤â€ Ã Â¤ÂµÃ Â¤Â¶Ã Â¥ÂÃ Â¤Â¯Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡. Ã Â¤ÂªÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾, Ã Â¤Â²Ã Â¥â€¹Ã Â¤â€”Ã Â¥â€¹, Ã Â¤Â¸Ã Â¤â€šÃ Â¤ÂªÃ Â¤Â°Ã Â¥ÂÃ Â¤â€¢ Ã Â¤â€ Ã Â¤Â£Ã Â¤Â¿ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯ Ã Â¤Â¸Ã Â¤â€šÃ Â¤â€“Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂÃ Â¤Å¡Ã Â¥ÂÃ Â¤â€ºÃ Â¤Â¿Ã Â¤â€¢ Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¤.',
-    'Mandals': 'Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
-    'Marathi': 'Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬',
-    'Members': 'Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Overview': 'Ã Â¤â€ Ã Â¤Â¢Ã Â¤Â¾Ã Â¤ÂµÃ Â¤Â¾',
-    'Password': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤Â¸Ã Â¤ÂµÃ Â¤Â°Ã Â¥ÂÃ Â¤Â¡',
-    'Phone No.': 'Ã Â¤Â«Ã Â¥â€¹Ã Â¤Â¨ Ã Â¤Â¨Ã Â¤â€šÃ Â¤Â¬Ã Â¤Â°',
-    'Save Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Saved': 'Ã Â¤Â¸Ã Â¥â€¡Ã Â¤ÂµÃ Â¥ÂÃ Â¤Â¹ Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡',
-    'Search': 'Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾',
-    'Search mandals by name, area, email...': 'Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ, Ã Â¤ÂªÃ Â¤Â°Ã Â¤Â¿Ã Â¤Â¸Ã Â¤Â°, Ã Â¤Ë†Ã Â¤Â®Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¨Ã Â¥â€¡ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³ Ã Â¤Â¶Ã Â¥â€¹Ã Â¤Â§Ã Â¤Â¾...',
-    'Slips Generated': 'Ã Â¤Â¤Ã Â¤Â¯Ã Â¤Â¾Ã Â¤Â° Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾',
-    'Slip Settings': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤Â¸Ã Â¥â€¡Ã Â¤Å¸Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”Ã Â¥ÂÃ Â¤Å“',
-    'Slip Size': 'Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Super Admin Console': 'Ã Â¤Â¸Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â° Ã Â¤â€¦Ã Â¥â€¦Ã Â¤Â¡Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¨ Ã Â¤â€¢Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¥â€¹Ã Â¤Â²',
-    'Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸',
-    'Template Size': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€ Ã Â¤â€¢Ã Â¤Â¾Ã Â¤Â°',
-    'Total Mandals': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³Ã Â¥â€¡',
-    'Total Members': 'Ã Â¤ÂÃ Â¤â€¢Ã Â¥â€šÃ Â¤Â£ Ã Â¤Â¸Ã Â¤Â¦Ã Â¤Â¸Ã Â¥ÂÃ Â¤Â¯',
-    'Upload Template': 'Ã Â¤Å¸Ã Â¥â€¡Ã Â¤Â®Ã Â¥ÂÃ Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Å¸ Ã Â¤â€¦Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¹Ã Â¤Â¡ Ã Â¤â€¢Ã Â¤Â°Ã Â¤Â¾',
-    'Username': 'Ã Â¤ÂµÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â°Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¤Ã Â¤Â¾ Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Âµ',
-    'Field Mapping': 'Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡ Ã Â¤Â®Ã Â¥â€¦Ã Â¤ÂªÃ Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-    'Place boxes exactly on printed slip labels.': 'Ã Â¤Â¬Ã Â¥â€°Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â¸ Ã Â¤â€ºÃ Â¤Â¾Ã Â¤ÂªÃ Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¯Ã Â¤Â¾ Ã Â¤ÂªÃ Â¤Â¾Ã Â¤ÂµÃ Â¤Â¤Ã Â¥â‚¬Ã Â¤ÂµÃ Â¤Â°Ã Â¥â‚¬Ã Â¤Â² Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â¬Ã Â¤Â²Ã Â¤ÂµÃ Â¤Â° Ã Â¤â€¦Ã Â¤Å¡Ã Â¥â€šÃ Â¤â€¢ Ã Â¤Â Ã Â¥â€¡Ã Â¤ÂµÃ Â¤Â¾.',
-    'Selected Field': 'Ã Â¤Â¨Ã Â¤Â¿Ã Â¤ÂµÃ Â¤Â¡Ã Â¤Â²Ã Â¥â€¡Ã Â¤Â²Ã Â¥â‚¬ Ã Â¤Â«Ã Â¥â‚¬Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡',
-  },
+  hi: {},
+  mr: {},
 };
 
 const cleanTranslations: Record<Language, Record<string, string>> = {
@@ -369,19 +293,19 @@ const cleanTranslations: Record<Language, Record<string, string>> = {
     'Saved': 'सेव हो गया',
     'Search': 'खोजें',
     'Search mandals by name, area, email...': 'नाम, क्षेत्र या ईमेल से मंडल खोजें...',
-    'Selected Field': 'चुना हुआ फील्ड',
+    'Slips Generated': 'बनी हुई पावती',
     'Slip Settings': 'पावती सेटिंग्स',
     'Slip Size': 'पावती आकार',
-    'Slips Generated': 'बनी हुई पावतियां',
     'Super Admin Console': 'सुपर एडमिन कंसोल',
     'Template': 'टेम्पलेट',
     'Template Size': 'टेम्पलेट आकार',
     'Total Mandals': 'कुल मंडल',
     'Total Members': 'कुल सदस्य',
     'Upload Template': 'टेम्पलेट अपलोड करें',
-    'Username': 'यूज़रनेम',
+    'Username': 'यूजरनेम',
     'Field Mapping': 'फील्ड मैपिंग',
-    'Place boxes exactly on printed slip labels.': 'बॉक्स को पावती के छपे हुए लेबल पर सही रखें.',
+    'Place boxes exactly on printed slip labels.': 'बॉक्स को छपी हुई पावती के लेबल पर ठीक से रखें.',
+    'Selected Field': 'चुना हुआ फील्ड',
   },
   mr: {
     'Add Mandal': 'मंडळ जोडा',
@@ -407,10 +331,9 @@ const cleanTranslations: Record<Language, Record<string, string>> = {
     'Saved': 'सेव्ह झाले',
     'Search': 'शोधा',
     'Search mandals by name, area, email...': 'नाव, परिसर किंवा ईमेलने मंडळ शोधा...',
-    'Selected Field': 'निवडलेले फील्ड',
+    'Slips Generated': 'तयार झालेल्या पावत्या',
     'Slip Settings': 'पावती सेटिंग्ज',
     'Slip Size': 'पावती आकार',
-    'Slips Generated': 'तयार झालेल्या पावत्या',
     'Super Admin Console': 'सुपर अॅडमिन कन्सोल',
     'Template': 'टेम्पलेट',
     'Template Size': 'टेम्पलेट आकार',
@@ -420,9 +343,9 @@ const cleanTranslations: Record<Language, Record<string, string>> = {
     'Username': 'वापरकर्ता नाव',
     'Field Mapping': 'फील्ड मॅपिंग',
     'Place boxes exactly on printed slip labels.': 'बॉक्स छापलेल्या पावतीवरील लेबलवर अचूक ठेवा.',
+    'Selected Field': 'निवडलेले फील्ड',
   },
 };
-
 function t(language: Language, text: string) {
   if (language === 'en') return text;
   return cleanTranslations[language][text] ?? translations[language][text] ?? text;
@@ -839,7 +762,7 @@ export default function App() {
       } else {
         const share = await createReceiptShare(slip, contributorPhone);
         await shareReceiptToWhatsApp(slip, contributorPhone, whatsappWindow, share?.receiptUrl);
-        setNotice(`Slip ${slip.slipNumber} generated. WhatsApp message prepared.`);
+        setNotice(`Slip ${slip.slipNumber} generated. WhatsApp opened and receipt message copied.`);
       }
     } catch (error) {
       whatsappWindow?.close();
@@ -1547,8 +1470,8 @@ function AdhyakshApp({
             <small>दापोडी, पुणे</small>
           </div>
           <div hidden>
-            <strong>{activeForm?.festival?.name ? 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â¹Ã Â¥ÂÃ Â¤Â² Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤Ã Â¥ÂÃ Â¤Â° Ã Â¤Â®Ã Â¤â€šÃ Â¤Â¡Ã Â¤Â³' : 'Akhilnayak Mitra Mandal'}</strong>
-            <small>Ã Â¤Â¦Ã Â¤Â¾Ã Â¤ÂªÃ Â¥â€¹Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡</small>
+            <strong>{activeForm?.festival?.name ? 'राहुल मित्र मंडळ' : 'Akhilnayak Mitra Mandal'}</strong>
+            <small>दापोडी, पुणे</small>
           </div>
         </div>
         <div className="mandal-contact-card">
@@ -2575,7 +2498,7 @@ function LoginPanel({
             </div>
           ) : (
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>Ã¢Å¡Â¡ Super Admin Portal</span>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4b12' }}>Super Admin Portal</span>
               <button
                 onClick={() => setLoginType('adhyaksh')}
                 style={{
@@ -2589,7 +2512,7 @@ function LoginPanel({
                 }}
                 type="button"
               >
-                Ã¢â€ Â Back to Mandal Login
+                ← Back to Mandal Login
               </button>
             </div>
           )}
@@ -2660,26 +2583,26 @@ function LoginPanel({
 
 function toMarathiDigits(val: string | number): string {
   const map: Record<string, string> = {
-    '0': 'Ã Â¥Â¦', '1': 'Ã Â¥Â§', '2': 'Ã Â¥Â¨', '3': 'Ã Â¥Â©', '4': 'Ã Â¥Âª',
-    '5': 'Ã Â¥Â«', '6': 'Ã Â¥Â¬', '7': 'Ã Â¥Â­', '8': 'Ã Â¥Â®', '9': 'Ã Â¥Â¯',
+    '0': '०', '1': '१', '2': '२', '3': '३', '4': '४',
+    '5': '५', '6': '६', '7': '७', '8': '८', '9': '९',
   };
   return String(val).replace(/[0-9]/g, (digit) => map[digit] ?? digit);
 }
 
 const MARATHI_WORD_MAP: Record<string, string> = {
-  'Cash': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦',
-  'CASH': 'Ã Â¤Â¨Ã Â¤â€”Ã Â¤Â¦ (CASH)',
-  'UPI': 'Ã Â¤â€˜Ã Â¤Â¨Ã Â¤Â²Ã Â¤Â¾Ã Â¤â€¡Ã Â¤Â¨ (UPI)',
-  'CHEQUE': 'Ã Â¤Â§Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¦Ã Â¥â€¡Ã Â¤Â¶ (Cheque)',
-  'BANK_TRANSFER': 'Ã Â¤Â¬Ã Â¤ÂÃ Â¤â€¢ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¤Â¾Ã Â¤Â¨Ã Â¥ÂÃ Â¤Â¸Ã Â¤Â«Ã Â¤Â°',
-  'Ramtekdi': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬',
-  'Ramtekdi, Pune': 'Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â®Ã Â¤Å¸Ã Â¥â€¡Ã Â¤â€¢Ã Â¤Â¡Ã Â¥â‚¬, Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
-  'Pune': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â£Ã Â¥â€¡',
-  'Mahesh Traders': 'Ã Â¤Â®Ã Â¤Â¹Ã Â¥â€¡Ã Â¤Â¶ Ã Â¤Å¸Ã Â¥ÂÃ Â¤Â°Ã Â¥â€¡Ã Â¤Â¡Ã Â¤Â°Ã Â¥ÂÃ Â¤Â¸',
-  'Prathama Building': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â¥Ã Â¤Â®Ã Â¤Â¾ Ã Â¤Â¬Ã Â¤Â¿Ã Â¤Â²Ã Â¥ÂÃ Â¤Â¡Ã Â¤Â¿Ã Â¤â€šÃ Â¤â€”',
-  'Pramod': 'Ã Â¤ÂªÃ Â¥ÂÃ Â¤Â°Ã Â¤Â®Ã Â¥â€¹Ã Â¤Â¦',
-  'Amit Collector': 'Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¤Â²Ã Â¥â€¡Ã Â¤â€¢Ã Â¥ÂÃ Â¤Å¸Ã Â¤Â°',
-  'Shop': 'Ã Â¤Â¦Ã Â¥ÂÃ Â¤â€¢Ã Â¤Â¾Ã Â¤Â¨',
+  'Cash': 'नगद',
+  'CASH': 'नगद (Cash)',
+  'UPI': 'ऑनलाइन (UPI)',
+  'CHEQUE': 'धनादेश (Cheque)',
+  'BANK_TRANSFER': 'बँक ट्रान्सफर',
+  'Ramtekdi': 'रामटेकडी',
+  'Ramtekdi, Pune': 'रामटेकडी, पुणे',
+  'Pune': 'पुणे',
+  'Mahesh Traders': 'महेश ट्रेडर्स',
+  'Prathama Building': 'प्रथमा बिल्डिंग',
+  'Pramod': 'प्रमोद',
+  'Amit Collector': 'अमित कलेक्टर',
+  'Shop': 'दुकान',
 };
 
 function applyAutoMarathiTranslation(text: string, placement?: Partial<TemplatePlacement>): string {
@@ -2714,7 +2637,7 @@ function FontDialogModal({
   initialPlacement,
   onClose,
   onSave,
-  sampleText = 'AaBbYyZz  Ã‚Â·  Ã Â¤â€¦Ã Â¤Â®Ã Â¤Â¿Ã Â¤Â¤ Ã Â¤â€¢Ã Â¥ÂÃ Â¤Â²Ã Â¤â€¢Ã Â¤Â°Ã Â¥ÂÃ Â¤Â£Ã Â¥â‚¬  Ã¢â€šÂ¹ Ã Â¥Â«,Ã Â¥Â§Ã Â¥Â¦Ã Â¥Â¦',
+  sampleText = 'AaBbYyZz · अमित कुलकर्णी ₹ ५,१००',
 }: {
   initialPlacement: Partial<TemplatePlacement>;
   onClose: () => void;
@@ -2790,7 +2713,7 @@ function FontDialogModal({
       <div className="font-dialog-box" onClick={(e) => e.stopPropagation()}>
         <div className="font-dialog-header">
           <span>Font</span>
-          <button onClick={onClose} type="button">Ã¢Å“â€¢</button>
+          <button onClick={onClose} type="button">×</button>
         </div>
 
         <div className="font-dialog-body">
@@ -3479,9 +3402,9 @@ function TemplateView({
                   <span>Rotate</span>
                   <ChevronRight size={14} />
                   <div className="submenu">
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5Ã‚Â°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5Ã‚Â°</button>
-                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0Ã‚Â°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateLeft'); setContextMenu(null); }} type="button">Rotate -5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'rotateRight'); setContextMenu(null); }} type="button">Rotate +5°</button>
+                    <button onClick={() => { contextAction(contextMenu.fieldKey, 'resetRotate'); setContextMenu(null); }} type="button">Reset 0°</button>
                   </div>
                 </div>
 
@@ -3524,7 +3447,7 @@ function TemplateView({
                   }}
                   type="button"
                 >
-                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? 'Ã¢Å“â€œ Marathi Translation ON' : 'Auto Marathi Translation (Ã Â¤Â®Ã Â¤Â°Ã Â¤Â¾Ã Â¤Â Ã Â¥â‚¬)'}</span>
+                  <span>{placements[contextMenu.fieldKey]?.autoMarathi ? '✓ Marathi Translation ON' : 'Auto Marathi Translation (मराठी)'}</span>
                 </button>
               </div>
             )}
@@ -3740,34 +3663,36 @@ function isSlipPaid(slip: Slip) {
   return (slip.status ?? 'ACTIVE').toUpperCase() !== 'PENDING';
 }
 
-function buildWhatsAppReceiptMessage(slip: Slip, receiptUrl = 'Receipt link will be generated by Digital Vargani.') {
-  return `॥ श्री गणेशाय नमः ॥
+function buildWhatsAppReceiptMessage(slip: Slip, receiptUrl = 'Digital receipt link is being generated.') {
+  const shopLine = slip.shopName ? `दुकान / संस्था: ${slip.shopName}\n` : '';
+  const areaLine = slip.areaName ? `परिसर: ${slip.areaName}\n` : '';
+
+  return `॥ श्री गणेशाय नमः ॥ 🙏🐘
 
 आदरणीय भक्तगण,
 
-पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार!
+पुणे गणपती उत्सव परिवाराच्या वतीने आपल्या अमूल्य देणगीबद्दल मनःपूर्वक आभार! 🌺
 
 आपण दिलेल्या देणगीची डिजिटल पावती या संदेशासोबत जोडलेली आहे. कृपया ती आपल्या नोंदीसाठी जतन करून ठेवा.
 
 पावती क्रमांक: ${slip.slipNumber}
 नाव: ${slip.contributorName}
-रक्कम: ${money(Number(slip.amount))}
+${shopLine}${areaLine}रक्कम: ${money(Number(slip.amount))}
 डिजिटल पावती: ${receiptUrl}
 
 आपल्या सहकार्यामुळे श्रींचा उत्सव अधिक भक्तिमय, भव्य आणि यशस्वी होण्यासाठी मोलाची मदत होत आहे.
 
-श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना.
+श्री गणराय आपल्या जीवनात सुख, समृद्धी, उत्तम आरोग्य आणि सर्व मनोकामना पूर्ण करो, हीच श्रीचरणी प्रार्थना. 🌸
 
-टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
+📄 टीप: ही System Generated Digital Receipt असून यासाठी स्वतंत्र स्वाक्षरीची आवश्यकता नाही.
 
-आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद!
+आपल्या प्रेम, विश्वास आणि सहकार्याबद्दल पुन्हा एकदा मनःपूर्वक धन्यवाद! 🙏
 
 ॥ गणपती बाप्पा मोरया ॥
-मंगलमूर्ती मोरया!
+मंगलमूर्ती मोरया! ❤️🌺
 
 – पुणे गणपती उत्सव`;
 }
-
 async function copyShareMessage(slip: Slip, receiptUrl?: string) {
   const text = buildWhatsAppReceiptMessage(slip, receiptUrl);
   await navigator.clipboard?.writeText(text).catch(() => undefined);
@@ -3787,6 +3712,7 @@ function openWhatsAppForSlip(slip: Slip, phone?: string | null, preparedText?: s
     : `https://wa.me/?text=${encodeURIComponent(text)}`;
   if (targetWindow) {
     targetWindow.location.href = url;
+    targetWindow.focus();
     return;
   }
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -3851,4 +3777,5 @@ function slugify(value: string) {
 function generateTemporaryPassword() {
   return `Dv@${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
 }
+
 
