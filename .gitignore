@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+qa-screenshots/
+AGENTS.md
+design-qa.md
+samavet-landing-page-qa.md
+docs/
+ 
