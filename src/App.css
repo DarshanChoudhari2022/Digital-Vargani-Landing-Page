@@ -182,3 +182,117 @@
     border-right-color: var(--border);
   }
 }
+
+.form-management-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.6fr);
+}
+
+.form-management-card {
+  background: #fff;
+  border: 1px solid rgba(53, 41, 31, 0.18);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 18px 45px rgba(68, 52, 36, 0.08);
+}
+
+.form-management-card h3 {
+  color: #101828;
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 0 0 6px;
+}
+
+.form-management-card p {
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.45;
+  margin: 0 0 18px;
+}
+
+.add-question-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.form-switches {
+  display: grid;
+  gap: 10px;
+}
+
+.form-switches label,
+.check-line {
+  align-items: center;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.form-switches input,
+.check-line input {
+  flex: 0 0 auto;
+  width: 18px !important;
+}
+
+.managed-fields-table {
+  border: 1px solid rgba(53, 41, 31, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.managed-fields-head,
+.managed-fields-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 0.85fr 0.6fr 1.2fr minmax(320px, 1.8fr);
+  align-items: center;
+}
+
+.managed-fields-head {
+  background: #fff6dd;
+  color: #8a4b00;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 14px 18px;
+  text-transform: uppercase;
+}
+
+.managed-fields-row {
+  background: #fff;
+  border-top: 1px solid rgba(53, 41, 31, 0.1);
+  padding: 16px 18px;
+}
+
+.managed-fields-row code {
+  background: #fff3df;
+  border: 1px solid #ffd09a;
+  border-radius: 999px;
+  color: #8a4b00;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  width: fit-content;
+}
+
+.row-actions .danger {
+  border-color: #ffb4a5;
+  color: #d92d20;
+}
+
+@media (max-width: 1180px) {
+  .form-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .managed-fields-head {
+    display: none;
+  }
+
+  .managed-fields-row {
+    grid-template-columns: 1fr;
+  }
+}

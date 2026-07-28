@@ -41,7 +41,7 @@ type TextAlign = 'left' | 'center' | 'right';
 type TextWrapMode = 'single' | 'wrap' | 'shrink';
 type TextDecoration = 'none' | 'underline' | 'line-through';
 type UserRole = 'MANDAL_ADMIN' | 'KHAJINDAR' | 'GROUP_LEADER' | 'MEMBER' | 'SUPER_ADMIN';
-type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'users' | 'logs';
+type AdhyakshScreen = 'members' | 'tasks' | 'expenses' | 'template' | 'slips' | 'form' | 'users' | 'logs';
 type OwnerScreen = 'dashboard' | 'mandals';
 type OwnerMandalTab = 'overview' | 'template';
 type Language = 'en' | 'mr' | 'hi';
@@ -91,9 +91,12 @@ interface AuthSession {
 }
 
 interface CustomField {
+  dashboardFilter?: boolean;
   id: string;
   key: string;
   label: string;
+  options?: string[];
+  printOnSlip?: boolean;
   required: boolean;
   sortOrder: number;
   type: string;
@@ -458,6 +461,97 @@ export default function App() {
     return asset.url;
   }
 
+  async function createCustomField(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session || !session.user.mandalId || !activeForm) return;
+
+    const form = new FormData(event.currentTarget);
+    const label = String(form.get('label') || '').trim();
+    const type = String(form.get('type') || 'TEXT');
+    const options = String(form.get('options') || '')
+      .split(',')
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    if (!label) {
+      setNotice('Enter a field label before adding it.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields`,
+        {
+          body: JSON.stringify({
+            dashboardFilter: form.get('dashboardFilter') === 'on',
+            label,
+            options: type === 'DROPDOWN' ? options : undefined,
+            printOnSlip: form.get('printOnSlip') === 'on',
+            required: form.get('required') === 'on',
+            sortOrder: (activeForm.customFields?.length ?? 0) + 1,
+            type,
+          }),
+          method: 'POST',
+        },
+        session,
+      );
+      event.currentTarget.reset();
+      setNotice('Form question added.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not add form question.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateCustomField(field: CustomField, patch: Partial<CustomField>) {
+    if (!session || !session.user.mandalId || !activeForm) return;
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields/${field.id}`,
+        {
+          body: JSON.stringify(patch),
+          method: 'PATCH',
+        },
+        session,
+      );
+      setNotice('Form question updated.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update form question.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCustomField(field: CustomField) {
+    if (!session || !session.user.mandalId || !activeForm) return;
+    const confirmed = window.confirm(`Delete "${field.label}" from the vargani form? Existing slips will keep their old data.`);
+    if (!confirmed) return;
+
+    setBusy(true);
+    try {
+      await apiRequest(
+        `/mandals/${session.user.mandalId}/festivals/${activeForm.festival.id}/custom-fields/${field.id}`,
+        { method: 'DELETE' },
+        session,
+      );
+      setNotice('Form question deleted.');
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey(session) });
+      await loadWorkspace(session);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not delete form question.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function applyWorkspaceBootstrap(payload: WorkspaceBootstrap) {
     if (payload.kind === 'OWNER') {
       const ownerMandals = payload.mandals.items.map(mapBackendMandal);
@@ -722,7 +816,9 @@ export default function App() {
     const customData: Record<string, unknown> = Object.fromEntries(
       (activeForm?.customFields ?? []).map((field) => [
         field.key,
-        String(form.get(`custom_${field.key}`) || ''),
+        field.type === 'CHECKBOX'
+          ? form.get(`custom_${field.key}`) === 'yes'
+          : String(form.get(`custom_${field.key}`) || ''),
       ]),
     );
     const tentativePaymentDate = String(form.get('tentativePaymentDate') || '');
@@ -1247,7 +1343,9 @@ export default function App() {
       onCancelSlip={cancelSlip}
       onCreateMember={createMember}
       onCreateExpense={createExpense}
+      onCreateCustomField={createCustomField}
       onCreateTask={createTask}
+      onDeleteCustomField={deleteCustomField}
       onDeleteExpense={deleteExpense}
       onDeleteTask={deleteTask}
       onDownloadSlip={downloadSlipAsJpeg}
@@ -1262,6 +1360,7 @@ export default function App() {
       onShareSlip={shareSlip}
       onTemplateSaved={(placements) => saveTemplateConfig(placements)}
       onTaskDone={(task) => updateTask(task, { status: 'DONE' })}
+      onUpdateCustomField={updateCustomField}
       query={query}
       report={report}
       session={session}
@@ -1288,6 +1387,7 @@ const adhyakshNavItems: Array<{ id: AdhyakshScreen; icon: ReactNode; label: stri
   { id: 'expenses', icon: <WalletCards size={20} />, label: 'Expenses' },
   { id: 'template', icon: <FileText size={20} />, label: 'Vargani Template' },
   { id: 'slips', icon: <BadgeIndianRupee size={20} />, label: 'Vargani Slips' },
+  { id: 'form', icon: <SlidersHorizontal size={20} />, label: 'Form Management' },
   { id: 'users', icon: <UserCog size={20} />, label: 'User Management' },
   { id: 'logs', icon: <ClipboardList size={20} />, label: 'System Logs' },
 ];
@@ -1305,7 +1405,9 @@ function AdhyakshApp({
   onCancelSlip,
   onCreateMember,
   onCreateExpense,
+  onCreateCustomField,
   onCreateTask,
+  onDeleteCustomField,
   onDeleteExpense,
   onDeleteTask,
   onDownloadSlip,
@@ -1322,6 +1424,7 @@ function AdhyakshApp({
   onShareSlip,
   onTemplateSaved,
   onTaskDone,
+  onUpdateCustomField,
   query,
   report,
   session,
@@ -1347,7 +1450,9 @@ function AdhyakshApp({
   onCancelSlip: (slip: Slip) => Promise<void> | void;
   onCreateMember: (event: FormEvent<HTMLFormElement>) => void;
   onCreateExpense: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
+  onCreateCustomField: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onCreateTask: () => Promise<void> | void;
+  onDeleteCustomField: (field: CustomField) => Promise<void> | void;
   onDeleteExpense: (expense: Expense) => Promise<void> | void;
   onDeleteTask: (task: FestivalTask) => Promise<void> | void;
   onDownloadSlip: (slip: Slip) => Promise<void>;
@@ -1364,6 +1469,7 @@ function AdhyakshApp({
   onShareSlip: (slip: Slip) => Promise<void>;
   onTemplateSaved: (placements: Record<string, TemplatePlacement>) => Promise<void> | void;
   onTaskDone: (task: FestivalTask) => Promise<void> | void;
+  onUpdateCustomField: (field: CustomField, patch: Partial<CustomField>) => Promise<void> | void;
   query: string;
   report: CollectionReport | null;
   session: AuthSession;
@@ -1447,6 +1553,7 @@ function AdhyakshApp({
   function pageTitle() {
     return {
       expenses: 'Expenses',
+      form: 'Form Management',
       logs: 'Logs',
       members: 'Members',
       slips: 'Vargani Slips',
@@ -1677,6 +1784,16 @@ function AdhyakshApp({
           </section>
         )}
 
+        {screen === 'form' && (
+          <FormManagementView
+            activeForm={activeForm}
+            busy={busy}
+            onCreateField={onCreateCustomField}
+            onDeleteField={onDeleteCustomField}
+            onUpdateField={onUpdateCustomField}
+          />
+        )}
+
         {screen === 'users' && (
           <section className="adhyaksh-page">
             <div className="wide-card action-card">
@@ -1740,7 +1857,7 @@ function AdhyakshApp({
             {entryStatus === 'PENDING' && (
               <label className="pending-date-card">Tentative Payment Date<input name="tentativePaymentDate" type="date" /></label>
             )}
-            {(activeForm?.customFields ?? []).map((field) => <label key={field.key}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>)}
+            {(activeForm?.customFields ?? []).map((field) => <CustomFieldInput field={field} key={field.id} />)}
             <div className="modal-actions"><button type="button" onClick={() => setEntryOpen(false)}>Cancel</button><button className={entryStatus === 'PENDING' ? 'pending-action' : 'success'} onClick={(event) => { if (event.currentTarget.form?.checkValidity()) onPrepareWhatsApp(entryStatus); }} type="submit">{entryStatus === 'PENDING' ? <Clock size={18} /> : <CheckCircle2 size={18} />}{entryStatus === 'PENDING' ? 'Save as Pending' : 'Confirm & Generate Slip'}</button></div>
           </form>
         </div>
@@ -1798,6 +1915,147 @@ function EmptyTableState({ message }: { message: string }) {
       <ReceiptText size={28} />
       <strong>{message}</strong>
     </div>
+  );
+}
+
+function CustomFieldInput({ field }: { field: CustomField }) {
+  const name = `custom_${field.key}`;
+  const label = `${field.label}${field.required ? ' *' : ''}`;
+  const type = field.type.toUpperCase();
+
+  if (type === 'DROPDOWN') {
+    return (
+      <label>
+        {label}
+        <select name={name} required={field.required} defaultValue="">
+          <option value="">Select {field.label}</option>
+          {(field.options ?? []).map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (type === 'LONG_TEXT') {
+    return <label>{label}<textarea name={name} required={field.required} /></label>;
+  }
+
+  if (type === 'NUMBER') {
+    return <label>{label}<input inputMode="numeric" name={name} required={field.required} /></label>;
+  }
+
+  if (type === 'DATE') {
+    return <label>{label}<input name={name} required={field.required} type="date" /></label>;
+  }
+
+  if (type === 'CHECKBOX') {
+    return (
+      <label className="check-line">
+        <input name={name} required={field.required} type="checkbox" value="yes" />
+        {label}
+      </label>
+    );
+  }
+
+  return <label>{label}<input name={name} required={field.required} /></label>;
+}
+
+function FormManagementView({
+  activeForm,
+  busy,
+  onCreateField,
+  onDeleteField,
+  onUpdateField,
+}: {
+  activeForm: ActiveForm | null;
+  busy: boolean;
+  onCreateField: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
+  onDeleteField: (field: CustomField) => Promise<void> | void;
+  onUpdateField: (field: CustomField, patch: Partial<CustomField>) => Promise<void> | void;
+}) {
+  const fields = [...(activeForm?.customFields ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <section className="adhyaksh-page">
+      <div className="wide-card action-card">
+        <div>
+          <h2>Vargani Form Management</h2>
+          <span>Add, edit, delete, and mark custom vargani questions as compulsory or optional.</span>
+        </div>
+      </div>
+
+      <div className="form-management-grid">
+        <form className="form-management-card add-question-card" onSubmit={onCreateField}>
+          <div>
+            <h3>Add Custom Question</h3>
+            <p>Use this for extra fields like donor type, building / lane, receipt note, sponsor category, or area metadata.</p>
+          </div>
+          <label>Question Label<input name="label" placeholder="e.g. Donor Type" required /></label>
+          <label>
+            Type
+            <select name="type" defaultValue="TEXT">
+              <option value="TEXT">Text</option>
+              <option value="LONG_TEXT">Long Text</option>
+              <option value="NUMBER">Number</option>
+              <option value="DATE">Date</option>
+              <option value="DROPDOWN">Dropdown</option>
+              <option value="CHECKBOX">Checkbox</option>
+            </select>
+          </label>
+          <label>Dropdown Options<input name="options" placeholder="Family, Shop, Sponsor" /></label>
+          <div className="form-switches">
+            <label><input name="required" type="checkbox" />Compulsory</label>
+            <label><input name="printOnSlip" type="checkbox" />Print on slip</label>
+            <label><input name="dashboardFilter" type="checkbox" />Use in dashboard filters</label>
+          </div>
+          <button className="blue-action" disabled={busy || !activeForm} type="submit"><Plus size={18} />Add Question</button>
+        </form>
+
+        <div className="form-management-card current-questions-card">
+          <div>
+            <h3>Current Form Questions</h3>
+            <p>Core receipt fields are fixed for audit accuracy. Custom fields below are fully configurable.</p>
+          </div>
+          <div className="managed-fields-table">
+            <div className="managed-fields-head">
+              <span>ID</span>
+              <span>Type</span>
+              <span>Required</span>
+              <span>English Label</span>
+              <span>Actions</span>
+            </div>
+            {fields.length === 0 && <EmptyTableState message="No custom form questions added yet." />}
+            {fields.map((field) => (
+              <div className="managed-fields-row" key={field.id}>
+                <code>{field.key}</code>
+                <span>{field.type.replace('_', ' ')}</span>
+                <strong>{field.required ? 'Yes' : 'No'}</strong>
+                <span>{field.label}</span>
+                <span className="row-actions">
+                  <button
+                    onClick={() => {
+                      const nextLabel = window.prompt('Edit question label', field.label)?.trim();
+                      if (nextLabel && nextLabel !== field.label) void onUpdateField(field, { label: nextLabel });
+                    }}
+                    type="button"
+                  >
+                    <Edit3 size={16} />Edit
+                  </button>
+                  <button onClick={() => void onUpdateField(field, { required: !field.required })} type="button">
+                    {field.required ? 'Make Optional' : 'Make Compulsory'}
+                  </button>
+                  <button onClick={() => void onUpdateField(field, { printOnSlip: !field.printOnSlip })} type="button">
+                    {field.printOnSlip ? 'Hide on Slip' : 'Print on Slip'}
+                  </button>
+                  <button className="danger" onClick={() => void onDeleteField(field)} type="button"><Trash2 size={16} />Delete</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2416,9 +2674,7 @@ function MemberCollectorApp({
             <label>Address<textarea name="contributorAddress" placeholder="Full address (optional)" /></label>
             <label>WhatsApp Number<input name="contributorPhone" placeholder="+91 10 digit WhatsApp number" /></label>
             <PaymentStatusSelector value={entryStatus} onChange={setEntryStatus} />
-            {(activeForm?.customFields ?? []).map((field) => (
-              <label key={field.id}>{field.label}<input name={`custom_${field.key}`} required={field.required} /></label>
-            ))}
+            {(activeForm?.customFields ?? []).map((field) => <CustomFieldInput field={field} key={field.id} />)}
             <label>
               Payment Mode *
               <select name="paymentMode" defaultValue="CASH">
