@@ -5,16 +5,18 @@ import {
   FileText,
   HeartHandshake,
   Landmark,
+  Leaf,
   MessageCircle,
   ReceiptText,
+  ShieldCheck,
   ThumbsDown,
   ThumbsUp,
   UsersRound,
   WalletCards,
 } from 'lucide-react';
 
-import communityNetwork from '../assets/samavet-community-network.webp';
 import epawatiReceipt from '../assets/epawati-receipt.webp';
+import ganeshProcession from '../assets/samavet-ganesh-procession.webp';
 import { audienceGroups, capabilities, epawatiBenefits, localizedCopy, workflowSteps, type LandingLanguage } from '../content';
 
 interface SharedProps {
@@ -42,11 +44,13 @@ export function HeroSection({ chatHref, demoHref, language }: SharedProps) {
     <section className="hero-section" id="about">
       <div className="hero-copy">
         <h1>{copy.heroTitle[0]}<br /><em>{copy.heroTitle[1]}</em></h1>
+        <p className="hero-tagline"><Leaf size={16} />{copy.heroTagline}</p>
         <p className="hero-description">{copy.heroDescription}</p>
         <WhatsAppActions chatHref={chatHref} demoHref={demoHref} labels={copy} />
+        <p className="hero-trust"><ShieldCheck size={17} />{copy.heroTrust}</p>
       </div>
       <div className="hero-art" aria-hidden="true">
-        <img src={communityNetwork} alt="" />
+        <img src={ganeshProcession} alt="" />
       </div>
     </section>
   );
@@ -120,7 +124,7 @@ export function WorkflowSection({ language }: Pick<SharedProps, 'language'>) {
 
 export function FinalCtaSection({ chatHref, demoHref, language }: SharedProps) {
   const copy = localizedCopy[language];
-  return <section className="final-cta section-shell"><div><p className="section-kicker">{copy.finalKicker}</p><h2>{copy.finalTitle}</h2><p>{copy.finalDescription}</p></div><WhatsAppActions chatHref={chatHref} demoHref={demoHref} labels={copy} /></section>;
+  return <section className="final-cta section-shell" id="contact"><div><p className="section-kicker">{copy.finalKicker}</p><h2>{copy.finalTitle}</h2><p>{copy.finalDescription}</p></div><WhatsAppActions chatHref={chatHref} demoHref={demoHref} labels={copy} /></section>;
 }
 
 export function FeedbackSection({ language, response, onRespond }: { language: LandingLanguage; response: string | null; onRespond: (response: string) => void }) {

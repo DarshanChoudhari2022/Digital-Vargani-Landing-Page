@@ -13,6 +13,7 @@ test('creates a prefilled WhatsApp URL for a demo request', () => {
 test('mounts the public page only for the Samavet host or local preview path', () => {
   assert.equal(shouldRenderSamavetLanding('samavet.in', '/'), true);
   assert.equal(shouldRenderSamavetLanding('www.samavet.in', '/'), true);
+  assert.equal(shouldRenderSamavetLanding('samvet.vercel.app', '/'), true);
   assert.equal(shouldRenderSamavetLanding('localhost', '/samavet'), true);
   assert.equal(shouldRenderSamavetLanding('digital-vargani-landing-page.vercel.app', '/'), false);
 });

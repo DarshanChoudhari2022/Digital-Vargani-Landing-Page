@@ -4,6 +4,8 @@ export const localizedCopy = {
   en: {
     brandLine: 'India’s Community Technology Platform',
     heroEyebrow: 'Built for communities that bring people together',
+    heroTagline: 'Digital receipts. Community by heart.',
+    heroTrust: 'Made for community organizations.',
     heroTitle: ['Together in tradition.', 'Stronger in purpose.'],
     heroDescription: 'Samavet helps Ganesh mandals and community organizations issue digital donation receipts and coordinate festival operations.',
     demo: 'Book a demo',
@@ -29,6 +31,8 @@ export const localizedCopy = {
   mr: {
     brandLine: 'भारताचे समुदाय तंत्रज्ञान व्यासपीठ',
     heroEyebrow: 'समुदायांना एकत्र आणणाऱ्यांसाठी',
+    heroTagline: 'डिजिटल पावत्या. समुदायासाठी.',
+    heroTrust: 'समुदाय संस्थांसाठी तयार केलेले.',
     heroTitle: ['परंपरेत एकत्र.', 'उद्देशात अधिक सक्षम.'],
     heroDescription: 'समवेत गणेश मंडळे आणि समुदाय संस्थांना डिजिटल देणगी पावत्या देण्यास व उत्सवातील कामांचे नियोजन करण्यास मदत करते.',
     demo: 'डेमो बुक करा',

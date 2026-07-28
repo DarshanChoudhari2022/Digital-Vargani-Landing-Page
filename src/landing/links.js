@@ -13,5 +13,5 @@ export function buildWhatsAppLink(phone, message) {
 
 export function shouldRenderSamavetLanding(hostname, pathname) {
   const host = String(hostname).toLowerCase();
-  return host === 'samavet.in' || host === 'www.samavet.in' || pathname === '/samavet';
+  return host === 'samavet.in' || host === 'www.samavet.in' || host === 'samvet.vercel.app' || pathname === '/samavet';
 }
